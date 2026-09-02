@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { CurrentUser, NoteNotFound } from "../../contracts/index.ts";
-import type { DomainDb } from "../../database.ts";
+import type { DomainDb } from "../../../config/database.ts";
 import { Note } from "../../db/d1.ts";
 import { renderNote } from "./render.ts";
 

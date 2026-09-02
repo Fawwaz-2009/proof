@@ -7,10 +7,10 @@ import { assembleRoutes } from "../config/routes.ts";
 import { authRuntimeSettings, buildAuthOptions, emailSenderEnabled, isDevMailboxUrl } from "../config/auth.config.ts";
 import { backendEnvironmentFor, parseHostList } from "../config/environments.ts";
 import type { GetUser } from "../src/middlewares/authentication.ts";
-import { DomainData } from "./database.ts";
-import type { BackendEnvironment } from "./lib/bindings.ts";
-import { ambientStage, devPortFor } from "./stage.ts";
-import { FilesBucket } from "./storage.ts";
+import { DomainData } from "../config/database.ts";
+import type { BackendEnvironment } from "../config/bindings.ts";
+import { ambientStage, devPortFor } from "../config/stage.ts";
+import { FilesBucket } from "../config/storage.ts";
 
 /**
  * The Worker entry: pure composition. Everything a template would keep

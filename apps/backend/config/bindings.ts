@@ -1,7 +1,7 @@
 import type * as Cloudflare from "@cloudflare/workers-types";
 import * as Effect from "effect/Effect";
 import * as Context from "effect/Context";
-import type { BackendEnvironmentSwitches } from "../../config/environments.ts";
+import type { BackendEnvironmentSwitches } from "./environments.ts";
 
 /**
  * Domain-blind plumbing between the Worker's runtime bindings and the

@@ -12,10 +12,9 @@ import { SessionHandlersLive } from "../src/controllers/session.ts";
 import { NotesHandlersLive } from "../src/controllers/notes.ts";
 import { DevMailboxHandlersLive, DevelopmentMailbox } from "../src/controllers/dev-mailbox.ts";
 import { Authentication, AuthenticatedLive, type GetUser } from "../src/middlewares/authentication.ts";
-import { Database } from "../src/database.ts";
+import { Database, type DomainDb } from "./database.ts";
 import { NotesLive } from "../src/domain/notes/index.ts";
-import { BucketPort, r2Port, type BackendEnvironment } from "../src/lib/bindings.ts";
-import type { DomainDb } from "../src/database.ts";
+import { BucketPort, r2Port, type BackendEnvironment } from "./bindings.ts";
 
 /**
  * The route table — the `config/routes.rb` analogue: a flat manifest of every

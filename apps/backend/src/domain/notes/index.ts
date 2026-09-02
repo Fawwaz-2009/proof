@@ -11,8 +11,8 @@ import type {
   NoteNotFound,
   NoteView,
 } from "../../contracts/index.ts";
-import { Database } from "../../database.ts";
-import { BucketPort } from "../../lib/bindings.ts";
+import { Database } from "../../../config/database.ts";
+import { BucketPort } from "../../../config/bindings.ts";
 import { createNote } from "./create.ts";
 import { destroyNote } from "./destroy.ts";
 import { getAttachment } from "./get-attachment.ts";

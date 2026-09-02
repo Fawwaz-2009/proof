@@ -17,8 +17,8 @@ import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import Backend from "./apps/backend/src/worker.ts";
-import { AppDatabase } from "./apps/backend/src/database.ts";
-import { FilesBucket } from "./apps/backend/src/storage.ts";
+import { AppDatabase } from "./apps/backend/config/database.ts";
+import { FilesBucket } from "./apps/backend/config/storage.ts";
 import { Website } from "./website.ts";
 
 export default Alchemy.Stack(

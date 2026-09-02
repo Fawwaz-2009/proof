@@ -16,7 +16,7 @@ import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
-import { ambientStage, devPortFor } from "./apps/backend/src/stage.ts";
+import { ambientStage, devPortFor } from "./apps/backend/config/stage.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;

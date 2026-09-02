@@ -89,7 +89,8 @@ reference for wiring that up.
 alchemy.run.ts        the stack: providers + state + yield the units
 website.ts            the frontend deploy unit (rootDir apps/web)
 apps/backend/         the private Worker (contracts, views, domain, controllers, db, migrations)
-apps/backend/config/  template-stable wiring: stage switches, auth options, route table
+apps/backend/config/  the infra room: D1/R2/bucket declarations + tags, stage switches,
+                      auth options, route table, dev-port derivation
 apps/web/             the public site (routes, typed client, auth gate)
 patches/              better-auth + kysely D1-introspection fixes (bun patchedDependencies)
 ```

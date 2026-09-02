@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import type { DomainDb } from "../../database.ts";
+import type { DomainDb } from "../../../config/database.ts";
 import { Note } from "../../db/d1.ts";
 import { NoteView } from "../../views/notes.ts";
 

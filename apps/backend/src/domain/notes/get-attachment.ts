@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { CurrentUser, NoteNotFound } from "../../contracts/index.ts";
 import type { AttachmentView } from "../../contracts/index.ts";
-import type { DomainDb } from "../../database.ts";
+import type { DomainDb } from "../../../config/database.ts";
 import { encodeBase64 } from "../../lib/base64.ts";
 import { findOwnedNote } from "./render.ts";
 

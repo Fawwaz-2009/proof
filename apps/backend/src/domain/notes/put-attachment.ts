@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { AttachmentMaxBytes, AttachmentTooLarge, CurrentUser, NoteNotFound } from "../../contracts/index.ts";
 import type { AttachmentInput } from "../../contracts/index.ts";
-import type { DomainDb } from "../../database.ts";
+import type { DomainDb } from "../../../config/database.ts";
 import { Note } from "../../db/d1.ts";
 import { decodeBase64 } from "../../lib/base64.ts";
 import { findOwnedNote, renderNote } from "./render.ts";
