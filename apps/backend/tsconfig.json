@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*.ts", "migrations/**/*.sql"],
+  "include": ["src/**/*.ts", "migrations/**/*.sql", "config/**/*.ts"],
   "compilerOptions": {
     "lib": ["ESNext"],
     "module": "Preserve",

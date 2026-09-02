@@ -11,4 +11,4 @@ export const AppApiLive = HttpApiBuilder.layer(AppApi).pipe(Layer.provide(AppApi
 export const DevelopmentApiLive = HttpApiBuilder.layer(DevelopmentApi).pipe(Layer.provide(DevMailboxHandlersLive));
 
 export { Authentication } from "./auth.ts";
-export { developmentMailboxLive, isDevMailboxUrl } from "./dev-mailbox.ts";
+export { developmentMailboxLive } from "./dev-mailbox.ts";
