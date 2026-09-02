@@ -1,3 +1,4 @@
+import * as Context from "effect/Context";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle";
 import * as Effect from "effect/Effect";
@@ -38,3 +39,6 @@ export const DomainData = Effect.gen(function* () {
 });
 
 export type DomainDb = Effect.Success<typeof DomainData>["db"];
+
+/** The runtime database handle, resolved once in the entry and provided to every consumer. */
+export class Database extends Context.Service<Database, { readonly db: DomainDb }>()("Backend/Database") {}

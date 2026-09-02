@@ -1,5 +1,5 @@
-import type * as Effect from "effect/Effect";
 import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import type {
   AttachmentInput,
@@ -11,7 +11,8 @@ import type {
   NoteNotFound,
   NoteView,
 } from "../../contracts/index.ts";
-import type { DomainDb } from "../../database.ts";
+import { Database } from "../../database.ts";
+import { BucketPort } from "../../lib/bindings.ts";
 import { createNote } from "./create.ts";
 import { destroyNote } from "./destroy.ts";
 import { getAttachment } from "./get-attachment.ts";
@@ -35,18 +36,19 @@ export class Notes extends Context.Service<
   }
 >()("AppApi/Notes") {}
 
-/** The bucket port keeps R2 mechanics out of the operations; the worker binds it to the deployed bucket. */
-export type BucketPort = {
-  readonly putObject: (key: string, bytes: Uint8Array, contentType: string, name: string) => Effect.Effect<void>;
-  readonly deleteObject: (key: string) => Effect.Effect<void>;
-  readonly getObject: (key: string) => Effect.Effect<{ bytes: Uint8Array; contentType: string } | null>;
-};
+/** The implementation layer: resolves the database and the bucket port from the entry. */
+export const NotesLive = Layer.effect(
+  Notes,
+  Effect.gen(function* () {
+    const { db } = yield* Database;
+    const bucket = yield* BucketPort;
 
-export const notesLive = (db: DomainDb, bucket: BucketPort) =>
-  Layer.succeed(Notes)({
-    list: listNotes(db),
-    create: (input) => createNote(db, input),
-    destroy: (id) => destroyNote(db, bucket.deleteObject, id),
-    putAttachment: (id, input) => putAttachment(db, bucket.putObject, bucket.deleteObject, id, input),
-    getAttachment: (id) => getAttachment(db, bucket.getObject, id),
-  });
+    return {
+      list: listNotes(db),
+      create: (input) => createNote(db, input),
+      destroy: (id) => destroyNote(db, bucket.deleteObject, id),
+      putAttachment: (id, input) => putAttachment(db, bucket.putObject, bucket.deleteObject, id, input),
+      getAttachment: (id) => getAttachment(db, bucket.getObject, id),
+    };
+  }),
+);

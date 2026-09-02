@@ -1,5 +1,6 @@
 import type * as Cloudflare from "@cloudflare/workers-types";
 import * as Effect from "effect/Effect";
+import * as Context from "effect/Context";
 import type { BackendEnvironmentSwitches } from "../../config/environments.ts";
 
 /**
@@ -32,3 +33,13 @@ export const r2Port = (bucket: Cloudflare.R2Bucket) => ({
       return { bytes, contentType: object.httpMetadata?.contentType ?? "" };
     }),
 });
+
+/** The R2 bucket port, resolved from the Worker binding in the entry. */
+export type BucketPortService = {
+  readonly putObject: (key: string, bytes: Uint8Array, contentType: string, name: string) => Effect.Effect<void>;
+  readonly deleteObject: (key: string) => Effect.Effect<void>;
+  readonly getObject: (key: string) => Effect.Effect<{ bytes: Uint8Array; contentType: string } | null>;
+};
+
+/** The R2 bucket port, resolved from the Worker binding in the entry. */
+export class BucketPort extends Context.Service<BucketPort, BucketPortService>()("Backend/BucketPort") {}
