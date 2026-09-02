@@ -19,17 +19,6 @@ export const Route = createRootRoute({
   notFoundComponent: NotFound,
 });
 
-function NotFound() {
-  return (
-    <main className="page">
-      <h1>Page not found</h1>
-      <p className="page-copy">The page you asked for does not exist.</p>
-      <a className="button primary" href="/">
-        Back to the start
-      </a>
-    </main>
-  );
-}
 function RootComponent() {
   return (
     <Document>
@@ -40,13 +29,25 @@ function RootComponent() {
   );
 }
 
+function NotFound() {
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-24">
+      <h1 className="text-3xl font-bold">Page not found</h1>
+      <p className="mt-2 text-muted-foreground">The page you asked for does not exist.</p>
+      <a className="mt-6 inline-block rounded-lg border bg-card px-4 py-2 font-semibold hover:bg-accent hover:text-accent-foreground" href="/">
+        Back to the start
+      </a>
+    </main>
+  );
+}
+
 function Document({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="antialiased">
         {children}
         <Scripts />
       </body>

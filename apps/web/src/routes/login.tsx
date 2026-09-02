@@ -4,6 +4,10 @@ import type { FormEvent } from "react";
 import { authClient } from "../auth-client.ts";
 import { getDevMailbox } from "../dev-api.ts";
 import { shouldAutofillDevMailbox } from "../dev-mailbox-mode.ts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -77,28 +81,51 @@ function Login() {
   };
 
   return (
-    <main className="auth-shell">
-      <h1>Sign in to Sufra</h1>
-      {step === "email" ? (
-        <form className="auth-form" onSubmit={sendCode}>
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
-          <button className="button primary" type="submit" disabled={submitting}>
-            {submitting ? "Sending..." : "Send a code"}
-          </button>
-          {devMailboxAutofillEnabled ? <p className="hint">Development mode: the code is captured in the dev mailbox and filled in for you.</p> : null}
-        </form>
-      ) : (
-        <form className="auth-form" onSubmit={verifyCode}>
-          <p className="hint">We sent a 6-digit code to {email}.</p>
-          <label htmlFor="otp">Code</label>
-          <input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
-          <button className="button primary" type="submit" disabled={submitting}>
-            {submitting ? "Verifying..." : "Verify and continue"}
-          </button>
-        </form>
-      )}
-      {error ? <p className="error">{error}</p> : null}
+    <main className="mx-auto max-w-sm px-6 py-24">
+      <h1 className="text-2xl font-bold">Sign in to Sufra</h1>
+      <Card className="mt-6">
+        <CardContent>
+          {step === "email" ? (
+            <form onSubmit={sendCode}>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </Field>
+              </FieldGroup>
+              <Button className="mt-4 w-full" type="submit" disabled={submitting}>
+                {submitting ? "Sending..." : "Send a code"}
+              </Button>
+              {devMailboxAutofillEnabled ? (
+                <FieldDescription className="mt-3">Development mode: the code is captured in the dev mailbox and filled in for you.</FieldDescription>
+              ) : null}
+            </form>
+          ) : (
+            <form onSubmit={verifyCode}>
+              <FieldGroup>
+                <Field>
+                  <FieldDescription>We sent a 6-digit code to {email}.</FieldDescription>
+                  <FieldLabel htmlFor="otp">Code</FieldLabel>
+                  <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
+                </Field>
+              </FieldGroup>
+              <Button className="mt-4 w-full" type="submit" disabled={submitting}>
+                {submitting ? "Verifying..." : "Verify and continue"}
+              </Button>
+            </form>
+          )}
+          {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+        </CardContent>
+      </Card>
+      <p className="mt-4 text-sm text-muted-foreground">Passwordless: the first sign-in with any email creates the account.</p>
     </main>
   );
 }

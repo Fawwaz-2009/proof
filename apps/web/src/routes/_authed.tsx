@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { authClient } from "../auth-client.ts";
 import { getSession } from "../auth.functions.ts";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async () => {
@@ -20,14 +21,14 @@ function AuthenticatedLayout() {
   };
 
   return (
-    <div className="authed-shell">
-      <header className="topbar">
-        <a className="topbar-brand" href="/">
+    <div className="min-h-svh">
+      <header className="flex items-center justify-between border-b bg-card px-6 py-3">
+        <a className="font-bold" href="/">
           Sufra
         </a>
-        <button className="button small" type="button" onClick={signOut}>
+        <Button variant="outline" size="sm" onClick={signOut}>
           Sign out
-        </button>
+        </Button>
       </header>
       <Outlet />
     </div>

@@ -1,12 +1,24 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { AttachmentMaxBytes } from "@sufra/backend/contract";
 import { AppClient, createNoteAtom, destroyNoteAtom, getAttachment, putAttachmentAtom } from "../../http-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "@tanstack/react-form";
+import * as z from "zod";
 
 export const Route = createFileRoute("/_authed/demo")({
   component: Demo,
+});
+
+const noteFormSchema = z.object({
+  title: z.string().min(1, "Give the note a title.").max(200, "Title must be at most 200 characters."),
+  body: z.string().max(10_000, "Body must be at most 10,000 characters."),
 });
 
 const decodeBase64 = (value: string): Uint8Array => {
@@ -31,8 +43,6 @@ function Demo() {
   const createNote = useAtomSet(createNoteAtom, { mode: "promise" });
   const destroyNote = useAtomSet(destroyNoteAtom, { mode: "promise" });
   const putAttachment = useAtomSet(putAttachmentAtom, { mode: "promise" });
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const fileInputs = useRef(new Map<string, HTMLInputElement>());
@@ -40,27 +50,27 @@ function Demo() {
   const data = AsyncResult.isSuccess(notes) ? notes.value : undefined;
   const loading = AsyncResult.isWaiting(notes);
 
-  useEffect(() => {
-    if (AsyncResult.isFailure(notes)) {
-      setError("Could not load your notes.");
-    }
-  }, [notes]);
-
-  const submitNote = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!title.trim()) return;
-    setBusy(true);
-    setError(undefined);
-    try {
-      await createNote({ payload: { title: title.trim(), body }, reactivityKeys: ["notes"] });
-      setTitle("");
-      setBody("");
-    } catch {
-      setError("Could not create the note.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const form = useForm({
+    defaultValues: {
+      title: "",
+      body: "",
+    },
+    validators: {
+      onSubmit: noteFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setBusy(true);
+      setError(undefined);
+      try {
+        await createNote({ payload: { title: value.title.trim(), body: value.body }, reactivityKeys: ["notes"] });
+        form.reset();
+      } catch {
+        setError("Could not create the note.");
+      } finally {
+        setBusy(false);
+      }
+    },
+  });
 
   const removeNote = async (id: string) => {
     setError(undefined);
@@ -114,52 +124,113 @@ function Demo() {
   };
 
   return (
-    <main className="page">
-      <h1>Notes</h1>
-      <p className="page-copy">A vertical slice: rows in D1, attachment bytes in a private R2 bucket, every endpoint owner-scoped.</p>
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <h1 className="text-3xl font-bold">Notes</h1>
+      <p className="mt-1 text-muted-foreground">A vertical slice: rows in D1, attachment bytes in a private R2 bucket, every endpoint owner-scoped.</p>
 
-      <form className="note-form card" onSubmit={submitNote}>
-        <label htmlFor="title">Title</label>
-        <input id="title" required maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What is this note about?" />
-        <label htmlFor="body">Body</label>
-        <textarea id="body" rows={3} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Optional details" />
-        <button className="button primary" type="submit" disabled={busy}>
-          Add note
-        </button>
-      </form>
+      <Card className="mt-8">
+        <CardContent>
+          <form
+            id="note-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup>
+              <form.Field
+                name="title"
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Title</FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="What is this note about?"
+                        autoComplete="off"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+              <form.Field
+                name="body"
+                children={(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Body</FieldLabel>
+                      <Textarea
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="Optional details"
+                        rows={3}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  );
+                }}
+              />
+            </FieldGroup>
+            <Button className="mt-4" type="submit" form="note-form" disabled={busy}>
+              {busy ? "Working..." : "Add note"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {error ? <p className="error">{error}</p> : null}
-      {loading ? <p className="hint">Loading notes...</p> : null}
-      {data && data.notes.length === 0 ? <p className="hint">No notes yet. Add the first one above.</p> : null}
+      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+      {loading ? <p className="mt-4 text-sm text-muted-foreground">Loading notes...</p> : null}
+      {data && data.notes.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No notes yet. Add the first one above.</p> : null}
 
-      <ul className="note-list">
+      <ul className="mt-6 flex flex-col gap-4">
         {data?.notes.map((note) => (
-          <li key={note.id} className="card note">
-            <div className="note-head">
-              <strong>{note.title}</strong>
-              <button className="button small" type="button" onClick={() => removeNote(note.id)}>
-                Delete
-              </button>
-            </div>
-            {note.body ? <p className="note-body">{note.body}</p> : null}
-            <footer className="note-foot">
-              <span className="hint">{new Date(note.createdAt).toLocaleString()}</span>
-              <div className="note-actions">
-                {note.hasAttachment ? (
-                  <button className="button small" type="button" onClick={() => downloadAttachment(note.id, note.attachmentName)}>
-                    Download {note.attachmentName ?? "attachment"}
-                  </button>
-                ) : null}
-                <input
-                  ref={(element) => {
-                    if (element) fileInputs.current.set(note.id, element);
-                    else fileInputs.current.delete(note.id);
-                  }}
-                  type="file"
-                  onChange={() => uploadAttachment(note.id)}
-                />
-              </div>
-            </footer>
+          <li key={note.id}>
+            <Card>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <strong>{note.title}</strong>
+                  <Button variant="outline" size="sm" onClick={() => removeNote(note.id)}>
+                    Delete
+                  </Button>
+                </div>
+                {note.body ? <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{note.body}</p> : null}
+                <footer className="mt-4 flex items-center justify-between gap-4 border-t pt-3">
+                  <span className="text-sm text-muted-foreground">{new Date(note.createdAt).toLocaleString()}</span>
+                  <div className="flex items-center gap-3">
+                    {note.hasAttachment ? (
+                      <Button variant="outline" size="sm" onClick={() => downloadAttachment(note.id, note.attachmentName)}>
+                        Download {note.attachmentName ?? "attachment"}
+                      </Button>
+                    ) : null}
+                    <Input
+                      className="w-auto"
+                      type="file"
+                      onChange={(event) => {
+                        const input = event.target;
+                        uploadAttachment(note.id);
+                        input.value = "";
+                      }}
+                      ref={(element) => {
+                        if (element) fileInputs.current.set(note.id, element);
+                        else fileInputs.current.delete(note.id);
+                      }}
+                    />
+                  </div>
+                </footer>
+              </CardContent>
+            </Card>
           </li>
         ))}
       </ul>
