@@ -1,24 +1,40 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
 import { ALCHEMY_DEV } from "alchemy/Phase";
+import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
-import { assembleRoutes } from "../config/routes.ts";
+import * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import * as Path from "effect/Path";
+import { Etag, HttpPlatform, HttpRouter } from "effect/unstable/http";
+import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { authRuntimeSettings, buildAuthOptions, emailSenderEnabled, isDevMailboxUrl } from "../config/auth.config.ts";
 import { backendEnvironmentFor, parseHostList } from "../config/environments.ts";
-import type { GetUser } from "../src/middlewares/authentication.ts";
-import { DomainData } from "../config/database.ts";
-import type { BackendEnvironment } from "../config/bindings.ts";
+import { Database } from "../config/database.ts";
+import { BucketPort, r2Port, type BackendEnvironment } from "../config/bindings.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
 import { FilesBucket } from "../config/storage.ts";
+import { DomainData } from "../config/database.ts";
+import { AppApi, DevelopmentApi } from "./contracts/index.ts";
+import { SessionHandlersLive } from "./controllers/session.ts";
+import { NotesHandlersLive } from "./controllers/notes.ts";
+import { DevMailboxHandlersLive, DevelopmentMailbox } from "./controllers/dev-mailbox.ts";
+import { Authentication, AuthenticatedLive, type GetUser } from "./middlewares/authentication.ts";
+import { NotesLive } from "./domain/notes/index.ts";
 
 /**
- * The Worker entry: pure composition. Everything a template would keep
- * byte-identical between products lives in ../config — per-stage switches
- * (environments.ts), Better Auth construction (auth.config.ts), and the route
- * table (routes.ts). This file only creates Alchemy resources, resolves the
- * runtime environment, and hands handles to the config builders.
+ * The Worker entry — following overseer/skoreon: resources are created here,
+ * the runtime environment is resolved here, and the HTTP assembly (the route
+ * manifest) lives inline in the Init phase, closing over the resolved handles.
+ * Everything a template would keep byte-identical between products — Better
+ * Auth options, per-stage switches, resource+tag declarations — lives in
+ * ../config and ./middlewares.
  */
+
+/** Platform services the HttpApi builder needs; a Worker has no filesystem, so it's a no-op. */
+const HttpServicesLive = Layer.mergeAll(Path.layer, Etag.layerWeak, HttpPlatform.layer).pipe(Layer.provideMerge(FileSystem.layerNoop({})));
+
 export default class Backend extends Cloudflare.Worker<Backend>()(
   "Backend",
   // The props read the ambient stage at synthesis; the deployed Worker
@@ -67,7 +83,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     );
 
     // The session bridge: Better Auth's session, projected onto the identity
-    // the API layers know (SessionUser) — provided to the middleware in routes.
+    // the API layers know (SessionUser).
     const authentication: GetUser = (headers) =>
       auth.getSession(headers).pipe(
         Effect.orDie,
@@ -82,6 +98,28 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         ),
       );
 
-    return yield* assembleRoutes({ auth, authentication, db, environment, canAccessDevMailbox });
+    // The route manifest — three surfaces on one fetch:
+    // Product surface: Session + Notes groups behind the authentication middleware.
+    const AppRoutesLive = HttpApiBuilder.layer(AppApi);
+    // Better Auth: its own framework, mounted as a raw catch-all before the typed API.
+    const AuthRoutesLive = HttpRouter.addAll([HttpRouter.route("*", "/api/auth/*", auth.fetch)]);
+    // Development surface: mailbox read — no auth middleware by design, 404-cloaked.
+    const DevelopmentRoutesLive = HttpApiBuilder.layer(DevelopmentApi);
+
+    return {
+      fetch: yield* HttpRouter.toHttpEffect(
+        Layer.mergeAll(AppRoutesLive, AuthRoutesLive, DevelopmentRoutesLive).pipe(
+          Layer.provide(Layer.mergeAll(SessionHandlersLive, NotesHandlersLive)),
+          Layer.provide(DevMailboxHandlersLive),
+          Layer.provide(NotesLive),
+          Layer.provide(AuthenticatedLive),
+          Layer.provide(Layer.succeed(Authentication, { getUser: authentication })),
+          Layer.provide(Layer.mergeAll(Layer.succeed(Database, { db }), Layer.succeed(BucketPort, r2Port(environment.FILES)))),
+          Layer.provide(Layer.succeed(DevelopmentMailbox, { db, canAccess: canAccessDevMailbox })),
+          Layer.provide(HttpServicesLive),
+          Layer.provide(Alchemy.RuntimeContext.phantom),
+        ),
+      ),
+    };
   }).pipe(Effect.provide(Cloudflare.D1.QueryDatabaseBinding), Effect.provide(Cloudflare.Email.SendBinding)),
 ) {}
