@@ -9,7 +9,6 @@ import type { DomainDb } from "../database.ts";
 
 // The host rule for OTP-related development access lives in the auth config
 // (config/auth.config.ts) — the OTP send path and this route must agree on it.
-export { isDevMailboxUrl } from "../../config/auth.config.ts";
 import { isDevMailboxUrl } from "../../config/auth.config.ts";
 
 export class DevelopmentMailbox extends Context.Service<

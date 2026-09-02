@@ -6,16 +6,17 @@ import * as Effect from "effect/Effect";
 import { assembleRoutes } from "../config/routes.ts";
 import { authRuntimeSettings, buildAuthOptions, emailSenderEnabled, isDevMailboxUrl } from "../config/auth.config.ts";
 import { backendEnvironmentFor, parseHostList } from "../config/environments.ts";
+import type { GetUser } from "../src/middlewares/authentication.ts";
 import { DomainData } from "./database.ts";
 import type { BackendEnvironment } from "./lib/bindings.ts";
 import { ambientStage, devPortFor } from "./stage.ts";
 import { FilesBucket } from "./storage.ts";
 
 /**
- * The Worker entry: pure composition. Everything that a template would keep
+ * The Worker entry: pure composition. Everything a template would keep
  * byte-identical between products lives in ../config — per-stage switches
  * (environments.ts), Better Auth construction (auth.config.ts), and the route
- * table (routes.ts). This file only creates Alchemy resources, reads the
+ * table (routes.ts). This file only creates Alchemy resources, resolves the
  * runtime environment, and hands handles to the config builders.
  */
 export default class Backend extends Cloudflare.Worker<Backend>()(
@@ -65,6 +66,22 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       Effect.provide(authDatabase),
     );
 
-    return yield* assembleRoutes({ auth, db, environment, canAccessDevMailbox });
+    // The session bridge: Better Auth's session, projected onto the identity
+    // the API layers know (SessionUser) — provided to the middleware in routes.
+    const authentication: GetUser = (headers) =>
+      auth.getSession(headers).pipe(
+        Effect.orDie,
+        Effect.map((session) =>
+          session?.user
+            ? {
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.name || session.user.email,
+              }
+            : null,
+        ),
+      );
+
+    return yield* assembleRoutes({ auth, authentication, db, environment, canAccessDevMailbox });
   }).pipe(Effect.provide(Cloudflare.D1.QueryDatabaseBinding), Effect.provide(Cloudflare.Email.SendBinding)),
 ) {}
