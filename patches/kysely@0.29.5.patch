@@ -1,0 +1,16 @@
+diff --git a/dist/dialect/sqlite/sqlite-introspector.js b/dist/dialect/sqlite/sqlite-introspector.js
+index 3a884bea5822b0c4307e2daee5f3b1fd1002cf02..1ff48e3e4c9b2d3fb332a947822ba97f37856f3c 100644
+--- a/dist/dialect/sqlite/sqlite-introspector.js
++++ b/dist/dialect/sqlite/sqlite-introspector.js
+@@ -18,6 +18,11 @@ export class SqliteIntrospector {
+             .selectFrom('sqlite_master')
+             .where('type', 'in', ['table', 'view'])
+             .where('name', 'not like', 'sqlite_%')
++            // D1 (and other hosted SQLite engines) keep provider-internal
++            // tables (e.g. Cloudflare's _cf_KV) in sqlite_master, and their
++            // authorizer rejects pragma_table_info on them — filter them out
++            // before the pragma join or introspection fails with SQLITE_AUTH.
++            .where(sql `substr(name, 1, 1) <> '_'`)
+             .select(['name', 'sql', 'type'])
+             .orderBy('name');
+         if (!options.withInternalKyselyTables) {

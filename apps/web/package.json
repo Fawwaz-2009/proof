@@ -1,0 +1,28 @@
+{
+  "name": "@sufra/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sufra web app: TanStack Start on Cloudflare Workers, the sole public ingress, forwarding /api to the private backend Worker over the BACKEND service binding.",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@effect/atom-react": "4.0.0-rc.110",
+    "@sufra/backend": "workspace:*",
+    "@tanstack/react-router": "^1.167.4",
+    "@tanstack/react-start": "^1.166.15",
+    "better-auth": "1.7.1",
+    "effect": "4.0.0-rc.110",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
+  }
+}

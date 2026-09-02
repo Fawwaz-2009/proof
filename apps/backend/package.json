@@ -1,0 +1,26 @@
+{
+  "name": "@sufra/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sufra backend: the private Effect-native Worker (D1, R2, email, Better Auth), deployed by the root Alchemy stack.",
+  "exports": {
+    "./contract": "./src/contracts/index.ts",
+    "./contract/*": "./src/contracts/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@alchemy.run/better-auth": "2.0.0-beta.74",
+    "alchemy": "2.0.0-beta.74",
+    "better-auth": "1.7.1",
+    "drizzle-orm": "1.0.0-rc.5-ab785fc",
+    "effect": "4.0.0-rc.110"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260819.1",
+    "@types/bun": "1.3.14",
+    "typescript": "^7.0.2"
+  }
+}

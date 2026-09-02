@@ -1,0 +1,13 @@
+diff --git a/dist/db/get-migration.mjs b/dist/db/get-migration.mjs
+index 0423d8d7e3ade429b5f9933e1b5d6714d980ab6a..f482facb86a687dfc23346ae9acfd3761ed58249 100644
+--- a/dist/db/get-migration.mjs
++++ b/dist/db/get-migration.mjs
+@@ -116,7 +116,7 @@ async function getDatabaseIndexes(db, dbType, schemaName) {
+ 				FROM sqlite_master AS tables
+ 				INNER JOIN pragma_index_list(tables.name) AS index_list
+ 				INNER JOIN pragma_index_info(index_list.name) AS index_info
+-				WHERE tables.type = 'table'
++				WHERE tables.type = 'table' AND substr(tables.name, 1, 1) <> '_'
+ 			`.execute(db)).rows;
+ 	else if (dbType === "postgres") rows = (await sql`
+ 				SELECT

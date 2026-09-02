@@ -1,0 +1,7 @@
+.alchemy/
+.tanstack/
+.output/
+dist/
+node_modules/
+apps/web/src/routeTree.gen.ts
+bun.lock
