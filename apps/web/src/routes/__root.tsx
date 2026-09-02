@@ -14,8 +14,22 @@ export const Route = createRootRoute({
     links: [{ rel: "stylesheet", href: appCss }],
   }),
   component: RootComponent,
+  // Without this, any request that 404s during dev teardown logs the router's
+  // "notFoundError was encountered" warning on shutdown.
+  notFoundComponent: NotFound,
 });
 
+function NotFound() {
+  return (
+    <main className="page">
+      <h1>Page not found</h1>
+      <p className="page-copy">The page you asked for does not exist.</p>
+      <a className="button primary" href="/">
+        Back to the start
+      </a>
+    </main>
+  );
+}
 function RootComponent() {
   return (
     <Document>

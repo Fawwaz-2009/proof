@@ -8,9 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run scripts/dev.ts start",
-    "dev:destroy": "bun run scripts/dev.ts destroy",
-    "dev:reset": "bun run scripts/dev.ts reset",
+    "dev": "alchemy dev",
     "destroy": "alchemy destroy",
     "build": "cd apps/web && bun run build",
     "typecheck": "tsc -p tsconfig.iac.json && cd apps/backend && bun run typecheck && cd ../web && bun run typecheck",

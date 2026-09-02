@@ -49,13 +49,18 @@ or `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` in `.env`
 ```sh
 bun install
 cp .env.example .env
-bun run dev        # starts (or reuses) stage dev_<your user>
+bun run dev        # alchemy dev: stage dev_<your user> by default
 ```
 
 `bun run dev` boots both Workers locally with emulated D1/R2, applies D1
 migrations and the Better Auth schema, and prints the local site URL. State
-isolates by stage, so parallel developers do not collide; `bun run
-dev:reset` rebuilds your stage and `bun run dev:destroy` removes it.
+isolates by stage, so parallel developers do not collide. Stages are plain
+Alchemy stages: pass `--stage` to override, and destroy explicitly:
+
+```sh
+alchemy dev --stage dev_alice            # a specific developer stage
+alchemy destroy --stage dev_fawwaz --yes # remove a developer stage
+```
 
 ## Deploying
 
@@ -86,7 +91,6 @@ website.ts            the frontend deploy unit (rootDir apps/web)
 apps/backend/         the private Worker (contracts, views, domain, controllers, db, migrations)
 apps/web/             the public site (routes, typed client, auth gate)
 patches/              better-auth + kysely D1-introspection fixes (bun patchedDependencies)
-scripts/dev.ts        the developer-stage lifecycle (start / reset / destroy)
 ```
 
 ## Renaming for a new product
