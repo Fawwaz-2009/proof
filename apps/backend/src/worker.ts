@@ -1,6 +1,7 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
 import * as Alchemy from "alchemy";
+import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { emailOTP } from "better-auth/plugins";
 import { drizzle as drizzleD1 } from "drizzle-orm/d1";
@@ -12,20 +13,20 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import { Etag, HttpPlatform, HttpRouter } from "effect/unstable/http";
 import { AppApiLive, Authentication, DevelopmentApiLive, developmentMailboxLive, isDevMailboxUrl } from "./controllers/index.ts";
-import { notesLive } from "./domain/notes/index.ts";
 import { DomainData } from "./database.ts";
 import { DevMailbox } from "./db/d1.ts";
-import { ambientStage } from "./stage.ts";
+import { notesLive } from "./domain/notes/index.ts";
+import { ambientStage, devPortFor } from "./stage.ts";
 import { FilesBucket } from "./storage.ts";
 
-const SignInEmail = Cloudflare.Email.SendEmail("SignInEmail");
 const DevMailboxEnvironment = Schema.Struct({ DEV_MAILBOX_ENABLED: Schema.String, DEV_MAILBOX_ALLOWED_HOSTS: Schema.String });
 
-/** The runtime view of the Worker's env: the R2 bucket binding plus the mailbox switches. */
+/** The runtime view of the Worker's env: the R2 bucket binding plus the auth switches. */
 type BackendEnvironment = {
   readonly FILES: R2Bucket;
   readonly DEV_MAILBOX_ENABLED: string;
   readonly DEV_MAILBOX_ALLOWED_HOSTS: string;
+  readonly EMAIL_SENDER: string;
   readonly [key: string]: unknown;
 };
 
@@ -54,7 +55,9 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
   // re-evaluates them without infrastructure context, where the
   // production-shaped fallback keeps the object total and unused.
   Effect.gen(function* () {
-    const nonProduction = (yield* ambientStage) !== "prod";
+    const stage = yield* ambientStage;
+    const nonProduction = stage !== "prod";
+    const isDev = yield* Effect.orDie(ALCHEMY_DEV);
     return {
       main: import.meta.filename,
       workersDev: false,
@@ -68,9 +71,14 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         logs: { enabled: true, invocationLogs: true, headSamplingRate: 0.1 },
         traces: { enabled: true, headSamplingRate: 0.01 },
       },
+      // Parallel `alchemy dev` sessions isolate by STAGE with a deterministic
+      // port; strictPort turns a port collision into a loud error instead of a
+      // silent drift.
+      ...(isDev ? { dev: { port: devPortFor(stage), strictPort: true } } : {}),
       env: {
         DEV_MAILBOX_ENABLED: nonProduction ? "true" : "false",
         DEV_MAILBOX_ALLOWED_HOSTS: nonProduction ? "*.workers.dev" : "",
+        EMAIL_SENDER: nonProduction ? "disabled" : "enabled",
         FILES: FilesBucket,
       },
     };
@@ -78,9 +86,12 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
   Effect.gen(function* () {
     const { database, db } = yield* DomainData;
     const authDatabase = CloudflareD1(database);
-    const sender = yield* SignInEmail;
-    yield* Cloudflare.Email.Send(sender);
     const environment = (yield* Cloudflare.WorkerEnvironment) as BackendEnvironment;
+    // The send_email binding is attached only where email is actually sent
+    // (production). Every other stage captures codes in the development
+    // mailbox, which also keeps alchemy's local runtime free of the binding.
+    const sender = environment.EMAIL_SENDER === "enabled" ? yield* Cloudflare.Email.SendEmail("SignInEmail") : undefined;
+    if (sender) yield* Cloudflare.Email.Send(sender);
     const emailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Sufra <noreply@localhost>"));
     const allowedHosts = (yield* Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev")))
       .split(",")
@@ -131,6 +142,8 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
                   target: DevMailbox.email,
                   set: { code: otp, sentAt: new Date() },
                 });
+            } else if (!sender) {
+              throw new Error(`No email sender is attached on this stage; the sign-in code for ${email} was not delivered.`);
             } else {
               const emailBinding = environment[sender.name] as SendEmail;
               await emailBinding.send({

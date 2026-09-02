@@ -1,17 +1,18 @@
 import { and, eq } from "drizzle-orm";
 import type { DomainDb } from "../../database.ts";
 import { Note } from "../../db/d1.ts";
-import type { NoteView } from "../../views/notes.ts";
+import { NoteView } from "../../views/notes.ts";
 
 /** The note's wire view is rendered by the aggregate; private until a second consumer earns extraction. */
-export const renderNote = (row: typeof Note.$inferSelect): NoteView => ({
-  id: row.id,
-  title: row.title,
-  body: row.body,
-  createdAt: row.createdAt.toISOString(),
-  hasAttachment: row.attachmentKey !== null,
-  attachmentName: row.attachmentName,
-});
+export const renderNote = (row: typeof Note.$inferSelect): NoteView =>
+  new NoteView({
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    createdAt: row.createdAt.toISOString(),
+    hasAttachment: row.attachmentKey !== null,
+    attachmentName: row.attachmentName,
+  });
 
 export type NoteRow = typeof Note.$inferSelect;
 

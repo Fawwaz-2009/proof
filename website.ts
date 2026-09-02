@@ -12,12 +12,16 @@
 // (alchemy.run.ts, tsconfig.iac.json) — is the honest home.
 
 import * as Cloudflare from "alchemy/Cloudflare";
+import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
+import { ambientStage, devPortFor } from "./apps/backend/src/stage.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;
+  const stage = yield* ambientStage;
+  const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the
   // stage's own backend Worker.
@@ -44,6 +48,9 @@ const websiteDeployProps = Effect.gen(function* () {
       include: ["**/*", "../backend/src/contracts/**", "../backend/src/views/**"],
       lockfile: true,
     },
+    // The stage's deterministic dev port: parallel `alchemy dev` sessions
+    // isolate by STAGE, and strictPort fails loudly on a taken port.
+    ...(isDev ? { dev: { port: devPortFor(`web-${stage}`), strictPort: true } } : {}),
     env: {
       // The private backend this Worker proxies to — the only binding the
       // frontend has.
