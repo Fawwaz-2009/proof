@@ -16,10 +16,13 @@ export const ENV_BINDINGS = {
   devMailboxAllowedHosts: "DEV_MAILBOX_ALLOWED_HOSTS",
 } as const;
 
+/** The OTP policy in one place: every stage except production captures codes in the dev mailbox (and may auto-fill them); production delivers via send_email. */
+export const capturesOtp = (stage: string): boolean => stage !== "prod";
+
 /** The plan-time mapping from stage onto shipped switch values; the only writer of the literals. */
 export const switchesForStage = (stage: string): Record<string, string> => ({
-  [ENV_BINDINGS.otpDelivery]: stage === "prod" ? "send" : "mailbox",
-  [ENV_BINDINGS.devMailboxAllowedHosts]: stage === "prod" ? "" : "*.workers.dev",
+  [ENV_BINDINGS.otpDelivery]: capturesOtp(stage) ? "mailbox" : "send",
+  [ENV_BINDINGS.devMailboxAllowedHosts]: capturesOtp(stage) ? "*.workers.dev" : "",
 });
 
 /**

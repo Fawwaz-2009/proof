@@ -17,6 +17,7 @@ import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
 import { ambientStage, devPortFor } from "./apps/backend/config/stage.ts";
+import { capturesOtp } from "./apps/backend/config/env.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;
@@ -55,6 +56,10 @@ const websiteDeployProps = Effect.gen(function* () {
       // The private backend this Worker proxies to — the only binding the
       // frontend has.
       BACKEND: backend,
+      // Mirrors the backend's OTP_DELIVERY switch (single writer: env.ts's
+      // capturesOtp): preview builds inline the flag so the login page
+      // auto-fills the captured code; production builds never offer it.
+      VITE_DEV_MAILBOX_ENABLED: capturesOtp(stage) ? "true" : "false",
     },
   };
 });
