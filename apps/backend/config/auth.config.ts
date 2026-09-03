@@ -1,73 +1,105 @@
 import type { BetterAuthProps } from "@alchemy.run/better-auth";
+import { Email } from "alchemy/Cloudflare";
+import * as Alchemy from "alchemy";
 import { emailOTP } from "better-auth/plugins";
-import { drizzle as drizzleD1 } from "drizzle-orm/d1";
 import * as Config from "effect/Config";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import * as Schema from "effect/Schema";
+import * as Layer from "effect/Layer";
 import { DevMailbox } from "../src/db/d1.ts";
-import { defaultAllowedHosts, parseHostList } from "./environments.ts";
+import { Database } from "./database.ts";
+import { parseHostList } from "./env.ts";
 
 /**
- * Better Auth construction — the `config/initializers` analogue. Pure builder:
- * takes the runtime bindings and values, returns the options object. No
- * Alchemy resources are created here (the Worker entry owns those), and the
- * module is safe to evaluate at plan time and in the deployed runtime.
+ * Better Auth construction — the `config/initializers` analogue. Pure builder
+ * plus the OTP delivery port: no Alchemy resources are created here (the
+ * Worker entry owns those), and the module is safe to evaluate at plan time
+ * and in the deployed runtime.
  */
 
-const DevMailboxEnvironment = Schema.Struct({ DEV_MAILBOX_ENABLED: Schema.String, DEV_MAILBOX_ALLOWED_HOSTS: Schema.String });
+const defaultAllowedHosts = "localhost:*,127.0.0.1:*,*.workers.dev";
 
-/**
- * Host rule for OTP-related development access: `http://localhost` always
- * qualifies; deployed non-prod stages add `*.workers.dev` through the
- * `DEV_MAILBOX_ALLOWED_HOSTS` env, production ships an empty list.
- */
-export const isDevMailboxUrl = (value: string, allowedHosts: ReadonlyArray<string> = []): boolean => {
-  try {
-    const { host, hostname, protocol } = new URL(value);
-    const matchesAllowedHost = allowedHosts.some((allowedHost) => {
-      const normalized = allowedHost.trim().toLowerCase();
-      if (normalized.startsWith("*.")) {
-        const suffix = normalized.slice(1);
-        return hostname.endsWith(suffix) && hostname.length > suffix.length;
-      }
-      return normalized === host;
-    });
-    return (
-      (protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".localhost"))) ||
-      ((protocol === "http:" || protocol === "https:") && matchesAllowedHost)
-    );
-  } catch {
-    return false;
-  }
-};
+/** The AUTH_* env vars as Config values, so the same constant ships the var in the props and reads it back at runtime. */
+export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Sufra <noreply@localhost>"));
+export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault(defaultAllowedHosts));
 
 export type AuthRuntimeSettings = {
   readonly emailFrom: string;
   readonly allowedHosts: Array<string>;
 };
 
-/** AUTH_EMAIL_FROM / AUTH_ALLOWED_HOSTS with template defaults; read via Effect Config so deploys can override. */
+/** Reads the AUTH_* settings through the Worker's ConfigProvider. */
 export const authRuntimeSettings = Effect.gen(function* () {
-  const emailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Sufra <noreply@localhost>"));
-  const allowedHosts = yield* Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault(defaultAllowedHosts));
+  const emailFrom = yield* emailFromConfig;
+  const allowedHosts = yield* allowedHostsConfig;
   return { emailFrom, allowedHosts: parseHostList(allowedHosts) };
 });
 
+/** The OTP delivery service shape; Better Auth's callback bridges it to promises. */
+export type OtpSenderService = {
+  readonly send: (input: { readonly email: string; readonly code: string }) => Effect.Effect<void>;
+};
+
+/**
+ * OTP delivery port: sign-in codes are delivered without ever failing the
+ * auth flow (E = never by contract). The entry picks the adapter — dev
+ * mailbox capture on development stages and local runtimes, the send_email
+ * binding elsewhere.
+ */
+export class OtpSender extends Context.Service<OtpSender, OtpSenderService>()("Backend/OtpSender") {}
+
+/** Dev adapter: upsert the code into the mailbox table for the auto-fill flow. Failures die loudly — this only runs in development. */
+export const otpSenderMailboxLive: Layer.Layer<OtpSender, never, Database> = Layer.effect(
+  OtpSender,
+  Effect.gen(function* () {
+    const { db } = yield* Database;
+    return {
+      send: ({ email, code }) =>
+        Effect.scoped(
+          db
+            .insert(DevMailbox)
+            .values({ email: email.toLowerCase(), code })
+            .onConflictDoUpdate({
+              target: DevMailbox.email,
+              set: { code, sentAt: new Date() },
+            }),
+        ).pipe(Effect.orDie),
+    };
+  }),
+);
+
+/** Production adapter: deliver via the send_email binding. Delivery failures are logged, never thrown — a mail outage must not lock sign-in. */
+export const otpSenderEmailLive = (sender: Email.SendEmail, emailFrom: string): Layer.Layer<OtpSender, never, Email.Send> =>
+  Layer.effect(
+    OtpSender,
+    Effect.gen(function* () {
+      const email = yield* Email.Send(sender);
+      return {
+        send: ({ email: to, code }) =>
+          email
+            .send({
+              from: emailFrom,
+              to,
+              subject: "Your Sufra sign-in code",
+              text: `Your Sufra sign-in code is ${code}. It expires in 15 minutes.`,
+              html: `<p>Your Sufra sign-in code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`,
+            })
+            .pipe(
+              Effect.asVoid,
+              Effect.catch(() => Effect.log(`Sign-in code email to ${to} failed`).pipe(Effect.asVoid)),
+              Effect.provide(Alchemy.RuntimeContext.phantom),
+            ),
+      };
+    }),
+  );
+
 export type BuildAuthOptionsInput = {
-  /** The Worker's runtime environment (bindings + env strings). */
-  readonly environment: Record<string, unknown>;
-  /** Logical id of the D1 database resource — the env key its binding lives under. */
-  readonly databaseLogicalId: string;
-  /** Attached only when EMAIL_SENDER is enabled (production stages). */
-  readonly sender: { readonly name: string } | undefined;
-  readonly emailFrom: string;
+  /** The resolved OTP delivery adapter. */
+  readonly otpSender: OtpSenderService;
   readonly allowedHosts: ReadonlyArray<string>;
 };
 
-/** The email sender env flag; the OTP send path refuses to run without it. */
-export const emailSenderEnabled = (environment: Record<string, unknown>): boolean => environment.EMAIL_SENDER === "enabled";
-
-export const buildAuthOptions = ({ environment, databaseLogicalId, sender, emailFrom, allowedHosts }: BuildAuthOptionsInput): BetterAuthProps => ({
+export const buildAuthOptions = ({ otpSender, allowedHosts }: BuildAuthOptionsInput): BetterAuthProps => ({
   appName: "Sufra",
   basePath: "/api/auth",
   baseURL: { allowedHosts: [...allowedHosts], protocol: "auto" },
@@ -89,31 +121,9 @@ export const buildAuthOptions = ({ environment, databaseLogicalId, sender, email
       expiresIn: 15 * 60,
       otpLength: 6,
       storeOTP: "hashed",
-      sendVerificationOTP: async ({ email, otp, type }, ctx) => {
-        const request = ctx?.request;
-        const devMailboxEnvironment = Schema.decodeUnknownSync(DevMailboxEnvironment)(environment);
-        const local = request ? isDevMailboxUrl(request.url, parseHostList(devMailboxEnvironment.DEV_MAILBOX_ALLOWED_HOSTS)) : false;
-        if ((devMailboxEnvironment.DEV_MAILBOX_ENABLED === "true" || local) && type === "sign-in") {
-          const runtimeDb = drizzleD1(environment[databaseLogicalId] as D1Database);
-          await runtimeDb
-            .insert(DevMailbox)
-            .values({ email: email.toLowerCase(), code: otp })
-            .onConflictDoUpdate({
-              target: DevMailbox.email,
-              set: { code: otp, sentAt: new Date() },
-            });
-        } else if (!sender) {
-          throw new Error(`No email sender is attached on this stage; the sign-in code for ${email} was not delivered.`);
-        } else {
-          const emailBinding = environment[sender.name] as SendEmail;
-          await emailBinding.send({
-            from: emailFrom,
-            to: email,
-            subject: "Your Sufra sign-in code",
-            text: `Your Sufra sign-in code is ${otp}. It expires in 15 minutes.`,
-            html: `<p>Your Sufra sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
-          });
-        }
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        if (type !== "sign-in") return;
+        await Effect.runPromise(otpSender.send({ email, code: otp }));
       },
     }),
   ],

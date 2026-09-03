@@ -1,20 +1,27 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
-import { ALCHEMY_DEV } from "alchemy/Phase";
+import { ALCHEMY_DEV, ALCHEMY_PHASE } from "alchemy/Phase";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
+import * as Context from "effect/Context";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import { Etag, HttpPlatform, HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import { authRuntimeSettings, buildAuthOptions, emailSenderEnabled, isDevMailboxUrl } from "../config/auth.config.ts";
-import { backendEnvironmentFor, parseHostList } from "../config/environments.ts";
+import {
+  OtpSender,
+  allowedHostsConfig,
+  authRuntimeSettings,
+  buildAuthOptions,
+  emailFromConfig,
+  otpSenderEmailLive,
+  otpSenderMailboxLive,
+} from "../config/auth.config.ts";
+import { devMailboxAllowedHosts, isDevMailboxUrl, otpDeliveryMode, parseHostList, switchesForStage } from "../config/env.ts";
 import { Database } from "../config/database.ts";
-import { BucketPort, r2Port, type BackendEnvironment } from "../config/bindings.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
-import { FilesBucket } from "../config/storage.ts";
 import { DomainData } from "../config/database.ts";
 import { AppApi, DevelopmentApi } from "./contracts/index.ts";
 import { SessionHandlersLive } from "./controllers/session.ts";
@@ -61,29 +68,42 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port: devPortFor(stage), strictPort: true } } : {}),
       env: {
-        ...backendEnvironmentFor(stage),
-        FILES: FilesBucket,
+        ...switchesForStage(stage),
+        AUTH_EMAIL_FROM: emailFromConfig,
+        AUTH_ALLOWED_HOSTS: allowedHostsConfig,
       },
     };
   }),
   Effect.gen(function* () {
     const { database, db } = yield* DomainData;
     const authDatabase = CloudflareD1(database);
-    const environment = (yield* Cloudflare.WorkerEnvironment) as BackendEnvironment;
-    // The send_email binding is attached only where email is actually sent
-    // (production). Every other stage captures codes in the development
-    // mailbox, which also keeps alchemy's local runtime free of the binding.
-    const sender = emailSenderEnabled(environment) ? yield* Cloudflare.Email.SendEmail("SignInEmail") : undefined;
+    // Eager, validated reads of the shipped switches — but only in the runtime
+    // phase, where alchemy's ConfigProvider serves the Worker's env. The CLI's
+    // plan pass evaluates this same effect without that provider, so it takes
+    // stage-derived fallbacks (mirroring `ambientStage`) that keep the binding
+    // graph identical to a real deploy of the same stage.
+    const stage = yield* ambientStage;
+    const isRuntime = (yield* ALCHEMY_PHASE) === "runtime";
+    const deliveryMode = isRuntime ? yield* otpDeliveryMode.pipe(Effect.orDie) : stage === "prod" ? "send" : "mailbox";
+    const devMailboxHosts = parseHostList(isRuntime ? yield* devMailboxAllowedHosts.pipe(Effect.orDie) : "");
+    const { emailFrom, allowedHosts } = yield* authRuntimeSettings.pipe(Effect.orDie);
+    const isDevRuntime = yield* Effect.orDie(ALCHEMY_DEV);
+    // The send_email binding is attached only where OTP codes are actually
+    // delivered; every other stage — and any local `alchemy dev` runtime —
+    // captures codes in the development mailbox.
+    const captureOtp = deliveryMode === "mailbox" || isDevRuntime;
+    const sender = captureOtp ? undefined : yield* Cloudflare.Email.SendEmail("SignInEmail");
     if (sender) yield* Cloudflare.Email.Send(sender);
-    const { emailFrom, allowedHosts } = yield* authRuntimeSettings;
-    const canAccessDevMailbox = (url: string) => isDevMailboxUrl(url, parseHostList(environment.DEV_MAILBOX_ALLOWED_HOSTS));
+    const canAccessDevMailbox = (url: string) => isDevMailboxUrl(url, devMailboxHosts);
 
-    const auth = yield* BetterAuth(buildAuthOptions({ environment, databaseLogicalId: database.LogicalId, sender, emailFrom, allowedHosts })).pipe(
-      Effect.provide(authDatabase),
+    const otpSenderLive: Layer.Layer<OtpSender, never, Database | Cloudflare.Email.Send> =
+      captureOtp || !sender ? otpSenderMailboxLive : otpSenderEmailLive(sender, emailFrom);
+    const otpSender = Context.get(
+      yield* Layer.build(Layer.provide(otpSenderLive, Layer.mergeAll(Layer.succeed(Database, { db }), Cloudflare.Email.SendBinding))),
+      OtpSender,
     );
 
-    // The session bridge: Better Auth's session, projected onto the identity
-    // the API layers know (SessionUser).
+    const auth = yield* BetterAuth(buildAuthOptions({ otpSender, allowedHosts })).pipe(Effect.provide(authDatabase));
     const authentication: GetUser = (headers) =>
       auth.getSession(headers).pipe(
         Effect.orDie,
@@ -114,7 +134,8 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
           Layer.provide(NotesLive),
           Layer.provide(AuthenticatedLive),
           Layer.provide(Layer.succeed(Authentication, { getUser: authentication })),
-          Layer.provide(Layer.mergeAll(Layer.succeed(Database, { db }), Layer.succeed(BucketPort, r2Port(environment.FILES)))),
+          Layer.provide(Layer.succeed(Database, { db })),
+          Layer.provide(Cloudflare.R2.ReadWriteBucketBinding),
           Layer.provide(Layer.succeed(DevelopmentMailbox, { db, canAccess: canAccessDevMailbox })),
           Layer.provide(HttpServicesLive),
           Layer.provide(Alchemy.RuntimeContext.phantom),

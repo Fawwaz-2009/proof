@@ -12,7 +12,9 @@ import type {
   NoteView,
 } from "../../contracts/index.ts";
 import { Database } from "../../../config/database.ts";
-import { BucketPort } from "../../../config/bindings.ts";
+import * as Cloudflare from "alchemy/Cloudflare";
+import * as Alchemy from "alchemy";
+import { FilesBucket } from "../../../config/storage.ts";
 import { createNote } from "./create.ts";
 import { destroyNote } from "./destroy.ts";
 import { getAttachment } from "./get-attachment.ts";
@@ -36,19 +38,41 @@ export class Notes extends Context.Service<
   }
 >()("AppApi/Notes") {}
 
-/** The implementation layer: resolves the database and the bucket port from the entry. */
+/** The implementation layer: resolves the database and the R2 client from the entry's provides. */
 export const NotesLive = Layer.effect(
   Notes,
   Effect.gen(function* () {
     const { db } = yield* Database;
-    const bucket = yield* BucketPort;
+    const files = yield* Cloudflare.R2.ReadWriteBucket(FilesBucket);
+
+    // The binding client's methods declare RuntimeContext in R; the Worker-binding
+    // implementation reads the env directly, so the entry's phantom discharge is the
+    // designed no-op that keeps the op boundary context-free.
+    const putObject = (key: string, bytes: Uint8Array, contentType: string, name: string) =>
+      files
+        .put(key, bytes, { httpMetadata: { contentType }, customMetadata: { name } })
+        .pipe(Effect.asVoid, Effect.orDie, Effect.provide(Alchemy.RuntimeContext.phantom));
+    const deleteObject = (key: string) => files.delete(key).pipe(Effect.orDie, Effect.provide(Alchemy.RuntimeContext.phantom));
+    const getObject = (key: string) =>
+      files.get(key).pipe(
+        Effect.flatMap((object) =>
+          object === null
+            ? Effect.succeed(null)
+            : Effect.map(object.arrayBuffer(), (buffer) => ({
+                bytes: new Uint8Array(buffer),
+                contentType: object.httpMetadata?.contentType ?? "",
+              })),
+        ),
+        Effect.orDie,
+        Effect.provide(Alchemy.RuntimeContext.phantom),
+      );
 
     return {
       list: listNotes(db),
       create: (input) => createNote(db, input),
-      destroy: (id) => destroyNote(db, bucket.deleteObject, id),
-      putAttachment: (id, input) => putAttachment(db, bucket.putObject, bucket.deleteObject, id, input),
-      getAttachment: (id) => getAttachment(db, bucket.getObject, id),
+      destroy: (id) => destroyNote(db, deleteObject, id),
+      putAttachment: (id, input) => putAttachment(db, putObject, deleteObject, id, input),
+      getAttachment: (id) => getAttachment(db, getObject, id),
     };
   }),
 );
