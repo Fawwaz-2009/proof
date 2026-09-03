@@ -53,4 +53,4 @@ export const SignInCodesEndpoints = HttpApiGroup.make("sign-in-codes").add(Issue
 
 // The sign-in-codes group returns with the drizzle-handle slice:
 // export class TempApi extends HttpApi.make("temp").add(TempEndpoints, SignInCodesEndpoints).prefix("/api") {}
-export class TempApi extends HttpApi.make("temp").add(TempEndpoints).prefix("/api") {}
+export class TempApi extends HttpApi.make("temp").add(TempEndpoints, SignInCodesEndpoints).prefix("/api") {}
