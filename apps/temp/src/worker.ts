@@ -1,26 +1,34 @@
 /**
- * Temp validation Worker: environment primitive, email service, auth service —
- * plain effects, no tags, no factories. Overseer assembly: bare class, make(),
- * provides at the layer. Routes exist only to exercise the services.
+ * Temp validation Worker — REBUILD LADDER.
+ *
+ * One piece at a time, typechecking + running between each, to find exactly
+ * where the seam breaks.
+ *
+ * Ladder:
+ *   ✓ database (config/database.ts): drizzle schema resource + D1, consumed
+ *     as `const database = yield* Database` and handed to auth.
+ *   ⏳ next: the drizzle handle (Drizzle.D1 over the database) so domain code
+ *      can persist — parked: contract/sign-in-codes group, controllers/ and
+ *      domain/ sign-in-code files.
+ *   ✓ environment primitive (config/environment.ts)
+ *   ✓ email service (config/email.ts) + SendBinding provide
+ *   ⏳ auth (config/auth.ts) — mounted, persistence parked
  */
 import * as Cloudflare from "alchemy/Cloudflare";
 import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as Etag from "effect/unstable/http/Etag";
+import { Etag, HttpRouter } from "effect/unstable/http";
 import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
-import * as HttpRouter from "effect/unstable/http/HttpRouter";
-import * as HttpApiBuilder from "effect/unstable/httpapi/HttpApiBuilder";
-import { auth } from "./auth.ts";
-import { emailSender } from "./email.ts";
-import { environment } from "./environment.ts";
-import { SendEmailResponse, TempApi } from "./contract.ts";
+import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { auth } from "../config/auth.ts";
+import { d1Database } from "../config/database.ts";
+import { TempApi } from "../contract/temp.ts";
+import { tempHandlers } from "../controllers/temp.ts";
+import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
 
 export default class Temp extends Cloudflare.Worker<Temp>()(
   "Temp",
-  // The props read the ambient stage at synthesis; the deployed Worker
-  // re-evaluates them without infrastructure context, where the
-  // production-shaped fallback keeps the object total and unused.
   Effect.gen(function* () {
     const isDev = yield* Effect.orDie(ALCHEMY_DEV);
     return {
@@ -30,17 +38,10 @@ export default class Temp extends Cloudflare.Worker<Temp>()(
     };
   }),
   Effect.gen(function* () {
-    const email = yield* emailSender;
     const authInstance = yield* auth;
-    const TempHandlersLive = HttpApiBuilder.group(TempApi, "temp", (handlers) =>
-      Effect.gen(function* () {
-        return handlers.handleAll({
-          getEnvironment: () => Effect.map(environment, (env) => ({ environment: env })),
-          sendEmail: ({ payload }) =>
-            Effect.map(email.send({ to: payload.to, subject: payload.subject, text: payload.text }), () => new SendEmailResponse({ status: email.mode })),
-        });
-      }),
-    );
+
+    const TempHandlersLive = yield* tempHandlers;
+
     const ApiRoutesLive = HttpApiBuilder.layer(TempApi);
     const AuthRoutesLive = HttpRouter.addAll([HttpRouter.route("*", "/api/auth/*", authInstance.fetch)]);
 
@@ -49,5 +50,5 @@ export default class Temp extends Cloudflare.Worker<Temp>()(
         Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(Layer.provide(TempHandlersLive), Layer.provide(HttpPlatform.layer), Layer.provide(Etag.layer)),
       ),
     };
-  }).pipe(Effect.provide(Cloudflare.Email.SendBinding)),
+  }).pipe(Effect.provide(Cloudflare.Email.SendBinding), Effect.provide(Cloudflare.D1.QueryDatabaseBinding), Effect.provide(CloudflareD1(d1Database))),
 ) {}

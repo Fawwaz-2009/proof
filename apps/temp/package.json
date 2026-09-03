@@ -8,10 +8,12 @@
     "@alchemy.run/better-auth": "2.0.0-beta.76",
     "alchemy": "2.0.0-beta.76",
     "better-auth": "1.7.1",
-    "effect": "4.0.0-rc.110"
+    "effect": "4.0.0-rc.110",
+    "drizzle-orm": "1.0.0-rc.5-ab785fc"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260819.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "drizzle-kit": "^1.0.0-beta.0"
   }
 }

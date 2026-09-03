@@ -36,3 +36,6 @@ export const emailSender = Effect.gen(function* () {
         ),
   };
 });
+
+/** Inferred from the constructor; consumers import this shape, never re-annotate it. */
+export type EmailSender = Effect.Success<typeof emailSender>;
