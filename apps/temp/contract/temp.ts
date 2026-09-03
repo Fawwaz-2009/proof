@@ -1,5 +1,7 @@
 import * as Schema from "effect/Schema";
-import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "effect/unstable/httpapi";
+import { HttpApi, HttpApiEndpoint, HttpApiError, HttpApiGroup } from "effect/unstable/httpapi";
+import { SignInCodeSelectSchema } from "../src/schema";
+import { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 
 // — Probes: endpoints that only exercise the services. —
 
@@ -25,12 +27,6 @@ export const SendEmailEndpoint = HttpApiEndpoint.post("sendEmail", "/email", {
 
 export const TempEndpoints = HttpApiGroup.make("temp").add(GetEnvironment, SendEmailEndpoint);
 
-// — Domain: sign-in codes. —
-
-export class SignInCodeView extends Schema.Class<SignInCodeView>("SignInCodeView")({
-  email: Schema.String,
-  code: Schema.String,
-}) {}
 
 export class SignInCodeNotFound extends Schema.TaggedError<SignInCodeNotFound>()(
   "SignInCodeNotFound",
@@ -40,13 +36,14 @@ export class SignInCodeNotFound extends Schema.TaggedError<SignInCodeNotFound>()
 
 export const IssueSignInCode = HttpApiEndpoint.post("issueSignInCode", "/sign-in-codes", {
   payload: Schema.Struct({ email: Schema.String }),
-  success: SignInCodeView,
+  success: SignInCodeSelectSchema,
+  error: [HttpApiError.InternalServerError, EffectDrizzleQueryError]
 });
 
 export const GetLatestSignInCode = HttpApiEndpoint.get("getLatestSignInCode", "/sign-in-codes/:email", {
   params: { email: Schema.String },
-  success: SignInCodeView,
-  error: SignInCodeNotFound,
+  success: SignInCodeSelectSchema,
+  error: [SignInCodeNotFound, EffectDrizzleQueryError],
 });
 
 export const SignInCodesEndpoints = HttpApiGroup.make("sign-in-codes").add(IssueSignInCode, GetLatestSignInCode);

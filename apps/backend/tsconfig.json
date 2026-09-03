@@ -1,7 +1,18 @@
 {
-  "include": ["src/**/*.ts", "migrations/**/*.sql", "config/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "migrations/**/*.sql",
+    "config/**/*.ts"
+  ],
   "compilerOptions": {
-    "lib": ["ESNext"],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ],
+    "lib": [
+      "ESNext"
+    ],
     "module": "Preserve",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
@@ -16,6 +27,9 @@
     "esModuleInterop": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["bun", "@cloudflare/workers-types"]
+    "types": [
+      "bun",
+      "@cloudflare/workers-types"
+    ]
   }
 }

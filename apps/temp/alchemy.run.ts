@@ -5,7 +5,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import Temp from "./src/worker.ts";
+import Temp from "./src/worker.js";
 
 export default Alchemy.Stack(
   "Temp",

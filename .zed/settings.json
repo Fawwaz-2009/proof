@@ -1,0 +1,34 @@
+// Effect Language Service (tsgo) as the sole TypeScript language server for
+// this repo. See: https://github.com/RATIU5/zed-effect-tsgo
+{
+  "languages": {
+    "TypeScript": {
+      "language_servers": [
+        "effect-tsgo",
+        "!vtsls",
+        "!typescript-language-server"
+      ]
+    },
+    "TSX": {
+      "language_servers": [
+        "effect-tsgo",
+        "!vtsls",
+        "!typescript-language-server"
+      ]
+    },
+    "JavaScript": {
+      "language_servers": [
+        "effect-tsgo",
+        "!vtsls",
+        "!typescript-language-server"
+      ]
+    },
+    "JSX": {
+      "language_servers": [
+        "effect-tsgo",
+        "!vtsls",
+        "!typescript-language-server"
+      ]
+    }
+  }
+}
