@@ -92,7 +92,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // delivered; every other stage — and any local `alchemy dev` runtime —
     // captures codes in the development mailbox.
     const captureOtp = deliveryMode === "mailbox" || isDevRuntime;
-    const sender = captureOtp ? undefined : yield* Cloudflare.Email.SendEmail("SignInEmail");
+    const sender = captureOtp ? undefined : yield* Cloudflare.Email.SendEmail("Email");
     if (sender) yield* Cloudflare.Email.Send(sender);
     const canAccessDevMailbox = (url: string) => isDevMailboxUrl(url, devMailboxHosts);
 
