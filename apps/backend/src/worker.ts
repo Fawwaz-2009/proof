@@ -1,7 +1,6 @@
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
-import * as Drizzle from "alchemy/Drizzle";
 import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -11,13 +10,12 @@ import { Etag, HttpRouter } from "effect/unstable/http";
 import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { allowedHostsConfig, auth } from "../config/auth.ts";
-import { d1Database, DatabaseLive } from "../config/database.ts";
+import { d1Database } from "../config/database.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
-import { FilesLive } from "../config/storage.ts";
+import { ResourcesLive } from "../config/resources.ts";
 import { AppApi } from "./contracts/index.ts";
-import { notesHandlers } from "./controllers/notes.ts";
-import { SessionHandlersLive } from "./controllers/session.ts";
+import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
 import { Authentication, AuthenticatedLive, type GetUser } from "./middlewares/authentication.ts";
 
@@ -90,20 +88,15 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // toHttpEffect, so the resulting fetch carries no requirements that
     // alchemy cannot satisfy per request.
     const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(
-      Layer.provideMerge(notesHandlers),
-      Layer.provideMerge(SessionHandlersLive),
+      Layer.provideMerge(ApiHandlers),
       Layer.provideMerge(AuthenticatedLive),
       Layer.provideMerge(Layer.succeed(Authentication, { getUser: authentication })),
-      Layer.provideMerge(HttpServicesLive),
       Layer.provideMerge(NotesLive),
-      Layer.provideMerge(DatabaseLive),
-      Layer.provideMerge(FilesLive),
-      Layer.provideMerge(Layer.mergeAll(Cloudflare.D1.QueryDatabaseBinding, Cloudflare.R2.ReadWriteBucketBinding, Cloudflare.Email.SendBinding)),
-
-      // Layer.provideMerge(Layer.mergeAll(Cloudflare.Email.SendBinding, Cloudflare.D1.QueryDatabaseBinding, Cloudflare.R2.ReadWriteBucketBinding, Drizzle.providers())),
-      //   // The contract middleware requires the request's RuntimeContext; the
-      //   // phantom satisfies the build-time requirement while alchemy serves
-      //   // the real per-request context to the fetch.
+      Layer.provideMerge(ResourcesLive),
+      Layer.provideMerge(HttpServicesLive),
+      // The contract middleware requires the request's RuntimeContext; the
+      // phantom satisfies the build-time requirement while alchemy serves
+      // the real per-request context to the fetch.
       Layer.provideMerge(Alchemy.RuntimeContext.phantom),
     );
     const app = yield* HttpRouter.toHttpEffect(appLayer);
