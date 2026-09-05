@@ -15,10 +15,7 @@ export const tempHandlers = HttpApiBuilder.group(TempApi, "temp", (handlers) =>
     return handlers.handleAll({
       getEnvironment: () => Effect.map(environment, (env) => ({ environment: env })),
       sendEmail: ({ payload }) =>
-        Effect.map(
-          email.send({ to: payload.to, subject: payload.subject, text: payload.text }),
-          () => new SendEmailResponse({ status: email.mode }),
-        ),
+        Effect.map(email.send({ to: payload.to, subject: payload.subject, text: payload.text }), () => new SendEmailResponse({ status: email.mode })),
     });
   }),
 );

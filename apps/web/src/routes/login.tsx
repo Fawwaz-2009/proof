@@ -2,8 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { authClient } from "../auth-client.ts";
-import { getDevMailbox } from "../dev-api.ts";
-import { shouldAutofillDevMailbox } from "../dev-mailbox-mode.ts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -12,8 +10,6 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/login")({
   component: Login,
 });
-
-const devMailboxAutofillEnabled = shouldAutofillDevMailbox(import.meta.env.DEV, import.meta.env.VITE_DEV_MAILBOX_ENABLED);
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -43,15 +39,6 @@ function Login() {
 
       setEmail(normalizedEmail);
       setStep("code");
-
-      if (devMailboxAutofillEnabled) {
-        try {
-          const message = await getDevMailbox(normalizedEmail);
-          setOtp(message.code);
-        } catch {
-          // Email delivery still works; local autofill is a development aid.
-        }
-      }
     } catch {
       setError("We could not send a sign-in code. Please try again.");
     } finally {
@@ -104,9 +91,6 @@ function Login() {
               <Button className="mt-4 w-full" type="submit" disabled={submitting}>
                 {submitting ? "Sending..." : "Send a code"}
               </Button>
-              {devMailboxAutofillEnabled ? (
-                <FieldDescription className="mt-3">Development mode: the code is captured in the dev mailbox and filled in for you.</FieldDescription>
-              ) : null}
             </form>
           ) : (
             <form onSubmit={verifyCode}>

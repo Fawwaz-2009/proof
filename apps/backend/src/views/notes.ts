@@ -13,3 +13,16 @@ export class NoteView extends Schema.Class<NoteView>("NoteView")({
   hasAttachment: Schema.Boolean,
   attachmentName: Schema.NullOr(Schema.String),
 }) {}
+
+import type { Note } from "../schema.ts";
+
+/** The note's wire view is rendered by the domain; private until a second consumer earns extraction. */
+export const renderNote = (row: typeof Note.$inferSelect): NoteView =>
+  new NoteView({
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    createdAt: row.createdAt.toISOString(),
+    hasAttachment: row.attachmentKey !== null,
+    attachmentName: row.attachmentName,
+  });

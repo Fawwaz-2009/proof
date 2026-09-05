@@ -15,20 +15,22 @@
 
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import * as Drizzle from "alchemy/Drizzle";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import Backend from "./apps/backend/src/worker.ts";
-import { AppDatabase } from "./apps/backend/config/database.ts";
+import { d1Database } from "./apps/backend/config/database.ts";
 import { FilesBucket } from "./apps/backend/config/storage.ts";
 import { Website } from "./website.ts";
 
 export default Alchemy.Stack(
   "Sufra",
   {
-    providers: Cloudflare.providers(),
+    providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers()),
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
-    const database = yield* AppDatabase;
+    const database = yield* d1Database;
     const bucket = yield* FilesBucket;
     const backend = yield* Backend;
     const website = yield* Website;

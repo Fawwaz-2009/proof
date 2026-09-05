@@ -44,11 +44,7 @@ const makeEmailSender = Effect.gen(function* () {
 export type EmailSenderShape = Effect.Success<typeof makeEmailSender>;
 
 /** Handlers yield `EmailSender`; the worker provides `EmailSenderLive` at the router. */
-export class EmailSender extends Context.Service<EmailSender, EmailSenderShape>()(
-  "@sufra/EmailSender",
-) {}
+export class EmailSender extends Context.Service<EmailSender, EmailSenderShape>()("@sufra/EmailSender") {}
 
 /** Built once per isolate; the send binding is discharged here, not per request. */
-export const EmailSenderLive = Layer.effect(EmailSender, makeEmailSender).pipe(
-  Layer.provide(Cloudflare.Email.SendBinding),
-);
+export const EmailSenderLive = Layer.effect(EmailSender, makeEmailSender).pipe(Layer.provide(Cloudflare.Email.SendBinding));

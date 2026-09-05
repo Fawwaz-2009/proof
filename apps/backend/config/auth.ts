@@ -1,0 +1,57 @@
+/**
+ * The auth service: a zero-arg effect that yields its own dependencies. The
+ * package's Database requirement is provided at the worker.
+ */
+import { BetterAuth } from "@alchemy.run/better-auth";
+import { emailOTP } from "better-auth/plugins";
+import * as Config from "effect/Config";
+import * as Effect from "effect/Effect";
+import { emailSender } from "./email.ts";
+
+/** Hosts the backend accepts auth traffic from; overridable via AUTH_ALLOWED_HOSTS. */
+export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
+
+export const auth = Effect.gen(function* () {
+  const mail = yield* emailSender;
+  const effectContext = yield* Effect.context<never>();
+  const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
+
+  return yield* BetterAuth({
+    basePath: "/api/auth",
+    baseURL: { allowedHosts, protocol: "auto" },
+    trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*"],
+    advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 30,
+      customRules: {
+        "/email-otp/send-verification-otp": { window: 60, max: 3 },
+        "/sign-in/email-otp": { window: 60, max: 10 },
+      },
+    },
+    plugins: [
+      emailOTP({
+        allowedAttempts: 5,
+        expiresIn: 15 * 60,
+        otpLength: 6,
+        storeOTP: "hashed",
+        sendVerificationOTP: async ({ email, otp, type }) => {
+          if (type !== "sign-in") return;
+          await Effect.runPromiseWith(effectContext)(
+            mail.send({
+              to: email,
+              subject: "Your Sufra sign-in code",
+              text: `Your Sufra sign-in code is ${otp}. It expires in 15 minutes.`,
+              html: `<p>Your Sufra sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
+            }),
+          );
+        },
+      }),
+    ],
+  });
+});

@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "b5a780ab-5d88-4872-9175-ea8a3fa22b84",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
       "name": "sign_in_codes",
@@ -41,9 +39,7 @@
       "table": "sign_in_codes"
     },
     {
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nameExplicit": false,
       "name": "sign_in_codes_pk",
       "table": "sign_in_codes",

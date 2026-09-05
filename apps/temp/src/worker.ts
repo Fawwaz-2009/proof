@@ -52,18 +52,13 @@ export default class Temp extends Cloudflare.Worker<Temp>()(
     // Init-time construction. better-auth gets its D1 adapter (`CloudflareD1`
     // requires Worker/WorkerEnvironment, provided by alchemy here) and the
     // email sender is built once, not per request.
-    const authInstance = yield* Effect.provide(
-      auth,
-      Layer.mergeAll(CloudflareD1(TempDb), EmailSenderLive),
-    );
+    const authInstance = yield* Effect.provide(auth, Layer.mergeAll(CloudflareD1(TempDb), EmailSenderLive));
 
     const SignInCodeHandlersLive = signInCodeHandlers;
     const TempHandlersLive = tempHandlers;
 
     const ApiRoutesLive = HttpApiBuilder.layer(TempApi);
-    const AuthRoutesLive = HttpRouter.addAll([
-      HttpRouter.route("*", "/api/auth/*", authInstance.fetch),
-    ]);
+    const AuthRoutesLive = HttpRouter.addAll([HttpRouter.route("*", "/api/auth/*", authInstance.fetch)]);
     const RoutesDomainRequirements = Layer.mergeAll(TempHandlersLive, SignInCodeHandlersLive);
     const platform = Layer.mergeAll(HttpPlatform.layer, Etag.layer);
 

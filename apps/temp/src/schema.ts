@@ -6,8 +6,9 @@ import { createSelectSchema } from "drizzle-orm/effect-schema";
 export const SignInCode = sqliteTable("sign_in_codes", {
   email: text("email").primaryKey(),
   code: text("code").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
-
 
 export const SignInCodeSelectSchema = createSelectSchema(SignInCode);

@@ -27,6 +27,4 @@ export class Database extends Context.Service<Database, DatabaseShape>()("@sufra
  * the binding at plan evaluation and reads it from the environment at runtime,
  * so nothing plan-time leaks into the per-request R channel.
  */
-export const DatabaseLive = Layer.effect(Database, makeDatabase).pipe(
-  Layer.provide(Cloudflare.D1.QueryDatabaseBinding),
-);
+export const DatabaseLive = Layer.effect(Database, makeDatabase).pipe(Layer.provide(Cloudflare.D1.QueryDatabaseBinding));

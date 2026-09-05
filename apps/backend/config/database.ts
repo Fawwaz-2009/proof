@@ -1,44 +1,41 @@
-import * as Context from "effect/Context";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle";
-import * as Effect from "effect/Effect";
+import { Context, Effect, Layer } from "effect";
 
 /**
- * Resolved at plan time only: the deployed Worker re-evaluates this module in
- * workerd, where `import.meta.url` cannot seed a relative `new URL`, so the
- * computation must never run there. The fallback string is never read at
- * runtime (migrations ride the plan-time D1 resource).
+ * Plan-time: regenerates migration SQL from src/schema.ts on every deploy,
+ * provisions D1, and applies the generated migrations. The schema module is
+ * the source of truth; the logical id doubles as the worker's binding key
+ * (better-auth reads it).
  */
-const d1MigrationsDir = (() => {
-  try {
-    return new URL("../migrations/d1", import.meta.url).pathname;
-  } catch {
-    return "apps/backend/migrations/d1";
-  }
-})();
-
-/**
- * The one D1 database: Better Auth's tables, the development OTP mailbox, and
- * the application tables (the notes demo). Migrations ride the resource, so
- * they are applied by `alchemy deploy` / `alchemy dev` in every stage.
- */
-export const AppDatabase = Effect.gen(function* () {
-  return yield* Cloudflare.D1.Database("AppDatabase", {
-    migrations: {
-      dir: d1MigrationsDir,
-      table: "drizzle_migrations",
-    },
+export const d1Database = Effect.gen(function* () {
+  const schema = yield* Drizzle.Schema("app-schema", {
+    schema: "apps/backend/src/schema.ts",
+    out: "apps/backend/migrations",
+    dialect: "sqlite",
   });
+  return yield* Cloudflare.D1.Database("AppDatabase", { migrations: schema });
 });
 
-export const DomainData = Effect.gen(function* () {
-  const database = yield* AppDatabase;
+const makeDatabase = Effect.gen(function* () {
+  const database = yield* d1Database;
   const d1 = yield* Cloudflare.D1.QueryDatabase(database);
-  const db = yield* Drizzle.D1(d1);
-  return { database, d1, db };
+  return yield* Drizzle.D1(d1);
 });
 
-export type DomainDb = Effect.Success<typeof DomainData>["db"];
+/** The shape handlers and domain functions receive, inferred from the constructor. */
+export type DatabaseShape = Effect.Success<typeof makeDatabase>;
 
-/** The runtime database handle, resolved once in the entry and provided to every consumer. */
-export class Database extends Context.Service<Database, { readonly db: DomainDb }>()("Backend/Database") {}
+/**
+ * The database service. Consumers yield the tag; the drizzle handle behind it
+ * abstracts the resources, so application code never depends on infra
+ * resource types.
+ */
+export class Database extends Context.Service<Database, DatabaseShape>()("@sufra/Database") {}
+
+/**
+ * Resolved once per isolate at worker init. QueryDatabaseBinding registers
+ * the binding at plan evaluation and reads it from the environment at
+ * runtime, so nothing plan-time leaks into the per-request R channel.
+ */
+export const DatabaseLive = Layer.effect(Database, makeDatabase).pipe(Layer.provide(Cloudflare.D1.QueryDatabaseBinding));

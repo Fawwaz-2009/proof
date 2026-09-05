@@ -15,8 +15,7 @@ export const signInCodeHandlers = HttpApiBuilder.group(TempApi, "sign-in-codes",
     const db = yield* Database;
     const email = yield* EmailSender;
     return handlers.handleAll({
-      issueSignInCode: ({ payload }) =>
-        issueSignInCode({ db, email }, { email: payload.email, code: code6() }),
+      issueSignInCode: ({ payload }) => issueSignInCode({ db, email }, { email: payload.email, code: code6() }),
       getLatestSignInCode: ({ params }) => latestSignInCode({ db }, params.email),
     });
   }),

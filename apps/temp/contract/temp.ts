@@ -27,17 +27,12 @@ export const SendEmailEndpoint = HttpApiEndpoint.post("sendEmail", "/email", {
 
 export const TempEndpoints = HttpApiGroup.make("temp").add(GetEnvironment, SendEmailEndpoint);
 
-
-export class SignInCodeNotFound extends Schema.TaggedError<SignInCodeNotFound>()(
-  "SignInCodeNotFound",
-  { email: Schema.String },
-  { httpApiStatus: 404 },
-) {}
+export class SignInCodeNotFound extends Schema.TaggedError<SignInCodeNotFound>()("SignInCodeNotFound", { email: Schema.String }, { httpApiStatus: 404 }) {}
 
 export const IssueSignInCode = HttpApiEndpoint.post("issueSignInCode", "/sign-in-codes", {
   payload: Schema.Struct({ email: Schema.String }),
   success: SignInCodeSelectSchema,
-  error: [HttpApiError.InternalServerError, EffectDrizzleQueryError]
+  error: [HttpApiError.InternalServerError, EffectDrizzleQueryError],
 });
 
 export const GetLatestSignInCode = HttpApiEndpoint.get("getLatestSignInCode", "/sign-in-codes/:email", {
