@@ -5,21 +5,15 @@ import { NotesApi } from "./notes.ts";
 export const ApiPrefix = "/api";
 
 export {
-  AttachmentMaxBytes,
-  AttachmentInput,
-  AttachmentView,
-  AttachmentTooLarge,
   CreateNote,
   CreateNoteInput,
   DestroyNote,
-  GetAttachment,
+  ImageContentTypes,
   ListNotes,
   ListNotesResponse,
-  NoteNotFound,
+  MaxImageBytes,
   NotesApi,
-  PutAttachment,
 } from "./notes.ts";
-export { NoteView } from "../views/notes.ts";
 export { Authenticated, CurrentUser, SessionUser, Unauthorized } from "./auth.ts";
 
 export class AppApi extends HttpApi.make("sufra").add(NotesApi).prefix(ApiPrefix) {}

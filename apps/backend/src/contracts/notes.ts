@@ -1,47 +1,61 @@
+import { Multipart } from "effect/unstable/http";
 import * as Schema from "effect/Schema";
-import { HttpApiEndpoint, HttpApiGroup } from "effect/unstable/httpapi";
-import { NoteView } from "../views/notes.ts";
+import { HttpApiEndpoint, HttpApiGroup, HttpApiMiddleware, HttpApiSchema, HttpApiError } from "effect/unstable/httpapi";
 import { Authenticated } from "./auth.ts";
 
 const NoteId = { id: Schema.String };
 
-export class NoteNotFound extends Schema.TaggedError<NoteNotFound>()("NoteNotFound", { message: Schema.String, id: Schema.String }, { httpApiStatus: 404 }) {}
+/**
+ * The wire view of a note. Lives in the contract because the browser consumes
+ * this shape; the server-side factory that builds it lives in
+ * src/views/notes.builder.ts.
+ */
+export class NoteView extends Schema.Class<NoteView>("NoteView")({
+  id: Schema.String,
+  title: Schema.String,
+  body: Schema.String,
+  /** ISO-8601 timestamp. */
+  createdAt: Schema.String,
+  imageUrl: Schema.NullOr(Schema.String),
+}) {}
 
-export class AttachmentTooLarge extends Schema.TaggedError<AttachmentTooLarge>()(
-  "AttachmentTooLarge",
-  { message: Schema.String, maxBytes: Schema.Number },
-  { httpApiStatus: 400 },
-) {}
+/**
+ * Images only. The multipart parser enforces the size limits natively
+ * (maxFileSize per part, maxTotalSize per request) mid-stream, so an
+ * oversized upload is rejected before the domain runs. The content-type
+ * whitelist is enforced by the controller, surfacing the standard
+ * `HttpApiError.BadRequest` (400).
+ */
+export const ImageContentTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
 
-/** Attachments ride the JSON contract as base64; the demo caps them well below the Workers body limit. */
-export const AttachmentMaxBytes = 5 * 1024 * 1024;
-
-export const CreateNoteInput = Schema.Struct({
-  title: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(200)),
-  body: Schema.String.check(Schema.isMaxLength(10_000)),
-});
-export type CreateNoteInput = typeof CreateNoteInput.Type;
-
-export const AttachmentInput = Schema.Struct({
-  name: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(200)),
-  contentType: Schema.String.check(Schema.isMaxLength(200)),
-  /** Base64-encoded bytes. */
-  data: Schema.String,
-});
-export type AttachmentInput = typeof AttachmentInput.Type;
-
-export const AttachmentView = Schema.Struct({
-  name: Schema.String,
-  contentType: Schema.String,
-  data: Schema.String,
-  size: Schema.Number,
-});
-export type AttachmentView = typeof AttachmentView.Type;
+const imageContentTypeSet = new Set<string>(ImageContentTypes);
+export const MaxImageBytes = 10 * 1024 * 1024;
 
 export const ListNotesResponse = Schema.Struct({
   notes: Schema.Array(NoteView),
 });
 export type ListNotesResponse = typeof ListNotesResponse.Type;
+
+export const CreateNoteInput = Schema.Struct({
+  title: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(200)),
+  body: Schema.String.check(Schema.isMaxLength(10_000)),
+  image: Schema.optional(
+    Multipart.SingleFileSchema.pipe(
+      Schema.check(
+        Schema.makeFilter(
+          (file) => imageContentTypeSet.has(file.contentType),
+          {
+            message: "Only PNG, JPEG, WebP, and GIF images are allowed.",
+            identifier: "CreateNoteImageContentTypes",
+          },
+        ),
+      ),
+    ),
+  ),
+}).pipe(
+  HttpApiSchema.asMultipart({ maxFileSize: MaxImageBytes, maxTotalSize: MaxImageBytes }),
+);
+export type CreateNoteInput = typeof CreateNoteInput.Type;
 
 export const ListNotes = HttpApiEndpoint.get("listNotes", "/notes", { success: ListNotesResponse });
 
@@ -50,20 +64,18 @@ export const CreateNote = HttpApiEndpoint.post("createNote", "/notes", { payload
 export const DestroyNote = HttpApiEndpoint.delete("destroyNote", "/notes/:id", {
   params: NoteId,
   success: NoteView,
-  error: [NoteNotFound],
+  error: [HttpApiError.NotFound],
 });
 
-export const PutAttachment = HttpApiEndpoint.put("putAttachment", "/notes/:id/attachment", {
-  params: NoteId,
-  payload: AttachmentInput,
-  success: NoteView,
-  error: [NoteNotFound, AttachmentTooLarge],
-});
 
-export const GetAttachment = HttpApiEndpoint.get("getAttachment", "/notes/:id/attachment", {
-  params: NoteId,
-  success: AttachmentView,
-  error: [NoteNotFound],
-});
+export class ValidationError extends Schema.TaggedError<ValidationError>()(
+  "ValidationError",
+  { message: Schema.String },
+  { httpApiStatus: 400 },
+) {}
 
-export class NotesApi extends HttpApiGroup.make("notes").add(ListNotes, CreateNote, DestroyNote, PutAttachment, GetAttachment).middleware(Authenticated) {}
+export class SchemaErrorHandler extends HttpApiMiddleware.Service<SchemaErrorHandler, { provides: ValidationError }>()("api/SchemaErrorHandler", {
+  error: ValidationError,
+}) {}
+
+export class NotesApi extends HttpApiGroup.make("notes").add(ListNotes, CreateNote, DestroyNote).middleware(Authenticated).middleware(SchemaErrorHandler) {}

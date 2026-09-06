@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-/** The demo resource: a per-user note with an optional attachment object in R2. */
+/** The demo resource: a per-user note with an optional image in R2. */
 export const Note = sqliteTable(
   "notes",
   {
@@ -9,9 +9,7 @@ export const Note = sqliteTable(
     userId: text("user_id").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
-    attachmentKey: text("attachment_key"),
-    attachmentName: text("attachment_name"),
-    attachmentType: text("attachment_type"),
+    imageKey: text("image_key"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

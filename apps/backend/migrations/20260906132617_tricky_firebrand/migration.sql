@@ -3,9 +3,7 @@ CREATE TABLE `notes` (
 	`user_id` text NOT NULL,
 	`title` text NOT NULL,
 	`body` text DEFAULT '' NOT NULL,
-	`attachment_key` text,
-	`attachment_name` text,
-	`attachment_type` text,
+	`image_key` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint

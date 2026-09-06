@@ -11,12 +11,14 @@ import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { allowedHostsConfig, Auth } from "../config/auth.ts";
 import { AppDatabase } from "../config/database/index.ts";
 import { emailFromConfig } from "../config/email.ts";
+import { MemoryFsLive } from "../config/memory-fs.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
 import { AuthenticatedLive } from "./middlewares/authentication.ts";
-import { Files } from "../config/storage.ts";
+import { SchemaErrorHandlerLive } from "./middlewares/schema-error.ts";
+import { Files, FilesBucket } from "../config/storage.ts";
 
 /**
  * The Worker entry — the Init gen constructs each service once and builds the
@@ -25,8 +27,10 @@ import { Files } from "../config/storage.ts";
  * reaches alchemy requires only what alchemy serves per request.
  */
 
-/** Platform services the HttpApi builder needs; a Worker has no filesystem, so it's a no-op. */
-const HttpServicesLive = Layer.mergeAll(Path.layer, Etag.layerWeak, HttpPlatform.layer).pipe(Layer.provideMerge(FileSystem.layerNoop({})));
+/** Platform services the HttpApi builder needs. Multipart files persist into the in-memory filesystem. */
+const HttpServicesLive = Layer.mergeAll(Path.layer, Etag.layerWeak, HttpPlatform.layer).pipe(
+  Layer.provideMerge(MemoryFsLive), 
+);
 
 export default class Backend extends Cloudflare.Worker<Backend>()(
   "Backend",
@@ -36,6 +40,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
   Effect.gen(function* () {
     const stage = yield* ambientStage;
     const isDev = yield* Effect.orDie(ALCHEMY_DEV);
+    const filesBucket = yield* FilesBucket;
     return {
       main: import.meta.filename,
       workersDev: false,
@@ -56,6 +61,10 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       env: {
         AUTH_EMAIL_FROM: emailFromConfig,
         AUTH_ALLOWED_HOSTS: allowedHostsConfig,
+        R2_BUCKET_NAME: filesBucket.bucketName,
+        R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID ?? "",
+        R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? "",
+        R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? "",
       },
     };
   }),
@@ -81,6 +90,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       Layer.provide(HttpServicesLive),
       Layer.provide(AppDatabase.Live),
       Layer.provide(Files.Live),
+      Layer.provide(SchemaErrorHandlerLive),
       Layer.provide(Alchemy.RuntimeContext.phantom),
     );
     const app = yield* HttpRouter.toHttpEffect(appLayer);
