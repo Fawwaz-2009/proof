@@ -1,4 +1,3 @@
-import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { ALCHEMY_DEV } from "alchemy/Phase";
@@ -9,15 +8,15 @@ import * as Path from "effect/Path";
 import { Etag, HttpRouter } from "effect/unstable/http";
 import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import { allowedHostsConfig, auth } from "../config/auth.ts";
-import { d1Database } from "../config/database.ts";
+import { allowedHostsConfig, Auth } from "../config/auth.ts";
+import { AppDatabase } from "../config/database.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
-import { ResourcesLive } from "../config/resources.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
 import { Authentication, AuthenticatedLive, type GetUser } from "./middlewares/authentication.ts";
+import { Files } from "../config/storage.ts";
 
 /**
  * The Worker entry — the Init gen constructs each service once and builds the
@@ -63,7 +62,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
   Effect.gen(function* () {
     // Init-time construction: better-auth gets its D1 adapter and the email
     // sender is built once, not per request.
-    const authInstance = yield* Effect.provide(auth, Layer.mergeAll(CloudflareD1(d1Database), Cloudflare.Email.SendBinding));
+    const authInstance = yield* Effect.provide(Auth, Auth.Live);
 
     const authentication: GetUser = (headers) =>
       authInstance.getSession(headers).pipe(
@@ -87,17 +86,16 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // The discharge edge: everything the routes need is provided HERE, before
     // toHttpEffect, so the resulting fetch carries no requirements that
     // alchemy cannot satisfy per request.
+
     const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(
-      Layer.provideMerge(ApiHandlers),
-      Layer.provideMerge(AuthenticatedLive),
-      Layer.provideMerge(Layer.succeed(Authentication, { getUser: authentication })),
-      Layer.provideMerge(NotesLive),
-      Layer.provideMerge(ResourcesLive),
-      Layer.provideMerge(HttpServicesLive),
-      // The contract middleware requires the request's RuntimeContext; the
-      // phantom satisfies the build-time requirement while alchemy serves
-      // the real per-request context to the fetch.
-      Layer.provideMerge(Alchemy.RuntimeContext.phantom),
+      Layer.provide(ApiHandlers),
+      Layer.provide(AuthenticatedLive),
+      Layer.provide(Layer.succeed(Authentication, { getUser: authentication })),
+      Layer.provide(NotesLive),
+      Layer.provide(HttpServicesLive),
+      Layer.provide(AppDatabase.Live),
+      Layer.provide(Files.Live),
+      Layer.provide(Alchemy.RuntimeContext.phantom),
     );
     const app = yield* HttpRouter.toHttpEffect(appLayer);
 

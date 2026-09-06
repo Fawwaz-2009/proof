@@ -5,7 +5,7 @@
  * `CurrentUser` from the authentication middleware. Signatures take inputs
  * only: no infra resource types cross this module's boundary.
  */
-import { Database } from "../../config/database.ts";
+import { AppDatabase } from "../../config/database.ts";
 import { Files } from "../../config/storage.ts";
 import { and, desc, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
@@ -16,7 +16,7 @@ import { Note } from "../schema.ts";
 import { renderNote } from "../views/notes.ts";
 
 const makeNotes = Effect.gen(function* () {
-  const db = yield* Database;
+  const db = yield* AppDatabase;
   const files = yield* Files;
 
   return {
