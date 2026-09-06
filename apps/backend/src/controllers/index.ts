@@ -5,6 +5,5 @@
  */
 import * as Layer from "effect/Layer";
 import { notesHandlers } from "./notes.ts";
-import { SessionHandlersLive } from "./session.ts";
 
-export const ApiHandlers = Layer.mergeAll(notesHandlers, SessionHandlersLive);
+export const ApiHandlers = notesHandlers;

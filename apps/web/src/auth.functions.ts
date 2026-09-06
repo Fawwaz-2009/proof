@@ -1,23 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { env } from "cloudflare:workers";
-import * as Schema from "effect/Schema";
-import { ApiPrefix, GetSession, SessionResponse } from "@sufra/backend/contract";
+import { ApiPrefix } from "@sufra/backend/contract";
 
-/** Read the session server-side before rendering a protected route. */
+/**
+ * Read the session server-side before rendering a protected route. The web
+ * worker holds no auth instance: the check rides the BACKEND service
+ * binding to better-auth's native session endpoint, forwarding the
+ * incoming request's cookies.
+ */
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
   const incoming = getRequest();
-  const url = new URL(`${ApiPrefix}${GetSession.path}`, incoming.url);
-  const response = await env.BACKEND.fetch(
+  const url = new URL(`${ApiPrefix}/auth/get-session`, incoming.url);
+  return await env.BACKEND.fetch(
     new Request(url, {
       headers: incoming.headers,
     }),
-  );
-
-  if (!response.ok) {
-    throw new Error("Unable to read the current session");
-  }
-
-  const session = await Schema.decodeUnknownPromise(SessionResponse)(await response.json());
-  return await Schema.encodePromise(SessionResponse)(session);
+  ).then((response) => (response.ok ? response.json() : null));
 });

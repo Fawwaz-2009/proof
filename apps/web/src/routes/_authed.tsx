@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async () => {
     const session = await getSession();
-    if (!session.user) {
+
+    if (!session?.user) {
       throw redirect({ to: "/login" });
     }
+
     return { user: session.user };
   },
   component: AuthenticatedLayout,
