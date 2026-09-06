@@ -19,7 +19,7 @@ import * as Drizzle from "alchemy/Drizzle";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import Backend from "./apps/backend/src/worker.ts";
-import { d1Database } from "./apps/backend/config/database.ts";
+import { d1Database } from "./apps/backend/config/database/index.ts";
 import { FilesBucket } from "./apps/backend/config/storage.ts";
 import { Website } from "./website.ts";
 

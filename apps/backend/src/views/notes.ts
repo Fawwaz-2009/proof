@@ -14,7 +14,7 @@ export class NoteView extends Schema.Class<NoteView>("NoteView")({
   attachmentName: Schema.NullOr(Schema.String),
 }) {}
 
-import type { Note } from "../schema.ts";
+import type { Note } from "../../config/database/schema.ts";
 
 /** The note's wire view is rendered by the domain; private until a second consumer earns extraction. */
 export const renderNote = (row: typeof Note.$inferSelect): NoteView =>

@@ -5,14 +5,14 @@
  * `CurrentUser` from the authentication middleware. Signatures take inputs
  * only: no infra resource types cross this module's boundary.
  */
-import { AppDatabase } from "../../config/database.ts";
+import { AppDatabase } from "../../config/database/index.ts";
 import { Files } from "../../config/storage.ts";
 import { and, desc, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { AttachmentMaxBytes, AttachmentTooLarge, CurrentUser, NoteNotFound } from "../contracts/index.ts";
 import type { AttachmentInput, AttachmentView, CreateNoteInput } from "../contracts/index.ts";
 import { decodeBase64, encodeBase64 } from "../lib/base64.ts";
-import { Note } from "../schema.ts";
+import { Note } from "../../config/database/schema.ts";
 import { renderNote } from "../views/notes.ts";
 
 const makeNotes = Effect.gen(function* () {

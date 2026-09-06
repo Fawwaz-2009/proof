@@ -9,7 +9,7 @@ import { Etag, HttpRouter } from "effect/unstable/http";
 import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { allowedHostsConfig, Auth } from "../config/auth.ts";
-import { AppDatabase } from "../config/database.ts";
+import { AppDatabase } from "../config/database/index.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
 import { AppApi } from "./contracts/index.ts";

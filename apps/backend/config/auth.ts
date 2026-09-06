@@ -6,7 +6,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { Context } from "effect";
 import { Email } from "./email.ts";
-import { d1Database } from "./database.ts";
+import { d1Database } from "./database/index.ts";
 
 /** Hosts the backend accepts auth traffic from; overridable via AUTH_ALLOWED_HOSTS. */
 export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
