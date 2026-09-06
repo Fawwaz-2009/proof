@@ -11,12 +11,12 @@ import * as schema from "./schema.ts";
  * share the same resource (deduped by logical id).
  */
 export const d1Database = Effect.gen(function* () {
-  const schema = yield* Drizzle.Schema("app-schema", {
+  const migrations = yield* Drizzle.Schema("app-schema", {
     schema: "apps/backend/config/database/schema.ts",
     out: "apps/backend/migrations",
     dialect: "sqlite",
   });
-  return yield* Cloudflare.D1.Database("AppDatabase", { migrations: schema });
+  return yield* Cloudflare.D1.Database("AppDatabase", { migrations });
 });
 
 /** Relations for the typed relational-query API (`db.query.*`). */
