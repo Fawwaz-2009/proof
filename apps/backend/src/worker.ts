@@ -15,7 +15,7 @@ import { ambientStage, devPortFor } from "../config/stage.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
-import { Authentication, AuthenticatedLive, type GetUser } from "./middlewares/authentication.ts";
+import { AuthenticatedLive } from "./middlewares/authentication.ts";
 import { Files } from "../config/storage.ts";
 
 /**
@@ -64,20 +64,6 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // sender is built once, not per request.
     const authInstance = yield* Effect.provide(Auth, Auth.Live);
 
-    const authentication: GetUser = (headers) =>
-      authInstance.getSession(headers).pipe(
-        Effect.orDie,
-        Effect.map((session) =>
-          session?.user
-            ? {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.name || session.user.email,
-              }
-            : null,
-        ),
-      );
-
     // Product surface: Notes group behind the authentication middleware.
     const ApiRoutesLive = HttpApiBuilder.layer(AppApi);
     // Better Auth: its own framework, mounted as a raw catch-all before the typed API.
@@ -90,7 +76,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(
       Layer.provide(ApiHandlers),
       Layer.provide(AuthenticatedLive),
-      Layer.provide(Layer.succeed(Authentication, { getUser: authentication })),
+      Layer.provide(Auth.Live),
       Layer.provide(NotesLive),
       Layer.provide(HttpServicesLive),
       Layer.provide(AppDatabase.Live),
