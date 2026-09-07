@@ -16,11 +16,11 @@ import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
-import { ambientStage, devPortFor } from "./apps/backend/config/stage.ts";
+import { devPort } from "./apps/backend/config/dev-port.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;
-  const stage = yield* ambientStage;
+  const webPort = yield* devPort("web-");
   const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the
@@ -50,7 +50,7 @@ const websiteDeployProps = Effect.gen(function* () {
     },
     // The stage's deterministic dev port: parallel `alchemy dev` sessions
     // isolate by STAGE, and strictPort fails loudly on a taken port.
-    ...(isDev ? { dev: { port: devPortFor(`web-${stage}`), strictPort: true } } : {}),
+    ...(isDev ? { dev: { port: webPort, strictPort: true } } : {}),
     env: {
       // The private backend this Worker proxies to — the only binding the
       // frontend has.

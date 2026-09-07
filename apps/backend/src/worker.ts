@@ -13,7 +13,7 @@ import { AppDatabase } from "../config/database/index.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
 import { DevRoutesLive } from "../config/dev-files.ts";
-import { ambientStage, devPortFor } from "../config/stage.ts";
+import { devPort } from "../config/dev-port.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
@@ -37,7 +37,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
   // re-evaluates them without infrastructure context, where the
   // production-shaped fallback keeps the object total and unused.
   Effect.gen(function* () {
-    const stage = yield* ambientStage;
+    const port = yield* devPort();
     const isDev = yield* Effect.orDie(ALCHEMY_DEV);
     const filesBucket = yield* FilesBucket;
     return {
@@ -56,7 +56,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // Parallel `alchemy dev` sessions isolate by STAGE with a deterministic
       // port; strictPort turns a port collision into a loud error instead of a
       // silent drift.
-      ...(isDev ? { dev: { port: devPortFor(stage), strictPort: true } } : {}),
+      ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
         AUTH_EMAIL_FROM: emailFromConfig,
         R2_BUCKET_NAME: filesBucket.bucketName,
