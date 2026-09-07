@@ -1,12 +1,10 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import * as Cause from "effect/Cause";
-import * as Exit from "effect/Exit";
-import * as Option from "effect/Option";
-import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import * as Effect from "effect/Effect";
 import { MaxImageBytes } from "@sufra/backend/contract";
-import { AppClient, createNoteAtom, destroyNoteAtom, mutationErrorMessage } from "../../http-client";
+import { getAppClient, mutationErrorMessage } from "../../http-client";
+import { notesQueryKey, notesQueryOptions } from "./demo/-queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -17,7 +15,13 @@ import * as z from "zod";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authed/demo")({
+  // Server-rendered cold loads prefetch here (binding transport, cookies forwarded);
+  // the result dehydrates into the HTML, so useSuspenseQuery never refetches.
+  // (ensureQueryData is deprecated in query-core 5.102; query + staleTime 'static'
+  // is its replacement: use cached data when present, fetch when missing.)
+  loader: ({ context }) => context.queryClient.query({ ...notesQueryOptions(), staleTime: "static" }),
   component: Demo,
+  errorComponent: DemoError,
 });
 
 const noteFormSchema = z.object({
@@ -26,19 +30,38 @@ const noteFormSchema = z.object({
 });
 
 function Demo() {
-  const notes = useAtomValue(AppClient.query("notes", "listNotes", { reactivityKeys: ["notes"] }));
-  const createResult = useAtomValue(createNoteAtom);
-  const createNote = useAtomSet(createNoteAtom, { mode: "promiseExit" });
-  const destroyNote = useAtomSet(destroyNoteAtom, { mode: "promiseExit" });
+  const queryClient = useQueryClient();
+  const { data } = useSuspenseQuery(notesQueryOptions());
   const [image, setImage] = useState<File | undefined>();
 
-  const creating = AsyncResult.isWaiting(createResult);
+  const createNote = useMutation({
+    mutationFn: async (input: { title: string; body: string; image?: File }) => {
+      const client = await getAppClient();
+      // The multipart payload rides to the typed client as FormData: the
+      // contract marks the payload as multipart, so the client encodes it.
+      const formData = new FormData();
+      formData.append("title", input.title.trim());
+      formData.append("body", input.body);
+      if (input.image) formData.append("image", input.image);
+      return Effect.runPromise(client.notes.createNote({ payload: formData }));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notesQueryKey });
+      form.reset();
+      setImage(undefined);
+      toast.success("Note added.");
+    },
+    onError: (error) => toast.error(mutationErrorMessage(error, "Could not create the note.")),
+  });
 
-  const data = AsyncResult.isSuccess(notes) ? notes.value : undefined;
-  const loading = AsyncResult.isInitial(notes);
-  // A Failure only surfaces as user-facing copy when it carries a real typed
-  // error; dev-mode interrupts/HMR aborts arrive as `Die` defects and are noise.
-  const loadFailed = AsyncResult.isFailure(notes) && Option.isSome(Cause.findErrorOption(notes.cause));
+  const destroyNote = useMutation({
+    mutationFn: async (id: string) => {
+      const client = await getAppClient();
+      return Effect.runPromise(client.notes.destroyNote({ params: { id } }));
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: notesQueryKey }),
+    onError: (error) => toast.error(mutationErrorMessage(error, "Could not delete the note.")),
+  });
 
   const form = useForm({
     defaultValues: {
@@ -49,35 +72,15 @@ function Demo() {
       onSubmit: noteFormSchema,
     },
     onSubmit: async ({ value }) => {
+      // Client-side guard is instant UX feedback; the server's multipart
+      // parser remains the backstop (its 413 arrives as a defect).
       if (image && image.size > MaxImageBytes) {
         toast.error(`Images are capped at ${Math.round(MaxImageBytes / (1024 * 1024))} MB.`);
         return;
       }
-
-      // The multipart payload rides to the typed client as FormData: the
-      // contract marks the payload as multipart, so the client encodes it.
-      const formData = new FormData();
-      formData.append("title", value.title.trim());
-      formData.append("body", value.body);
-      if (image) formData.append("image", image);
-
-      Exit.match(await createNote({ payload: formData, reactivityKeys: ["notes"] }), {
-        onSuccess: () => {
-          form.reset();
-          setImage(undefined);
-          toast.success("Note added.");
-        },
-        onFailure: (cause) => toast.error(mutationErrorMessage(Cause.findErrorOption(cause), "Could not create the note.")),
-      });
+      createNote.mutate({ title: value.title, body: value.body, image });
     },
   });
-
-  const removeNote = async (id: string) => {
-    Exit.match(await destroyNote({ params: { id }, reactivityKeys: ["notes"] }), {
-      onSuccess: () => {},
-      onFailure: (cause) => toast.error(mutationErrorMessage(Cause.findErrorOption(cause), "Could not delete the note.")),
-    });
-  };
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
@@ -140,34 +143,27 @@ function Demo() {
               />
               <Field>
                 <FieldLabel htmlFor="image">Image (optional)</FieldLabel>
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={(event) => setImage(event.target.files?.[0] ?? undefined)}
-                />
+                <Input id="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setImage(event.target.files?.[0] ?? undefined)} />
               </Field>
             </FieldGroup>
-            <Button className="mt-4" type="submit" form="note-form" disabled={creating}>
-              {creating ? "Working..." : "Add note"}
+            <Button className="mt-4" type="submit" form="note-form" disabled={createNote.isPending}>
+              {createNote.isPending ? "Working..." : "Add note"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {loadFailed ? <p className="mt-4 text-sm text-destructive">Could not load your notes.</p> : null}
-      {loading ? <p className="mt-4 text-sm text-muted-foreground">Loading notes...</p> : null}
-      {data && data.notes.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No notes yet. Add the first one above.</p> : null}
+      {data.notes.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No notes yet. Add the first one above.</p> : null}
 
       <ul className="mt-6 flex flex-col gap-4">
-        {data?.notes.map((note) => (
+        {data.notes.map((note) => (
           <li key={note.id}>
             <Card>
               <CardContent>
                 <div className="flex items-center justify-between gap-4">
                   <strong>{note.title}</strong>
-                  <Button variant="outline" size="sm" onClick={() => removeNote(note.id)}>
-                    Delete
+                  <Button variant="outline" size="sm" disabled={destroyNote.isPending} onClick={() => destroyNote.mutate(note.id)}>
+                    {destroyNote.isPending && destroyNote.variables === note.id ? "Deleting..." : "Delete"}
                   </Button>
                 </div>
                 {note.body ? <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{note.body}</p> : null}
@@ -180,6 +176,18 @@ function Demo() {
           </li>
         ))}
       </ul>
+    </main>
+  );
+}
+
+function DemoError() {
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-24">
+      <h1 className="text-3xl font-bold">Could not load your notes.</h1>
+      <p className="mt-2 text-muted-foreground">Check your connection and try again.</p>
+      <a className="mt-6 inline-block rounded-lg border bg-card px-4 py-2 font-semibold hover:bg-accent hover:text-accent-foreground" href="/demo">
+        Retry
+      </a>
     </main>
   );
 }

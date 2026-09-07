@@ -1,10 +1,14 @@
-import { RegistryProvider } from "@effect/atom-react";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
+import type { QueryClient } from "@tanstack/react-query";
 
-export const Route = createRootRoute({
+interface RouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -23,9 +27,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <Document>
-      <RegistryProvider>
-        <Outlet />
-      </RegistryProvider>
+      <Outlet />
     </Document>
   );
 }

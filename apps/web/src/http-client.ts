@@ -1,30 +1,49 @@
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as AtomHttpApi from "effect/unstable/reactivity/AtomHttpApi";
-import * as Option from "effect/Option";
+import type * as HttpApi from "effect/unstable/httpapi/HttpApi";
+import { HttpApiClient } from "effect/unstable/httpapi";
+import * as Effect from "effect/Effect";
+import { createIsomorphicFn } from "@tanstack/react-start";
 import { AppApi, ValidationError } from "@sufra/backend/contract";
 
+type Groups = typeof AppApi extends HttpApi.HttpApi<infer _Id, infer Groups> ? Groups : never;
+
 /**
- * The typed HTTP client for the browser. Reads subscribe through
- * `AppClient.query(group, endpoint, request)` — atoms derived from the
- * contract. Writes are the derived mutation atoms below. URLs, query
- * encoding, and response decoding come from the shared contract. Multipart
- * payloads (createNote with an image) are passed as `FormData`.
+ * The contract-derived typed client. Isomorphic:
+ * - browser: `fetch("/api/...")` same-origin, cookies automatic (api.$.ts proxies to the binding);
+ * - server (SSR loaders): BACKEND service binding with the SSR request's cookies forwarded
+ *   (see server/backend-client.server.ts).
  */
-export class AppClient extends AtomHttpApi.Service<AppClient>()("AppClient", { api: AppApi, httpClient: FetchHttpClient.layer }) { }
+export type AppClient = HttpApiClient.Client<Groups>;
 
+let cached: Promise<AppClient> | undefined;
 
-export const createNoteAtom = AppClient.mutation("notes", "createNote");
-export const destroyNoteAtom = AppClient.mutation("notes", "destroyNote");
+export const getAppClient = (): Promise<AppClient> => {
+  cached ??= buildAppClient();
+  return cached;
+};
 
 /**
- * Toast/copy text for a failed mutation. `error` is the mutation atom's typed
- * error channel (`Cause.findErrorOption(exit.cause)`). Every member of the union carries a
- * server-authored message (`ValidationError`, `HttpApiError.NotFound`, ...), so the filter is just the
- * guard; `None` means a defect (oversize-upload 413, transport failure), which
+ * One typed client, two transports, selected per environment by the framework
+ * (the .server() implementation is stripped from client bundles):
+ * - client: fetch("/api/...") same-origin, cookies automatic (api.$.ts proxies
+ *   to the binding);
+ * - server (SSR loaders): BACKEND service binding with the SSR request's
+ *   cookies forwarded (see server/backend-client.server.ts).
+ */
+const buildAppClient = createIsomorphicFn()
+  .server(
+    (): Promise<AppClient> =>
+      import("./server/backend-client.server").then((server) => Effect.runPromise(server.AppClient)),
+  )
+  .client(
+    (): Promise<AppClient> => Effect.runPromise(HttpApiClient.make(AppApi).pipe(Effect.provide(FetchHttpClient.layer))),
+  );
+
+/**
+ * Toast/copy text for a failed mutation. `error` is the mutation's decoded
+ * error instance: the server-authored `ValidationError` message wins,
+ * anything else (defects like the oversize-upload 413, transport failures)
  * gets the caller's fallback.
  */
-export const mutationErrorMessage = (error: Option.Option<unknown>, fallback: string): string =>
-  Option.getOrElse(
-    Option.map(error, (e) => (e instanceof ValidationError ? e.message : fallback)),
-    () => fallback,
-  );
+export const mutationErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof ValidationError ? error.message : fallback;
