@@ -6,6 +6,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import { Etag, HttpRouter } from "effect/unstable/http";
+import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
 import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { allowedHostsConfig, Auth } from "../config/auth.ts";
@@ -14,6 +15,7 @@ import { emailFromConfig } from "../config/email.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
 import { DevRoutesLive } from "../config/dev-files.ts";
 import { devPort } from "../config/dev-port.ts";
+import { clientIp, RateLimits } from "../config/rate-limit.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
@@ -70,11 +72,26 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // Init-time construction: better-auth gets its D1 adapter and the email
     // sender is built once, not per request.
     const authInstance = yield* Effect.provide(Auth, Auth.Live);
+    const rateLimits = yield* Effect.provide(RateLimits, RateLimits.Live);
 
     // Product surface: Notes group behind the authentication middleware.
     const ApiRoutesLive = HttpApiBuilder.layer(AppApi);
-    // Better Auth: its own framework, mounted as a raw catch-all before the typed API.
-    const AuthRoutesLive = HttpRouter.addAll([HttpRouter.route("*", "/api/auth/*", authInstance.fetch)]);
+    // Better Auth: its own framework, mounted as a raw catch-all before the
+    // typed API. Tier 2 sits in front: 5 auth requests per minute per IP.
+    // Every auth request can cost a real email, so floods stop here before
+    // Better Auth's per-route D1 limits even run.
+    const AuthRoutesLive = HttpRouter.addAll([
+      HttpRouter.route(
+        "*",
+        "/api/auth/*",
+        Effect.gen(function* () {
+          const request = yield* HttpServerRequest;
+          const allowed = yield* rateLimits.auth(`auth:${clientIp(request)}`);
+          if (!allowed.success) return rateLimits.tooManyRequests;
+          return yield* authInstance.fetch;
+        }),
+      ),
+    ]);
 
     // The discharge edge: everything the routes need is provided HERE, before
     // toHttpEffect, so the resulting fetch carries no requirements that
@@ -93,6 +110,17 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     );
     const app = yield* HttpRouter.toHttpEffect(appLayer);
 
-    return { fetch: app };
+    // Tier 1 wraps EVERYTHING the backend serves (typed API, auth mount, dev
+    // routes): 300 requests per minute per IP. A bad-actor clamp, never a
+    // domain rule, so it answers plain HTTP 429 + Retry-After rather than a
+    // typed contract error.
+    return {
+      fetch: Effect.gen(function* () {
+        const request = yield* HttpServerRequest;
+        const allowed = yield* rateLimits.global(`ip:${clientIp(request)}`);
+        if (!allowed.success) return rateLimits.tooManyRequests;
+        return yield* app;
+      }),
+    };
   }),
 ) {}
