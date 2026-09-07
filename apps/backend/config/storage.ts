@@ -24,9 +24,12 @@ export class Files extends Context.Service<Files>()("Files", {
     // Secrets resolve in the init phase per the secrets-env pattern: read
     // from the deploy environment (.env / shell), bound to the Worker as
     // secret_text, resolved from that binding at runtime.
-    const accountId = yield* Config.string("R2_ACCOUNT_ID");
-    const accessKeyId = yield* Config.string("R2_ACCESS_KEY_ID");
-    const secretAccessKey = yield* Config.redacted("R2_SECRET_ACCESS_KEY");
+    // Empty defaults keep the local dev loop zero-config: capture mode and
+    // the dev gateway never sign, so the placeholder creds are never used.
+    // Deploys gate on the real values in worker.ts (requireEnv).
+    const accountId = yield* Config.string("R2_ACCOUNT_ID").pipe(Config.withDefault(""));
+    const accessKeyId = yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""));
+    const secretAccessKey = yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")));
     const r2 = new AwsClient({
       accessKeyId,
       secretAccessKey: Redacted.value(secretAccessKey),

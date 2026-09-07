@@ -147,6 +147,15 @@ per call), which is why `worker.ts` has
 satisfied at build, served for real per request. `CurrentUser` is provided
 per request by the middleware; views never require it directly.
 
+Email recipients are NEVER fake. NEVER trigger an email send (or an auth
+flow that sends) against a live transport with a placeholder recipient
+(`test.local`, `example.com`, invented inboxes): bounces from fake
+recipients permanently damage the sending domain's reputation. Local and
+preview stages capture to logs and never send; only the `prod` stage
+delivers. When testing anything that can really send, use a real, verified
+inbox supplied at test time (env or secret), never an address committed to
+the source tree.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

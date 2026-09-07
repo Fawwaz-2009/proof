@@ -8,8 +8,16 @@ import { Context, Layer } from "effect";
 // Declared outside so the stack and the worker reference the same resource.
 export const EmailResource = Cloudflare.Email.SendEmail("Email");
 
-/** The from address for outgoing email; overridable via AUTH_EMAIL_FROM. */
-export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Alchemy Flare <noreply@localhost>"));
+/**
+ * The from address for outgoing email. The localhost default is load-bearing:
+ * the init gen runs during `alchemy dev` synthesis (via Auth.Live) outside any
+ * binding context, and capture mode never sends, so the placeholder is
+ * cosmetic there. Deploys go through worker.ts, which requires the real
+ * address (see the props gen).
+ */
+export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(
+  Config.withDefault("Alchemy Flare <noreply@localhost>"),
+);
 
 export class Email extends Context.Service<Email>()("Email", {
   make: Effect.gen(function* () {

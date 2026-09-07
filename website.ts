@@ -16,11 +16,13 @@ import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
-import { devPort } from "./apps/backend/config/dev-port.ts";
+import { devPort } from "./apps/backend/config/domain.ts";
+import { websiteDomain } from "./apps/backend/config/domain.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;
   const webPort = yield* devPort("web-");
+  const websiteUrl = yield* websiteDomain;
   const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the
@@ -50,7 +52,12 @@ const websiteDeployProps = Effect.gen(function* () {
     },
     // The stage's deterministic dev port: parallel `alchemy dev` sessions
     // isolate by STAGE, and strictPort fails loudly on a taken port.
-    ...(isDev ? { dev: { port: webPort, strictPort: true } } : {}),
+    // Deployed: the stage's Custom Domain (DNS + certificate auto-managed);
+    // workers.dev stays off so the custom host is the one canonical URL.
+    // Local: the deterministic dev server port instead, no DNS touched.
+    ...(isDev
+      ? { dev: { port: webPort, strictPort: true } }
+      : { domain: websiteUrl, workersDev: false }),
     env: {
       // The private backend this Worker proxies to — the only binding the
       // frontend has.

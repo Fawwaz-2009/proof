@@ -14,7 +14,9 @@ import { AppDatabase } from "../config/database/index.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
 import { DevRoutesLive } from "../config/dev-files.ts";
-import { devPort } from "../config/dev-port.ts";
+import { devPort, websiteDomain } from "../config/domain.ts";
+import * as Config from "effect/Config";
+import { Redacted } from "effect";
 import { clientIp, RateLimits } from "../config/rate-limit.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
@@ -42,6 +44,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     const port = yield* devPort();
     const isDev = yield* Effect.orDie(ALCHEMY_DEV);
     const filesBucket = yield* FilesBucket;
+    const websiteUrl = yield* websiteDomain;
     return {
       main: import.meta.filename,
       workersDev: false,
@@ -60,11 +63,24 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: emailFromConfig,
+        AUTH_EMAIL_FROM: yield* (isDev
+          ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Alchemy Flare <noreply@localhost>"))
+          : Config.string("AUTH_EMAIL_FROM")
+        ).pipe(Effect.orDie),
+        AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl}`,
         R2_BUCKET_NAME: filesBucket.bucketName,
-        R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID ?? "",
-        R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? "",
-        R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? "",
+        R2_ACCOUNT_ID: yield* (isDev
+          ? Config.string("R2_ACCOUNT_ID").pipe(Config.withDefault(""))
+          : Config.string("R2_ACCOUNT_ID")
+        ).pipe(Effect.orDie),
+        R2_ACCESS_KEY_ID: yield* (isDev
+          ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""))
+          : Config.string("R2_ACCESS_KEY_ID")
+        ).pipe(Effect.orDie),
+        R2_SECRET_ACCESS_KEY: yield* (isDev
+          ? Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")))
+          : Config.redacted("R2_SECRET_ACCESS_KEY")
+        ).pipe(Effect.orDie),
       },
     };
   }),

@@ -8,8 +8,16 @@ import { Context } from "effect";
 import { Email } from "./email.ts";
 import { d1Database } from "./database/index.ts";
 
-/** Hosts the backend accepts auth traffic from; overridable via AUTH_ALLOWED_HOSTS. */
-export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
+/** Hosts the backend accepts auth traffic from. Always bound via props env:
+ * derived from the stage's website domain (see worker.ts + config/domain.ts). */
+/**
+ * The localhost fallback is load-bearing: Auth.make runs during `alchemy dev`
+ * synthesis, outside any binding context. Deployed stages get the derived
+ * hosts via the AUTH_ALLOWED_HOSTS binding (see worker.ts).
+ */
+export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(
+  Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"),
+);
 
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {

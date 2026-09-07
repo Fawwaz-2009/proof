@@ -25,20 +25,45 @@ email, Better Auth), and a public TanStack Start website as the sole ingress.
   objects, every endpoint owner-scoped by the session user id. Sign in at
   `/login`, then use `/demo`.
 
-## Authentication and the development mailbox
+## Authentication and email
 
 Sign-in is a 6-digit emailed code (Better Auth `emailOTP`, hashed at rest,
-database-backed rate limits). The domain-x development mode carries over:
+database-backed rate limits). The transport branches on the stage:
 
-- On every non-prod stage (and any localhost request) the OTP is **captured
-  into a `dev_mailbox` D1 table** instead of being emailed, and the login page
-  **autofills** it (`VITE_DEV_MAILBOX_ENABLED` / `import.meta.env.DEV`).
-- The mailbox is readable at `GET /api/dev/mailbox?email=...` only from
-  allowed hosts (`*.workers.dev` on non-prod, localhost always); any other
-  host gets the same 404 as a missing code.
-- Production stages set `DEV_MAILBOX_ENABLED=false` and send the real email
-  through the Cloudflare email binding using `AUTH_EMAIL_FROM` (must be on a
-  verified domain of the same account).
+- `local` (`alchemy dev`) and `preview` stages (any deploy not named `prod`)
+  **capture** the code: it appears as `[email] captured (...)` in the
+  runner or deploy logs. No email leaves the account.
+- The `prod` stage **delivers** through the Cloudflare send_email binding,
+  from `AUTH_EMAIL_FROM` (required to deploy; set it to an address on a
+  domain with Email Sending or Routing enabled in your Cloudflare account).
+
+Two Cloudflare constraints worth knowing: send_email delivers only to
+verified destination addresses (Email Routing > Destination addresses in
+the dashboard), so delivery to arbitrary end-users needs a provider
+integration later; and failed deliveries are logged rather than thrown, so
+a send failure never breaks the sign-in request.
+
+Never point a live send at a fake or placeholder address (`test.local`,
+`example.com`, invented inboxes): bounces permanently damage the sending
+domain's reputation. When testing real delivery, use an inbox you control
+and verify it first under Email Routing > Destination addresses.
+
+## Addresses and stages
+
+One module decides every public hostname: `apps/backend/config/domain.ts`
+(the `APP_SLUG` and `BASE_DOMAIN` consts):
+
+| stage | website URL |
+|---|---|
+| `alchemy dev` | `http://localhost:<web port>` (deterministic per stage) |
+| `prod` | `https://alchemy-flare.<your root domain>` |
+| anything else | `https://alchemy-flare-<stage>.<your root domain>` |
+
+Hostnames attach to the Website Worker as Cloudflare Custom Domains: DNS
+and the edge certificate are created with the deploy and destroyed with the
+stage. The backend Worker is never public (`workersDev: false`): the
+website is the sole ingress over the service binding. Better Auth's allowed
+hosts are derived from the same hostname and bound as `AUTH_ALLOWED_HOSTS`.
 
 ## Local development
 
@@ -59,19 +84,20 @@ Alchemy stages: pass `--stage` to override, and destroy explicitly:
 
 ```sh
 alchemy dev --stage dev_alice            # a specific developer stage
-alchemy destroy --stage dev_fawwaz --yes # remove a developer stage
+alchemy destroy --stage dev_alice --yes  # remove a developer stage
 ```
 
 ## Deploying
 
 ```sh
-alchemy deploy --stage prod      # production
-alchemy deploy --stage pr-123    # an isolated throwaway stage (clean destroy)
+alchemy deploy --stage prod      # production: https://alchemy-flare.<your root domain>
+alchemy deploy --stage pr-123    # preview: https://alchemy-flare-pr-123.<your root domain>
 alchemy destroy --stage pr-123
 ```
 
 Every non-prod stage gets its own D1 database, R2 bucket, and captured
-mailbox; only `prod` sends real email.
+Every stage is a complete isolated copy: own D1 database, R2 bucket, public
+hostname, and capture-only email; only `prod` sends real email.
 
 ## Verification gate
 
@@ -90,7 +116,7 @@ alchemy.run.ts        the stack: providers + state + yield the units
 website.ts            the frontend deploy unit (rootDir apps/web)
 apps/backend/         the private Worker (contracts, views, domain, controllers, db, migrations)
 apps/backend/config/  the infra room: D1/R2/bucket declarations + tags, stage switches,
-                      auth options, dev-port derivation (route manifest: inline in worker.ts)
+                      auth options, dev-port + domain derivation (route manifest: inline in worker.ts)
 apps/web/             the public site (routes, typed client, auth gate)
 patches/              better-auth + kysely D1-introspection fixes (bun patchedDependencies)
 ```
@@ -99,7 +125,8 @@ patches/              better-auth + kysely D1-introspection fixes (bun patchedDe
 
 The template is named "alchemy-flare" end to end: the stack name in
 `alchemy.run.ts` ("AlchemyFlare"), the `@alchemy-flare/*` package names, the
-site copy ("Alchemy Flare"), the sign-in email copy in `config/auth.ts`, the
+site copy ("Alchemy Flare"), the site hostname in `config/domain.ts`
+(`APP_SLUG` + `BASE_DOMAIN`), the sign-in email copy in `config/auth.ts`, the
 default sender in `config/email.ts`, and the rate-limit namespace comment in
 `config/rate-limit.ts`. When you fork it into a product: rename those, then
 `alchemy deploy --stage prod` against your own account and set
