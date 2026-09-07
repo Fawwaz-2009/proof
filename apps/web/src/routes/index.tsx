@@ -11,7 +11,7 @@ function Home() {
     <main className="mx-auto max-w-5xl px-6 py-20">
       <section className="max-w-2xl">
         <p className="text-xs font-bold uppercase tracking-widest text-primary">Starting template</p>
-        <h1 className="mt-2 text-6xl font-bold tracking-tight">Sufra</h1>
+        <h1 className="mt-2 text-6xl font-bold tracking-tight">Alchemy Flare</h1>
         <p className="mt-4 text-lg text-muted-foreground">
           One Alchemy stack, two Workers: a private Effect backend owning D1 and R2, and this TanStack Start site as the only public ingress. Sign in with an emailed code
           and try the notes demo.

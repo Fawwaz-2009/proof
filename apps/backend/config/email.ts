@@ -9,7 +9,7 @@ import { Context, Layer } from "effect";
 export const EmailResource = Cloudflare.Email.SendEmail("Email");
 
 /** The from address for outgoing email; overridable via AUTH_EMAIL_FROM. */
-export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Sufra <noreply@localhost>"));
+export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Alchemy Flare <noreply@localhost>"));
 
 export class Email extends Context.Service<Email>()("Email", {
   make: Effect.gen(function* () {

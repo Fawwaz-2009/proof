@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import * as Effect from "effect/Effect";
-import { MaxImageBytes } from "@sufra/backend/contract";
+import { MaxImageBytes } from "@alchemy-flare/backend/contract";
 import { getAppClient, mutationErrorMessage } from "../../http-client";
 import { notesQueryKey, notesQueryOptions } from "./demo/-queries";
 import { Button } from "@/components/ui/button";

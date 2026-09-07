@@ -22,7 +22,7 @@ import { HttpServerResponse } from "effect/unstable/http";
  *   identity-keyed tier.
  *
  * namespaceId is ACCOUNT-global: two bindings sharing one id share counters,
- * across Workers and across apps. 9001/9002 belong to Sufra; pick fresh ids
+ * across Workers and across apps. 9001/9002 belong to alchemy-flare; pick fresh ids
  * for sibling products on the same Cloudflare account.
  */
 export const GlobalRateLimit = Cloudflare.RateLimit("GlobalRateLimit", {

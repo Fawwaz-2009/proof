@@ -1,7 +1,8 @@
-# Sufra
+# alchemy-flare
 
-Effect-native full-stack app on alchemy v2: one stack, two workers — a private
-backend (D1, R2, better-auth) and a public TanStack Start website that proxies
+alchemy-flare is an Effect-native starting template on alchemy v2: one stack,
+two workers, a private backend (D1, R2, better-auth) and a public TanStack Start
+website that proxies
 `/api/*` to the backend over a service binding. The backend is the reference
 implementation of the app's architecture; copy its patterns, don't invent new
 ones.

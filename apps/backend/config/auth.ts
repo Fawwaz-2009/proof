@@ -46,9 +46,9 @@ export class Auth extends Context.Service<Auth>()("Auth", {
             await Effect.runPromiseWith(effectContext)(
               mail.send({
                 to: email,
-                subject: "Your Sufra sign-in code",
-                text: `Your Sufra sign-in code is ${otp}. It expires in 15 minutes.`,
-                html: `<p>Your Sufra sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
+                subject: "Your Alchemy Flare sign-in code",
+                text: `Your Alchemy Flare sign-in code is ${otp}. It expires in 15 minutes.`,
+                html: `<p>Your Alchemy Flare sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
               }),
             );
           },

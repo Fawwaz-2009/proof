@@ -17,7 +17,7 @@
       },
     },
     "apps/backend": {
-      "name": "@sufra/backend",
+      "name": "@alchemy-flare/backend",
       "version": "0.0.0",
       "dependencies": {
         "@alchemy.run/better-auth": "2.0.0-beta.76",
@@ -35,11 +35,11 @@
       },
     },
     "apps/web": {
-      "name": "@sufra/web",
+      "name": "@alchemy-flare/web",
       "version": "0.0.0",
       "dependencies": {
+        "@alchemy-flare/backend": "workspace:*",
         "@fontsource-variable/geist": "^5.3.0",
-        "@sufra/backend": "workspace:*",
         "@tanstack/react-form": "^1.23.0",
         "@tanstack/react-query": "^5.100.14",
         "@tanstack/react-router": "^1.170.10",
@@ -76,6 +76,10 @@
   },
   "packages": {
     "@alcalzone/ansi-tokenize": ["@alcalzone/ansi-tokenize@0.2.5", "", { "dependencies": { "ansi-styles": "^6.2.1", "is-fullwidth-code-point": "^5.0.0" } }, "sha512-3NX/MpTdroi0aKz134A6RC2Gb2iXVECN4QaAXnvCIxxIm3C3AVB1mkUe8NaaiyvOpDfsrqWhYtj+Q6a62RrTsw=="],
+
+    "@alchemy-flare/backend": ["@alchemy-flare/backend@workspace:apps/backend"],
+
+    "@alchemy-flare/web": ["@alchemy-flare/web@workspace:apps/web"],
 
     "@alchemy.run/better-auth": ["@alchemy.run/better-auth@2.0.0-beta.76", "", { "peerDependencies": { "@cloudflare/workers-types": "^5.20260812.1", "@distilled.cloud/aws": "1.0.0-rc.8", "@neondatabase/serverless": "^1.0.1", "alchemy": "2.0.0-beta.76", "better-auth": "^1.6.2", "drizzle-orm": "1.0.0-rc.5-ab785fc", "effect": ">=4.0.0-rc.112 || >=4.0.0", "kysely": "^0.29.4", "mysql2": "^3.24.2", "pg": "^8.22.0" }, "optionalPeers": ["@cloudflare/workers-types", "@distilled.cloud/aws", "@neondatabase/serverless", "drizzle-orm", "kysely", "mysql2", "pg"] }, "sha512-ZDaUfimK716qpBPnErEbv5dQJpytAQNilc4JMZgqqPsNYdEWbBNJzYAHcSnb7dgbMYyzYn4rqjG6Kem5YmGsKQ=="],
 
@@ -734,10 +738,6 @@
     "@smithy/util-utf8": ["@smithy/util-utf8@2.3.0", "", { "dependencies": { "@smithy/util-buffer-from": "^2.2.0", "tslib": "^2.6.2" } }, "sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
-
-    "@sufra/backend": ["@sufra/backend@workspace:apps/backend"],
-
-    "@sufra/web": ["@sufra/web@workspace:apps/web"],
 
     "@tailwindcss/node": ["@tailwindcss/node@4.3.3", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "enhanced-resolve": "^5.24.1", "jiti": "^2.7.0", "lightningcss": "1.32.0", "magic-string": "^0.30.21", "source-map-js": "^1.2.1", "tailwindcss": "4.3.3" } }, "sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg=="],
 

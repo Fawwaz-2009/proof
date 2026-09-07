@@ -69,7 +69,7 @@ function Login() {
 
   return (
     <main className="mx-auto max-w-sm px-6 py-24">
-      <h1 className="text-2xl font-bold">Sign in to Sufra</h1>
+      <h1 className="text-2xl font-bold">Sign in to Alchemy Flare</h1>
       <Card className="mt-6">
         <CardContent>
           {step === "email" ? (

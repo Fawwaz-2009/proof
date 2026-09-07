@@ -1,16 +1,16 @@
 {
-  "name": "@sufra/web",
+  "name": "@alchemy-flare/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Sufra web app: TanStack Start on Cloudflare Workers, the sole public ingress, forwarding /api to the private backend Worker over the BACKEND service binding.",
+  "description": "alchemy-flare web app: TanStack Start on Cloudflare Workers, the sole public ingress, forwarding /api to the private backend Worker over the BACKEND service binding.",
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
-    "@sufra/backend": "workspace:*",
+    "@alchemy-flare/backend": "workspace:*",
     "@tanstack/react-form": "^1.23.0",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.10",

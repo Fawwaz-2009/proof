@@ -1,4 +1,4 @@
-# Sufra — starting template
+# alchemy-flare: starting template
 
 A Bun-monorepo starting template on the Effect v4 + Cloudflare + Alchemy v2
 backbone, modeled on the domain-x setup. One Alchemy stack deploys two
@@ -19,7 +19,7 @@ email, Better Auth), and a public TanStack Start website as the sole ingress.
   binding, and the SSR session gate dispatches in-process (no self-fetch).
 - **Shared contract**: `apps/backend/src/contracts` + `src/views` are the
   browser-safe HTTP interface. The web app imports them as
-  `@sufra/backend/contract` and derives its typed client from them — no
+  `@alchemy-flare/backend/contract` and derives its typed client from them: no
   hand-written URLs, no response decoding.
 - **Demo resource** ("notes"): rows in D1, optional attachments as private R2
   objects, every endpoint owner-scoped by the session user id. Sign in at
@@ -97,8 +97,10 @@ patches/              better-auth + kysely D1-introspection fixes (bun patchedDe
 
 ## Renaming for a new product
 
-The template is named "Sufra" end to end: the stack name in
-`alchemy.run.ts`, the Better Auth `appName`/`id` and mailbox table copy in
-`apps/backend/src/worker.ts`, `@sufra/*` package names, and the site copy.
-Rename those, then `alchemy deploy --stage prod` against your own account
-and set `AUTH_EMAIL_FROM` to a verified sender.
+The template is named "alchemy-flare" end to end: the stack name in
+`alchemy.run.ts` ("AlchemyFlare"), the `@alchemy-flare/*` package names, the
+site copy ("Alchemy Flare"), the sign-in email copy in `config/auth.ts`, the
+default sender in `config/email.ts`, and the rate-limit namespace comment in
+`config/rate-limit.ts`. When you fork it into a product: rename those, then
+`alchemy deploy --stage prod` against your own account and set
+`AUTH_EMAIL_FROM` to a verified sender.
