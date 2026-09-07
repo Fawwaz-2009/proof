@@ -12,6 +12,7 @@ import { allowedHostsConfig, Auth } from "../config/auth.ts";
 import { AppDatabase } from "../config/database/index.ts";
 import { emailFromConfig } from "../config/email.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
+import { DevRoutesLive } from "../config/dev-files.ts";
 import { ambientStage, devPortFor } from "../config/stage.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
@@ -28,9 +29,7 @@ import { Files, FilesBucket } from "../config/storage.ts";
  */
 
 /** Platform services the HttpApi builder needs. Multipart files persist into the in-memory filesystem. */
-const HttpServicesLive = Layer.mergeAll(Path.layer, Etag.layerWeak, HttpPlatform.layer).pipe(
-  Layer.provideMerge(MemoryFsLive), 
-);
+const HttpServicesLive = Layer.mergeAll(Path.layer, Etag.layerWeak, HttpPlatform.layer).pipe(Layer.provideMerge(MemoryFsLive));
 
 export default class Backend extends Cloudflare.Worker<Backend>()(
   "Backend",
@@ -60,7 +59,6 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       ...(isDev ? { dev: { port: devPortFor(stage), strictPort: true } } : {}),
       env: {
         AUTH_EMAIL_FROM: emailFromConfig,
-        AUTH_ALLOWED_HOSTS: allowedHostsConfig,
         R2_BUCKET_NAME: filesBucket.bucketName,
         R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID ?? "",
         R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? "",
@@ -82,7 +80,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // toHttpEffect, so the resulting fetch carries no requirements that
     // alchemy cannot satisfy per request.
 
-    const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(
+    const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive, DevRoutesLive).pipe(
       Layer.provide(ApiHandlers),
       Layer.provide(AuthenticatedLive),
       Layer.provide(Auth.Live),

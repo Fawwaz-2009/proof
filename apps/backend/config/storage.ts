@@ -1,5 +1,6 @@
 import { AwsClient } from "aws4fetch";
 import * as Cloudflare from "alchemy/Cloudflare";
+import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Config from "effect/Config";
 import { Context, Effect, Layer, Redacted } from "effect";
 
@@ -33,6 +34,11 @@ export class Files extends Context.Service<Files>()("Files", {
 
     const signReadUrl = (key: string, expiresIn = 900) =>
       Effect.gen(function* () {
+        // Locally the object lives in the dev simulator, not real R2, so a
+        // presigned URL for the real host would 404. Dev views point at the
+        // localhost gateway route instead (see config/dev-files.ts).
+        const isDev = yield* ALCHEMY_DEV;
+        if (isDev) return `/api/dev/files/${key}`;
         // The bucket name is a deploy-time output of the FilesBucket
         // resource: bound via props env, readable from the worker env at
         // request time (alchemy wires the env ConfigProvider per request).

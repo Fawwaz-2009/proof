@@ -66,6 +66,29 @@ Rules:
 - The worker's own gens stay inline (matching the shape
   `Cloudflare.Worker<Backend>()("Backend", Effect.gen(...), Effect.gen(...))`).
 
+## Dependency management (Effect conventions)
+
+Dependencies enter services and builders through the Effect context only:
+`yield* SomeTag`. The R channel documents the requirement and Effect infers
+every type. Passing a service, or a resolved service handle, as a function
+argument is a huge red flag: it is the factory shape the service idiom
+replaces, and it immediately forces hand-written type annotations (for
+example `type FilesService = Effect.Success<typeof Files>`) where yielding
+the tag infers everything. If a hand-written annotation exists to type a
+parameter, the parameter is the bug.
+
+When a builder needs a service, the builder is itself an Effect that yields
+the service and returns the built value:
+
+    export const devFilesRoutes = Effect.gen(function* () {
+      const files = yield* Files;
+      return HttpRouter.addAll([/* handlers close over files */]);
+    });
+
+Callers resolve it where the requirement is already discharged (worker
+init / the discharge edge):
+`yield* Effect.provide(devFilesRoutes, Files.Live)`.
+
 ## Validation placement
 
 - The contract schema declares shape and the declared limits (for multipart:
@@ -82,21 +105,24 @@ contract schema enforces content-type whitelist and per-file/request size
 limits (makeFilter + parser limits, rejected before the domain runs), the
 controller reads the persisted file part via the in-memory filesystem
 (`config/memory-fs.ts`), the domain puts bytes to R2 and writes the row, and
-the view exposes `imageUrl` — a presigned R2 GET URL (15-min TTL) built by
-`Files.signReadUrl` (aws4fetch). The browser loads images directly from R2;
-no presigned PUT, no base64, no bytes in JSON.
+the view exposes `imageUrl` from `Files.signReadUrl` (aws4fetch): a
+presigned R2 GET URL (15-min TTL) on deployed stages, the localhost gateway
+path in dev. The browser loads images directly; no presigned PUT, no
+base64, no bytes in JSON.
 
 Credential + memory rules:
 - R2 S3 credentials come from env (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-  `R2_SECRET_ACCESS_KEY`, Object Read scoped to the bucket). Without them the
-  service degrades gracefully: `signReadUrl` yields null and notes render
-  without images.
-- Known limitation: presigned URLs point at the real R2 S3 endpoint, but in
-  `alchemy dev` the Files bucket is a local simulator whose objects do not
-  exist in real R2 — so dev-rendered image URLs 404 even with credentials
-  set. Mature fix (see Fizzy's storage.oss.yml): run a local S3-compatible
-  endpoint (MinIO) for dev and point the signer at it, or fall back to the
-  authorized route URL in dev.
+  `R2_SECRET_ACCESS_KEY`, Object Read scoped to the bucket). They are
+  required: absent values fail loudly rather than serving broken image
+  URLs.
+- Local dev serves images through the gateway route
+  (`GET /api/dev/files/*`, `config/dev-files.ts`), mounted only under
+  `ALCHEMY_DEV`, which `alchemy dev` injects into the worker isolate: the
+  simulator bucket does not exist in real R2, so presigned URLs would 404.
+  The gateway streams objects from the binding, unauthenticated by design
+  (localhost only, unguessable keys). Do NOT bind `ALCHEMY_DEV` into the
+  worker props env: that name collides with alchemy's own env handling and
+  every request 500s; read the ambient value instead.
 - `config/memory-fs.ts` holds in-flight upload bytes in the isolate (128MB
   shared across concurrent requests). `maxFileSize` bounds a single request;
   keep concurrent in-flight uploads x maxFileSize well under 128MB. Verified
