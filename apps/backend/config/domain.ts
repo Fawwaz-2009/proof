@@ -4,7 +4,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
 /** The app's identity: every public hostname and sender address derives from it. */
-const APP_SLUG = "alchemy-flare";
+const APP_SLUG = "starting-flare";
 
 /**
  * The stage's addresses.

@@ -1,4 +1,4 @@
-# alchemy-flare: starting template
+# starting-flare: starting template
 
 A Bun-monorepo starting template on the Effect v4 + Cloudflare + Alchemy v2
 backbone, modeled on the domain-x setup. One Alchemy stack deploys two
@@ -19,7 +19,7 @@ email, Better Auth), and a public TanStack Start website as the sole ingress.
   binding, and the SSR session gate dispatches in-process (no self-fetch).
 - **Shared contract**: `apps/backend/src/contracts` + `src/views` are the
   browser-safe HTTP interface. The web app imports them as
-  `@alchemy-flare/backend/contract` and derives its typed client from them: no
+  `@starting-flare/backend/contract` and derives its typed client from them: no
   hand-written URLs, no response decoding.
 - **Demo resource** ("notes"): rows in D1, optional attachments as private R2
   objects, every endpoint owner-scoped by the session user id. Sign in at
@@ -56,8 +56,8 @@ One module decides every public hostname: `apps/backend/config/domain.ts`
 | stage | website URL |
 |---|---|
 | `alchemy dev` | `http://localhost:<web port>` (deterministic per stage) |
-| `prod` | `https://alchemy-flare.<your root domain>` |
-| anything else | `https://alchemy-flare-<stage>.<your root domain>` |
+| `prod` | `https://starting-flare.<your root domain>` |
+| anything else | `https://starting-flare-<stage>.<your root domain>` |
 
 Hostnames attach to the Website Worker as Cloudflare Custom Domains: DNS
 and the edge certificate are created with the deploy and destroyed with the
@@ -90,8 +90,8 @@ alchemy destroy --stage dev_alice --yes  # remove a developer stage
 ## Deploying
 
 ```sh
-alchemy deploy --stage prod      # production: https://alchemy-flare.<your root domain>
-alchemy deploy --stage pr-123    # preview: https://alchemy-flare-pr-123.<your root domain>
+alchemy deploy --stage prod      # production: https://starting-flare.<your root domain>
+alchemy deploy --stage pr-123    # preview: https://starting-flare-pr-123.<your root domain>
 alchemy destroy --stage pr-123
 ```
 
@@ -123,9 +123,9 @@ patches/              better-auth + kysely D1-introspection fixes (bun patchedDe
 
 ## Renaming for a new product
 
-The template is named "alchemy-flare" end to end: the stack name in
-`alchemy.run.ts` ("AlchemyFlare"), the `@alchemy-flare/*` package names, the
-site copy ("Alchemy Flare"), the site hostname in `config/domain.ts`
+The template is named "starting-flare" end to end: the stack name in
+`alchemy.run.ts` ("StartingFlare"), the `@starting-flare/*` package names, the
+site copy ("Starting Flare"), the site hostname in `config/domain.ts`
 (`APP_SLUG` + `BASE_DOMAIN`), the sign-in email copy in `config/auth.ts`, the
 default sender in `config/email.ts`, and the rate-limit namespace comment in
 `config/rate-limit.ts`. When you fork it into a product: rename those, then

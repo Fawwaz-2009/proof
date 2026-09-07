@@ -26,7 +26,7 @@ function AuthenticatedLayout() {
     <div className="min-h-svh">
       <header className="flex items-center justify-between border-b bg-card px-6 py-3">
         <a className="font-bold" href="/">
-          Alchemy Flare
+          Starting Flare
         </a>
         <Button variant="outline" size="sm" onClick={signOut}>
           Sign out

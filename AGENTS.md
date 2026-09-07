@@ -1,6 +1,6 @@
-# alchemy-flare
+# starting-flare
 
-alchemy-flare is an Effect-native starting template on alchemy v2: one stack,
+starting-flare is an Effect-native starting template on alchemy v2: one stack,
 two workers, a private backend (D1, R2, better-auth) and a public TanStack Start
 website that proxies
 `/api/*` to the backend over a service binding. The backend is the reference

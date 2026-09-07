@@ -17,4 +17,4 @@ export {
 } from "./notes.ts";
 export { Authenticated, CurrentUser, SessionUser, Unauthorized } from "./auth.ts";
 
-export class AppApi extends HttpApi.make("alchemy-flare").add(NotesApi).prefix(ApiPrefix) {}
+export class AppApi extends HttpApi.make("starting-flare").add(NotesApi).prefix(ApiPrefix) {}

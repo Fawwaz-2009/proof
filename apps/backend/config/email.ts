@@ -16,7 +16,7 @@ export const EmailResource = Cloudflare.Email.SendEmail("Email");
  * address (see the props gen).
  */
 export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(
-  Config.withDefault("Alchemy Flare <noreply@localhost>"),
+  Config.withDefault("Starting Flare <noreply@localhost>"),
 );
 
 export class Email extends Context.Service<Email>()("Email", {

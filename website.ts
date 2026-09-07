@@ -43,7 +43,7 @@ const websiteDeployProps = Effect.gen(function* () {
       traces: { enabled: true, headSamplingRate: 0.01 },
     },
     memo: {
-      // The site imports @alchemy-flare/backend/contract (a sibling workspace
+      // The site imports @starting-flare/backend/contract (a sibling workspace
       // package); the default hash scope only covers apps/web, so the shared
       // contract sources are added explicitly and the lockfile stays in the
       // hash (providing `include` drops it otherwise).

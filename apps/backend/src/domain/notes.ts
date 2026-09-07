@@ -123,7 +123,7 @@ export type NotesShape = Effect.Success<typeof makeNotes>;
  * The notes service. Consumers yield the tag; every method returns an effect
  * whose only remaining requirement is request-scoped (`CurrentUser`).
  */
-export class Notes extends Context.Service<Notes, NotesShape>()("@alchemy-flare/Notes") {}
+export class Notes extends Context.Service<Notes, NotesShape>()("@starting-flare/Notes") {}
 
 /** Built once per isolate; its Database and Files requirements are discharged at the composition edge. */
 export const NotesLive = Layer.effect(Notes, makeNotes);

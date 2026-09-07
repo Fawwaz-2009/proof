@@ -64,7 +64,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
         AUTH_EMAIL_FROM: yield* (isDev
-          ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Alchemy Flare <noreply@localhost>"))
+          ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Starting Flare <noreply@localhost>"))
           : Config.string("AUTH_EMAIL_FROM")
         ).pipe(Effect.orDie),
         AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl}`,

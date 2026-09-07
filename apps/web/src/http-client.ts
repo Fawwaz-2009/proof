@@ -3,7 +3,7 @@ import type * as HttpApi from "effect/unstable/httpapi/HttpApi";
 import { HttpApiClient } from "effect/unstable/httpapi";
 import * as Effect from "effect/Effect";
 import { createIsomorphicFn } from "@tanstack/react-start";
-import { AppApi, ValidationError } from "@alchemy-flare/backend/contract";
+import { AppApi, ValidationError } from "@starting-flare/backend/contract";
 
 type Groups = typeof AppApi extends HttpApi.HttpApi<infer _Id, infer Groups> ? Groups : never;
 
