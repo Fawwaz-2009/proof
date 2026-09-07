@@ -95,21 +95,6 @@ apps/web/             the public site (routes, typed client, auth gate)
 patches/              better-auth + kysely D1-introspection fixes (bun patchedDependencies)
 ```
 
-## Create a product from this template
-
-```sh
-bunx github:<you>/alchemy-flare my-app
-```
-
-(that form works once this repo is pushed under its final name; from a local
-clone, `bun scripts/create-alchemy-flare.ts my-app` does the same thing.)
-
-It prompts for a project name, renames every identity token (workspace
-packages, stack name, site copy, sign-in email copy), assigns fresh
-rate-limit namespace ids, gives the product a fresh single-commit git
-history, installs dependencies, and prints the day-0 runbook. The manual
-rename below is the fallback for forks that skip the CLI.
-
 ## Renaming for a new product
 
 The template is named "alchemy-flare" end to end: the stack name in
