@@ -44,6 +44,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     const port = yield* devPort();
     const isDev = yield* Effect.orDie(ALCHEMY_DEV);
     const filesBucket = yield* FilesBucket;
+    const { accountId } = yield* yield* Cloudflare.CloudflareEnvironment;
     const websiteUrl = yield* websiteDomain;
     return {
       main: import.meta.filename,
@@ -69,10 +70,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         ).pipe(Effect.orDie),
         AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl}`,
         R2_BUCKET_NAME: filesBucket.bucketName,
-        R2_ACCOUNT_ID: yield* (isDev
-          ? Config.string("R2_ACCOUNT_ID").pipe(Config.withDefault(""))
-          : Config.string("R2_ACCOUNT_ID")
-        ).pipe(Effect.orDie),
+        R2_ACCOUNT_ID: accountId,
         R2_ACCESS_KEY_ID: yield* (isDev
           ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""))
           : Config.string("R2_ACCESS_KEY_ID")

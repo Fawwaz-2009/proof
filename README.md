@@ -95,7 +95,6 @@ alchemy deploy --stage pr-123    # preview: https://starting-flare-pr-123.<your 
 alchemy destroy --stage pr-123
 ```
 
-Every non-prod stage gets its own D1 database, R2 bucket, and captured
 Every stage is a complete isolated copy: own D1 database, R2 bucket, public
 hostname, and capture-only email; only `prod` sends real email.
 
@@ -105,9 +104,42 @@ hostname, and capture-only email; only `prod` sends real email.
 bun run check    # lint + typecheck (iac, backend, web) + format + build
 ```
 
-CI should run `bun run check`, then (optionally) deploy a `test-<run>`
-stage, smoke it, and destroy it — the domain-x preview pipeline is the
-reference for wiring that up.
+## Continuous deployment
+
+Two GitHub Actions workflows ship with the template (`.github/workflows/`),
+plus one merge blocker:
+
+- **PR preview** — every pull request deploys a fully isolated `pr-<n>` stage
+  (own Workers, D1, R2; email captured) and posts the preview URL on the PR.
+  Closing the PR destroys the stage, and the destroy job refuses any
+  non-`pr-*` stage.
+- **Prod CD** — merges to `main` deploy production, migrations riding the
+  deploy.
+- **Prod readiness** — the merge blocker: until the repository is
+  production-ready (domain, sender address, R2 credentials), this check is
+  red on every PR with the full setup checklist in its output. Mark it as a
+  required status check in branch protection and merging is impossible
+  before setup is done. It is self-removing: once the secrets exist, it
+  passes silently forever. Previews themselves work from minute one
+  (workers.dev URLs, captured email), so agents and humans can build before
+  the domain lands.
+
+One-time ceremony (your machine, never CI) — the header of
+`stacks/github.ts` carries the full permission list and the gotchas:
+
+```sh
+ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \
+R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
+GITHUB_TOKEN=$(gh auth token) \
+bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
+```
+
+That mints the least-privilege CI token and writes every secret the
+workflows need. API-minted tokens cannot carry token-creation rights, so
+the deploying token itself is always dashboard-born: the platform's one
+irreducible human step. Acceptance is the peace-sign ritual: open a marker
+PR, see the preview carry it, merge, watch prod migrate, then a removal PR
+cleans up.
 
 ## Layout
 

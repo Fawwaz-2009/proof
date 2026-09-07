@@ -112,8 +112,10 @@ path in dev. The browser loads images directly; no presigned PUT, no
 base64, no bytes in JSON.
 
 Credential + memory rules:
-- R2 S3 credentials come from env (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-  `R2_SECRET_ACCESS_KEY`, Object Read scoped to the bucket). They are
+- R2 S3 credentials are the key pair `R2_ACCESS_KEY_ID` +
+  `R2_SECRET_ACCESS_KEY` (Object Read scoped to the bucket); the account id
+  is not user-provided — worker.ts derives it from the authenticated
+  account (CloudflareEnvironment) and binds it as `R2_ACCOUNT_ID`. They are
   required: absent values fail loudly rather than serving broken image
   URLs.
 - Local dev serves images through the gateway route

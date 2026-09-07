@@ -1,0 +1,100 @@
+name: PR preview
+
+# Every PR gets a fully isolated stage `pr-<n>`: its own Workers, D1 and R2
+# (Alchemy stage-scopes each physical name), and email captured to logs —
+# nothing real is ever sent outside prod. The preview URL is posted on the PR;
+# closing the PR destroys the stage (the cleanup safety check refuses any
+# non-pr-* stage).
+#
+# URL derivation: with the ROOT_DOMAIN secret set, the URL is deterministic —
+# `https://starting-flare-<stage>.<ROOT_DOMAIN>` — a mirror of the derivation
+# in apps/backend/config/domain.ts. Keep the two in sync. Without it, the
+# workers.dev URL is extracted from the deploy output.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency:
+  group: preview-${{ github.event.number }}
+  cancel-in-progress: false
+
+env:
+  STAGE: pr-${{ github.event.number }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CI: "true"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
+      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'Starting Flare Preview <noreply@localhost>' }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      # Deploy stamp — identifies the exact merge result the preview serves.
+      GITHUB_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun run typecheck
+      - name: Deploy preview stage
+        run: |
+          set -o pipefail
+          bunx alchemy deploy --stage "$STAGE" --yes 2>&1 | tee deploy-output.txt
+      - name: Resolve preview URL
+        run: |
+          if [ -n "$ROOT_DOMAIN" ]; then
+            echo "PREVIEW_URL=https://starting-flare-$STAGE.$ROOT_DOMAIN" >> "$GITHUB_ENV"
+          else
+            url=$(grep -oE 'https://[a-zA-Z0-9.-]+' deploy-output.txt | grep 'workers.dev' | head -1 || true)
+            echo "PREVIEW_URL=$url" >> "$GITHUB_ENV"
+          fi
+      - name: Comment preview URL
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          body="🔎 **Preview:** ${PREVIEW_URL:-_(workers.dev URL in workflow logs)_} · stage \`$STAGE\` · \`${{ github.sha }}\`"
+          gh pr comment "${{ github.event.number }}" --edit-last --body "$body" \
+            || gh pr comment "${{ github.event.number }}" --body "$body"
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+      # `alchemy destroy` re-evaluates the stack, so teardown needs the same
+      # values the deploy had — byte-identical env or it dies before deleting
+      # anything (this exact gap leaked previews for days in the reference
+      # implementation).
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
+      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'Starting Flare Preview <noreply@localhost>' }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Safety check — never destroy a non-preview stage
+        run: |
+          case "$STAGE" in
+            pr-*) echo "Destroying $STAGE" ;;
+            *) echo "Refusing to destroy non-preview stage '$STAGE'"; exit 1 ;;
+          esac
+      - name: Destroy preview stage (retries — custom-domain deletes transiently fail)
+        run: |
+          for i in 1 2 3 4; do
+            bunx alchemy destroy --stage "$STAGE" --yes && exit 0
+            echo "destroy attempt $i failed; retrying in 5s..."; sleep 5
+          done
+          bunx alchemy destroy --stage "$STAGE" --yes

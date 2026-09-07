@@ -1,0 +1,63 @@
+name: Prod readiness
+
+# The merge blocker. Previews and local dev work with zero domain — email is
+# captured and previews serve from workers.dev — but merging to main arms
+# prod, which sends real email and serves the real domain. This check stays
+# red, with the full setup checklist as its output, until the repository is
+# production-ready. Mark it as a required status check in branch protection
+# and merging is impossible before setup is done. It is self-removing: once
+# the secrets exist, it passes silently forever.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
+      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check prod credentials
+        run: |
+          missing=0
+          for var in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ROOT_DOMAIN AUTH_EMAIL_FROM R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY; do
+            if [ -z "${!var}" ]; then
+              echo "::error::$var is not set in repository secrets"
+              missing=1
+            fi
+          done
+          exit $missing
+      - name: Setup checklist
+        if: failure()
+        run: |
+          cat <<'CHECKLIST'
+          Production is not set up yet, so merging is blocked. Clear it in one
+          command once three inputs exist:
+
+            1. A domain on the Cloudflare account. Buy it in the dashboard, or
+               have your agent do it via the Cloudflare MCP registrar tools.
+            2. A dashboard-born Cloudflare API token (API-minted tokens cannot
+               carry token-creation rights). Custom token permissions:
+               Workers Scripts / KV Storage / R2 Storage / Routes: Edit,
+               D1: Edit, Workers Tail: Read, Workers Observability: Edit,
+               Email Sending: Edit, Secrets Store: Edit, Account Settings: Read.
+            3. R2 S3 credentials for the Files bucket (Object Read scope).
+
+          Then, from the repository root, wire everything in one command:
+
+            GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
+            ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \
+            R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
+            GITHUB_TOKEN=$(gh auth token) \
+            bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
+
+          That mints the least-privilege CI token and writes every secret these
+          checks need. Push again (or re-run this workflow) and it goes green.
+          CHECKLIST
+          exit 1

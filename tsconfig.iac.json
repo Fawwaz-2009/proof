@@ -1,5 +1,5 @@
 {
-  "include": ["alchemy.run.ts", "website.ts"],
+  "include": ["alchemy.run.ts", "website.ts", "stacks/github.ts"],
   "compilerOptions": {
     "lib": ["ESNext"],
     "module": "Preserve",
