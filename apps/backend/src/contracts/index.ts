@@ -13,6 +13,7 @@ export {
   ListNotesResponse,
   MaxImageBytes,
   NotesApi,
+  ValidationError,
 } from "./notes.ts";
 export { Authenticated, CurrentUser, SessionUser, Unauthorized } from "./auth.ts";
 

@@ -1,9 +1,12 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import * as Cause from "effect/Cause";
+import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { MaxImageBytes } from "@sufra/backend/contract";
-import { AppClient, createNoteAtom, destroyNoteAtom } from "../../http-client";
+import { AppClient, createNoteAtom, destroyNoteAtom, mutationErrorMessage } from "../../http-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -11,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import * as z from "zod";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authed/demo")({
   component: Demo,
@@ -23,14 +27,18 @@ const noteFormSchema = z.object({
 
 function Demo() {
   const notes = useAtomValue(AppClient.query("notes", "listNotes", { reactivityKeys: ["notes"] }));
-  const createNote = useAtomSet(createNoteAtom, { mode: "promise" });
-  const destroyNote = useAtomSet(destroyNoteAtom, { mode: "promise" });
-  const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  const createResult = useAtomValue(createNoteAtom);
+  const createNote = useAtomSet(createNoteAtom, { mode: "promiseExit" });
+  const destroyNote = useAtomSet(destroyNoteAtom, { mode: "promiseExit" });
   const [image, setImage] = useState<File | undefined>();
 
+  const creating = AsyncResult.isWaiting(createResult);
+
   const data = AsyncResult.isSuccess(notes) ? notes.value : undefined;
-  const loading = AsyncResult.isWaiting(notes);
+  const loading = AsyncResult.isInitial(notes);
+  // A Failure only surfaces as user-facing copy when it carries a real typed
+  // error; dev-mode interrupts/HMR aborts arrive as `Die` defects and are noise.
+  const loadFailed = AsyncResult.isFailure(notes) && Option.isSome(Cause.findErrorOption(notes.cause));
 
   const form = useForm({
     defaultValues: {
@@ -41,40 +49,34 @@ function Demo() {
       onSubmit: noteFormSchema,
     },
     onSubmit: async ({ value }) => {
-      setBusy(true);
-      setError(undefined);
-      try {
-        if (image && image.size > MaxImageBytes) {
-          setError(`Images are capped at ${Math.round(MaxImageBytes / (1024 * 1024))} MB.`);
-          setBusy(false);
-          return;
-        }
-
-        // The multipart payload rides to the typed client as FormData: the
-        // contract marks the payload as multipart, so the client encodes it.
-        const formData = new FormData();
-        formData.append("title", value.title.trim());
-        formData.append("body", value.body);
-        if (image) formData.append("image", image);
-
-        await createNote({ payload: formData, reactivityKeys: ["notes"] });
-        form.reset();
-        setImage(undefined);
-      } catch {
-        setError("Could not create the note.");
-      } finally {
-        setBusy(false);
+      if (image && image.size > MaxImageBytes) {
+        toast.error(`Images are capped at ${Math.round(MaxImageBytes / (1024 * 1024))} MB.`);
+        return;
       }
+
+      // The multipart payload rides to the typed client as FormData: the
+      // contract marks the payload as multipart, so the client encodes it.
+      const formData = new FormData();
+      formData.append("title", value.title.trim());
+      formData.append("body", value.body);
+      if (image) formData.append("image", image);
+
+      Exit.match(await createNote({ payload: formData, reactivityKeys: ["notes"] }), {
+        onSuccess: () => {
+          form.reset();
+          setImage(undefined);
+          toast.success("Note added.");
+        },
+        onFailure: (cause) => toast.error(mutationErrorMessage(Cause.findErrorOption(cause), "Could not create the note.")),
+      });
     },
   });
 
   const removeNote = async (id: string) => {
-    setError(undefined);
-    try {
-      await destroyNote({ params: { id }, reactivityKeys: ["notes"] });
-    } catch {
-      setError("Could not delete the note.");
-    }
+    Exit.match(await destroyNote({ params: { id }, reactivityKeys: ["notes"] }), {
+      onSuccess: () => {},
+      onFailure: (cause) => toast.error(mutationErrorMessage(Cause.findErrorOption(cause), "Could not delete the note.")),
+    });
   };
 
   return (
@@ -146,14 +148,14 @@ function Demo() {
                 />
               </Field>
             </FieldGroup>
-            <Button className="mt-4" type="submit" form="note-form" disabled={busy}>
-              {busy ? "Working..." : "Add note"}
+            <Button className="mt-4" type="submit" form="note-form" disabled={creating}>
+              {creating ? "Working..." : "Add note"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+      {loadFailed ? <p className="mt-4 text-sm text-destructive">Could not load your notes.</p> : null}
       {loading ? <p className="mt-4 text-sm text-muted-foreground">Loading notes...</p> : null}
       {data && data.notes.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No notes yet. Add the first one above.</p> : null}
 

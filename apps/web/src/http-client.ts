@@ -1,7 +1,7 @@
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as AtomHttpApi from "effect/unstable/reactivity/AtomHttpApi";
-import { HttpApiClient } from "effect/unstable/httpapi";
-import { AppApi } from "@sufra/backend/contract";
+import * as Option from "effect/Option";
+import { AppApi, ValidationError } from "@sufra/backend/contract";
 
 /**
  * The typed HTTP client for the browser. Reads subscribe through
@@ -15,3 +15,16 @@ export class AppClient extends AtomHttpApi.Service<AppClient>()("AppClient", { a
 
 export const createNoteAtom = AppClient.mutation("notes", "createNote");
 export const destroyNoteAtom = AppClient.mutation("notes", "destroyNote");
+
+/**
+ * Toast/copy text for a failed mutation. `error` is the mutation atom's typed
+ * error channel (`Cause.findErrorOption(exit.cause)`). Every member of the union carries a
+ * server-authored message (`ValidationError`, `HttpApiError.NotFound`, ...), so the filter is just the
+ * guard; `None` means a defect (oversize-upload 413, transport failure), which
+ * gets the caller's fallback.
+ */
+export const mutationErrorMessage = (error: Option.Option<unknown>, fallback: string): string =>
+  Option.getOrElse(
+    Option.map(error, (e) => (e instanceof ValidationError ? e.message : fallback)),
+    () => fallback,
+  );

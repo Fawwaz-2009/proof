@@ -1,6 +1,7 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -49,6 +50,7 @@ function Document({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body className="antialiased">
         {children}
+        <Toaster />
         <Scripts />
       </body>
     </html>
