@@ -180,6 +180,9 @@ Flags:
 
 Environment equivalents: ROOT_DOMAIN, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
 AUTH_EMAIL_FROM, CLOUDFLARE_API_TOKEN, GITHUB_OWNER.
+
+Private template repo? \`bunx github:...\` fetches anonymously and needs the
+template repo public. While it is private, clone it and run this file with bun.
 `.trimStart();
 
 // ------------------------------------------------------------ prompting ----

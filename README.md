@@ -22,6 +22,14 @@ agents run the same flow non-interactively.
 The rest of this README documents the template itself; everything below
 applies to the scaffolded app as-is.
 
+Note: `bunx github:...` fetches anonymously, so it needs this repository to
+be public. While it is private, clone and run the CLI directly:
+
+```sh
+git clone --depth 1 https://github.com/Fawwaz-2009/starting-flare.git /tmp/sf
+bun /tmp/sf/packages/create-starting-flare/src/index.ts my-app
+```
+
 ## What is in the box
 
 - **One stack** (`alchemy.run.ts` + `website.ts` at the root): one plan, one
