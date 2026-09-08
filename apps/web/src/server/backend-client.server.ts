@@ -7,7 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { getRequest } from "@tanstack/react-start/server";
 import { env } from "cloudflare:workers";
-import { AppApi } from "@starting-flare/backend/contract";
+import { AppApi } from "@proof/backend/contract";
 
 type Groups = typeof AppApi extends HttpApi.HttpApi<infer _Id, infer Groups> ? Groups : never;
 
@@ -55,5 +55,5 @@ const transport = HttpClient.make((request, url, signal) => {
 });
 
 export const AppClient: Effect.Effect<HttpApiClient.Client<Groups>, never, never> = HttpApiClient.make(AppApi, {
-  baseUrl: "https://starting-flare-backend.internal",
+  baseUrl: "https://proof-backend.internal",
 }).pipe(Effect.provide(Layer.succeed(HttpClient.HttpClient, transport)));

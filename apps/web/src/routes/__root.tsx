@@ -1,21 +1,30 @@
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { env } from "cloudflare:workers";
 import type { ReactNode } from "react";
-import { Toaster } from "@/components/ui/sonner";
-import appCss from "../styles.css?url";
 import type { QueryClient } from "@tanstack/react-query";
+import appCss from "../styles.css?url";
 
 interface RouterContext {
   queryClient: QueryClient;
 }
 
+/**
+ * Runtime identity from the Worker's bindings: the wordmark and page title
+ * follow APP_NAME, and STAGE tells preview deploys where they are. Server
+ * function so the env import never reaches the client bundle.
+ */
+export const getAppMeta = createServerFn({ method: "GET" }).handler(async () => {
+  return {
+    appName: (env.APP_NAME as string | undefined) ?? "Proof",
+    stage: (env.STAGE as string | undefined) ?? "",
+  };
+});
+
 export const Route = createRootRouteWithContext<RouterContext>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "description", content: "Starting Flare: a starting template on the Effect + Cloudflare backbone." },
-      { title: "Starting Flare" },
-    ],
+  loader: () => getAppMeta(),
+  head: ({ match }) => ({
+    meta: [{ charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" }, { title: match.loaderData?.appName ?? "Proof" }],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
   component: RootComponent,
@@ -35,9 +44,9 @@ function RootComponent() {
 function NotFound() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-24">
-      <h1 className="text-3xl font-bold">Page not found</h1>
-      <p className="mt-2 text-muted-foreground">The page you asked for does not exist.</p>
-      <a className="mt-6 inline-block rounded-lg border bg-card px-4 py-2 font-semibold hover:bg-accent hover:text-accent-foreground" href="/">
+      <h1 className="text-3xl font-bold tracking-tight">Page not found</h1>
+      <p className="mt-2 text-zinc-600 dark:text-zinc-400">The page you asked for does not exist.</p>
+      <a className="mt-6 inline-block rounded-lg border border-zinc-200 px-4 py-2 font-semibold hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900" href="/">
         Back to the start
       </a>
     </main>
@@ -50,9 +59,8 @@ function Document({ children }: Readonly<{ children: ReactNode }>) {
       <head>
         <HeadContent />
       </head>
-      <body className="antialiased">
+      <body className="bg-white font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         {children}
-        <Toaster />
         <Scripts />
       </body>
     </html>
