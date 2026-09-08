@@ -7,12 +7,10 @@ import { SchemaErrorHandler, ValidationError } from "../contracts/notes.ts";
  * filters) into a typed 400 `ValidationError` carrying the checker's message,
  * instead of an opaque defect. Wire alongside the other discharge-edge layers.
  */
-export const SchemaErrorHandlerLive = HttpApiMiddleware.layerSchemaErrorTransform(
-  SchemaErrorHandler,
-  (schemaError: HttpApiError.HttpApiSchemaError) =>
-    Effect.fail(
-      new ValidationError({
-        message: schemaError.cause.message || "The request payload is invalid.",
-      }),
-    ),
+export const SchemaErrorHandlerLive = HttpApiMiddleware.layerSchemaErrorTransform(SchemaErrorHandler, (schemaError: HttpApiError.HttpApiSchemaError) =>
+  Effect.fail(
+    new ValidationError({
+      message: schemaError.cause.message || "The request payload is invalid.",
+    }),
+  ),
 );

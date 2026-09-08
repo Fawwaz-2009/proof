@@ -8,27 +8,22 @@ email, Better Auth), and a public TanStack Start website as the sole ingress.
 ## Start a new app from this template
 
 ```sh
-bunx github:Fawwaz-2009/starting-flare my-app
+bunx create-starting-flare my-app
 ```
 
 One command, a finished day zero: it checks prerequisites, guides the one
-Cloudflare credential that can mint others, copies the template with a FRESH
-git history (no template commits), renames every identity token, assigns
-fresh rate-limit namespaces, creates the GitHub repo, runs the ceremony
-(mints the least-privilege CI token, writes every repo secret), and opens
-the marker PR with the remaining-setup checklist. Flags in `--help` let
-agents run the same flow non-interactively.
+Cloudflare credential that can mint others, copies the bundled template with
+a FRESH git history (no template commits), renames every identity token,
+assigns fresh rate-limit namespaces, creates the GitHub repo, runs the
+ceremony (mints the least-privilege CI token, writes every repo secret), and
+opens the marker PR with the remaining-setup checklist. Flags in `--help`
+let agents run the same flow non-interactively. Because the template ships
+inside the package, the command works whatever this repository's visibility
+is, and every CLI release carries a template snapshot you can test before
+it becomes the default anyone scaffolds.
 
 The rest of this README documents the template itself; everything below
 applies to the scaffolded app as-is.
-
-Note: `bunx github:...` fetches anonymously, so it needs this repository to
-be public. While it is private, clone and run the CLI directly:
-
-```sh
-git clone --depth 1 https://github.com/Fawwaz-2009/starting-flare.git /tmp/sf
-bun /tmp/sf/packages/create-starting-flare/src/index.ts my-app
-```
 
 ## What is in the box
 

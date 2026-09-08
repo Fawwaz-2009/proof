@@ -62,20 +62,15 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: yield* (isDev
-          ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Starting Flare <noreply@localhost>"))
-          : Config.string("AUTH_EMAIL_FROM")
+        AUTH_EMAIL_FROM: yield* (
+          isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Starting Flare <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")
         ).pipe(Effect.orDie),
         AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl}`,
         R2_BUCKET_NAME: filesBucket.bucketName,
         R2_ACCOUNT_ID: accountId,
-        R2_ACCESS_KEY_ID: yield* (isDev
-          ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""))
-          : Config.string("R2_ACCESS_KEY_ID")
-        ).pipe(Effect.orDie),
-        R2_SECRET_ACCESS_KEY: yield* (isDev
-          ? Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")))
-          : Config.redacted("R2_SECRET_ACCESS_KEY")
+        R2_ACCESS_KEY_ID: yield* (isDev ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault("")) : Config.string("R2_ACCESS_KEY_ID")).pipe(Effect.orDie),
+        R2_SECRET_ACCESS_KEY: yield* (
+          isDev ? Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make(""))) : Config.redacted("R2_SECRET_ACCESS_KEY")
         ).pipe(Effect.orDie),
       },
     };

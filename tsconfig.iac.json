@@ -1,5 +1,5 @@
 {
-  "include": ["alchemy.run.ts", "website.ts", "stacks/github.ts", "scripts/ci/preflight.ts", "scripts/wt.ts", "packages/create-starting-flare/src/index.ts"],
+  "include": ["alchemy.run.ts", "website.ts", "stacks/github.ts", "scripts/ci/preflight.ts", "scripts/wt.ts", "packages/create-starting-flare/src"],
   "compilerOptions": {
     "lib": ["ESNext"],
     "module": "Preserve",
