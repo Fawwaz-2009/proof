@@ -24,9 +24,7 @@ const devFilesRoutes = Effect.gen(function* () {
       "/api/dev/files/*",
       Effect.gen(function* () {
         const request = yield* HttpServerRequest;
-        const key = decodeURIComponent(
-          new URL(request.url, "http://localhost").pathname.replace(/^\/api\/dev\/files\//, ""),
-        );
+        const key = decodeURIComponent(new URL(request.url, "http://localhost").pathname.replace(/^\/api\/dev\/files\//, ""));
 
         const object = yield* files.get(key).pipe(Effect.orDie);
         if (!object) return HttpServerResponse.empty({ status: 404 });

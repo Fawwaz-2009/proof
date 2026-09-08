@@ -21,10 +21,7 @@ export const websiteDomain = Effect.gen(function* () {
   // The root zone must already exist on the deploy account (Cloudflare
   // attaches the Custom Domain to it). Set ROOT_DOMAIN in .env before
   // deploying; the neutral default keeps the template publishable.
-  const baseDomain = yield* Config.string("ROOT_DOMAIN").pipe(
-    Config.withDefault("example.com"),
-    Effect.orDie,
-  );
+  const baseDomain = yield* Config.string("ROOT_DOMAIN").pipe(Config.withDefault("example.com"), Effect.orDie);
   const stack = yield* Effect.serviceOption(Stack);
   if (stack._tag === "None") {
     return yield* Effect.die("websiteDomain: no synthesis context (Stack service missing)");
@@ -44,9 +41,7 @@ export const websiteDomain = Effect.gen(function* () {
  */
 export const devPort = (salt = "") =>
   Effect.gen(function* () {
-    const stage = yield* Effect.serviceOption(Alchemy.Stage).pipe(
-      Effect.map((service) => (service._tag === "Some" ? service.value : "")),
-    );
+    const stage = yield* Effect.serviceOption(Alchemy.Stage).pipe(Effect.map((service) => (service._tag === "Some" ? service.value : "")));
     const name = `${salt}${stage}`;
     let hash = 2166136261;
     for (let index = 0; index < name.length; index++) {

@@ -8,8 +8,9 @@
 //
 // One-time ceremony (from the repository root, on a clean main):
 //   1. Create the dashboard-born token — My Profile → API Tokens → Create
-//      Custom Token, with the permission groups listed in `permissionGroups`
-//      below (they match alchemy's PermissionGroups.ts exactly).
+//      Custom Token, with the `permissionGroups` list below PLUS
+//      "Account API Tokens: Edit" (the caller needs it to mint this CI child
+//      token at all; OAuth and API-minted tokens can never carry it).
 //   2. Authenticate alchemy with it: CLOUDFLARE_API_TOKEN=<token> (or
 //      `alchemy login` via the API-token method).
 //   3. Run:
@@ -44,9 +45,11 @@ export default Alchemy.Stack(
     const repo = { owner, repository };
     const { accountId } = yield* yield* Cloudflare.CloudflareEnvironment;
 
-    // Least-privilege CI token: exactly what deploying this stack needs, and
-    // deliberately NO token-creation rights — API-minted tokens refuse them
-    // anyway, and CI never mints credentials.
+    // The CI token is minted HERE, by this stack, from the caller's
+    // credential: the mint requires the caller to carry "Account API Tokens:
+    // Edit", which OAuth sessions and API-minted tokens can never hold —
+    // so this ceremony must run with the dashboard-born admin credential
+    // (--profile admin, API-token method).
     const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("StartingFlareCIToken", {
       policies: [
         {

@@ -16,6 +16,7 @@ function Home() {
           One Alchemy stack, two Workers: a private Effect backend owning D1 and R2, and this TanStack Start site as the only public ingress. Sign in with an emailed code
           and try the notes demo.
         </p>
+        <p className="mt-2 text-sm font-medium text-primary">⚡ first light — this page is a deployed preview stage</p>
         <div className="mt-8 flex gap-3">
           <Button asChild>
             <Link to="/demo">Open the demo</Link>

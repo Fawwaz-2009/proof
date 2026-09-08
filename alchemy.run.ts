@@ -8,7 +8,9 @@
 //   alchemy dev                     # both Workers locally; zero .env required
 //
 // Composition-root discipline: this file names the stack, merges providers,
-// picks state, and yields the units — NOTHING else. The backend's deploy
+// picks state, and yields the units. One CI-only extra: in GitHub Actions
+// preview deploys it declares the PR comment resource (local runs skip it).
+// The backend's deploy
 // shape lives with the backend (apps/backend/src/worker.ts + infra slices);
 // the frontend's lives in ./website.ts, outside apps/web on purpose (see its
 // header).
@@ -16,6 +18,8 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle";
+import * as GitHub from "alchemy/GitHub";
+import * as Output from "alchemy/Output";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import Backend from "./apps/backend/src/worker.ts";
@@ -26,7 +30,7 @@ import { Website } from "./website.ts";
 export default Alchemy.Stack(
   "StartingFlare",
   {
-    providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers()),
+    providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers(), GitHub.providers()),
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
@@ -34,6 +38,24 @@ export default Alchemy.Stack(
     const bucket = yield* FilesBucket;
     const backend = yield* Backend;
     const website = yield* Website;
+    // CI preview deploys announce their stage URL on the PR. The comment is
+    // a state-tracked resource: the constant logical id updates the same
+    // comment on every push, and its body reads the Website resource's real
+    // url output, so it can never drift from the deployed hostname. Local
+    // runs have no PULL_REQUEST and skip the block entirely.
+    if (process.env.PULL_REQUEST) {
+      const [owner = "", repository = ""] = (process.env.GITHUB_REPOSITORY ?? "").split("/");
+      yield* GitHub.Comment("preview-comment", {
+        owner,
+        repository,
+        issueNumber: Number(process.env.PULL_REQUEST),
+        body: Output.interpolate`
+          ⚡ **Preview:** ${website.url} · stage \`${process.env.STAGE ?? `pr-${process.env.PULL_REQUEST}`}\` · \`${(process.env.GITHUB_SHA ?? "").slice(0, 7)}\`
+
+          _This comment updates automatically with each push._
+        `,
+      });
+    }
     return {
       url: website.url,
       backendWorkerName: backend.workerName,

@@ -5,6 +5,26 @@ backbone, modeled on the domain-x setup. One Alchemy stack deploys two
 Workers: a private Effect-native backend owning the data plane (D1, R2,
 email, Better Auth), and a public TanStack Start website as the sole ingress.
 
+## Start a new app from this template
+
+```sh
+bunx create-starting-flare my-app
+```
+
+One command, a finished day zero: it checks prerequisites, guides the one
+Cloudflare credential that can mint others, copies the bundled template with
+a FRESH git history (no template commits), renames every identity token,
+assigns fresh rate-limit namespaces, creates the GitHub repo, runs the
+ceremony (mints the least-privilege CI token, writes every repo secret), and
+opens the marker PR with the remaining-setup checklist. Flags in `--help`
+let agents run the same flow non-interactively. Because the template ships
+inside the package, the command works whatever this repository's visibility
+is, and every CLI release carries a template snapshot you can test before
+it becomes the default anyone scaffolds.
+
+The rest of this README documents the template itself; everything below
+applies to the scaffolded app as-is.
+
 ## What is in the box
 
 - **One stack** (`alchemy.run.ts` + `website.ts` at the root): one plan, one
@@ -53,11 +73,11 @@ and verify it first under Email Routing > Destination addresses.
 One module decides every public hostname: `apps/backend/config/domain.ts`
 (the `APP_SLUG` and `BASE_DOMAIN` consts):
 
-| stage | website URL |
-|---|---|
+| stage         | website URL                                             |
+| ------------- | ------------------------------------------------------- |
 | `alchemy dev` | `http://localhost:<web port>` (deterministic per stage) |
-| `prod` | `https://starting-flare.<your root domain>` |
-| anything else | `https://starting-flare-<stage>.<your root domain>` |
+| `prod`        | `https://starting-flare.<your root domain>`             |
+| anything else | `https://starting-flare-<stage>.<your root domain>`     |
 
 Hostnames attach to the Website Worker as Cloudflare Custom Domains: DNS
 and the edge certificate are created with the deploy and destroyed with the
@@ -124,10 +144,12 @@ plus one merge blocker:
   (workers.dev URLs, captured email), so agents and humans can build before
   the domain lands.
 
-One-time ceremony (your machine, never CI) — the header of
-`stacks/github.ts` carries the full permission list and the gotchas:
+One-time ceremony (your machine, never CI) — the scaffold command above runs
+it for you; the header of `stacks/github.ts` carries the full permission
+list and the gotchas for the manual path:
 
 ```sh
+GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
 ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \
 R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
 GITHUB_TOKEN=$(gh auth token) \
@@ -135,11 +157,12 @@ bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 ```
 
 That mints the least-privilege CI token and writes every secret the
-workflows need. API-minted tokens cannot carry token-creation rights, so
-the deploying token itself is always dashboard-born: the platform's one
-irreducible human step. Acceptance is the peace-sign ritual: open a marker
-PR, see the preview carry it, merge, watch prod migrate, then a removal PR
-cleans up.
+workflows need. Two platform walls shape the ceremony: the deploying token
+is always dashboard-born (API-minted tokens cannot carry token-creation
+rights), and it must itself include "Account API Tokens: Edit" — the one
+group that lets it mint the CI child token. Acceptance is the peace-sign
+ritual: open a marker PR, see the preview carry it, merge, watch prod
+migrate, then a removal PR cleans up.
 
 ## Layout
 

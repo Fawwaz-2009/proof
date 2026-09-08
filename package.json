@@ -1,12 +1,17 @@
 {
   "name": "starting-flare",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "packageManager": "bun@1.3.14",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
+  "bin": {
+    "starting-flare": "packages/create-starting-flare/src/index.ts",
+    "create-starting-flare": "packages/create-starting-flare/src/index.ts"
+  },
   "scripts": {
     "dev": "alchemy dev",
     "destroy": "alchemy destroy",

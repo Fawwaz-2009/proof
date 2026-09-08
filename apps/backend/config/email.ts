@@ -15,9 +15,7 @@ export const EmailResource = Cloudflare.Email.SendEmail("Email");
  * cosmetic there. Deploys go through worker.ts, which requires the real
  * address (see the props gen).
  */
-export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(
-  Config.withDefault("Starting Flare <noreply@localhost>"),
-);
+export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Starting Flare <noreply@localhost>"));
 
 export class Email extends Context.Service<Email>()("Email", {
   make: Effect.gen(function* () {
@@ -53,4 +51,3 @@ export class Email extends Context.Service<Email>()("Email", {
 }) {
   static readonly Live = Layer.effect(this, this.make).pipe(Layer.provide(Cloudflare.Email.SendBinding));
 }
-

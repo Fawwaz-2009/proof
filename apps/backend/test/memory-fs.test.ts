@@ -28,7 +28,10 @@ const uploadEffect = (n: number) =>
 describe("memory filesystem", () => {
   test("concurrent requests persist and read back their own bytes", async () => {
     const results = await Effect.runPromise(
-      Effect.all(Array.from({ length: 16 }, (_, i) => uploadEffect(i + 1)), { concurrency: "unbounded" }),
+      Effect.all(
+        Array.from({ length: 16 }, (_, i) => uploadEffect(i + 1)),
+        { concurrency: "unbounded" },
+      ),
     );
 
     expect(results).toHaveLength(16);
@@ -38,7 +41,10 @@ describe("memory filesystem", () => {
   test("released scopes drop their bytes: no accumulation across waves", async () => {
     for (let wave = 1; wave <= 3; wave++) {
       await Effect.runPromise(
-        Effect.all(Array.from({ length: 16 }, (_, i) => uploadEffect(wave * 100 + i)), { concurrency: "unbounded" }),
+        Effect.all(
+          Array.from({ length: 16 }, (_, i) => uploadEffect(wave * 100 + i)),
+          { concurrency: "unbounded" },
+        ),
       );
       expect(stats()).toEqual({ files: 0, bytes: 0 });
     }

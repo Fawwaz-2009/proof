@@ -1,6 +1,6 @@
 {
   "name": "@starting-flare/backend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "starting-flare backend: the private Effect-native Worker (D1, R2, email, Better Auth), deployed by the root Alchemy stack.",

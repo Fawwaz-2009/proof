@@ -1,9 +1,9 @@
 {
   "name": "@starting-flare/web",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "starting-flare web app: TanStack Start on Cloudflare Workers, the sole public ingress, forwarding /api to the private backend Worker over the BACKEND service binding.",
+  "description": "starting-flare web app: TanStack Start on Cloudflare Workers, the sole public ingress.",
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json"

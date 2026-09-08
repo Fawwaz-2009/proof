@@ -15,9 +15,7 @@ import { d1Database } from "./database/index.ts";
  * synthesis, outside any binding context. Deployed stages get the derived
  * hosts via the AUTH_ALLOWED_HOSTS binding (see worker.ts).
  */
-export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(
-  Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"),
-);
+export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
 
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
@@ -65,7 +63,5 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     });
   }),
 }) {
-  static readonly Live = Layer.effect(this, this.make).pipe(
-    Layer.provide(Layer.mergeAll(Email.Live, CloudflareD1(d1Database))),
-  );
+  static readonly Live = Layer.effect(this, this.make).pipe(Layer.provide(Layer.mergeAll(Email.Live, CloudflareD1(d1Database))));
 }

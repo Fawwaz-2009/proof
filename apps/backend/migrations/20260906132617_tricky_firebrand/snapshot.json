@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "5dc6404f-c7f5-4ae1-b82d-e1617ef13985",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
       "name": "notes",
@@ -71,9 +69,7 @@
       "table": "notes"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "notes_pk",
       "table": "notes",

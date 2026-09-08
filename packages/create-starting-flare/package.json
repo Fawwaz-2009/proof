@@ -1,0 +1,29 @@
+{
+  "name": "create-starting-flare",
+  "version": "0.1.1",
+  "description": "Scaffold a production-grade Bun + Effect v4 + Cloudflare Workers product from the starting-flare template: fresh history, renamed identity, wired CI, marker PR.",
+  "type": "module",
+  "bin": {
+    "create-starting-flare": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "template",
+    "README.md"
+  ],
+  "scripts": {
+    "sync-template": "bun scripts/sync-template.ts",
+    "prepack": "bun run sync-template",
+    "prepublishOnly": "bun run sync-template"
+  },
+  "engines": {
+    "bun": ">=1.2"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@types/gradient-string": "^1.1.6",
+    "chalk": "^5.6.0",
+    "gradient-string": "^3.0.0"
+  }
+}
