@@ -10,9 +10,7 @@ export function getRouter() {
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    Wrap: ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    ),
+    Wrap: ({ children }: { children: ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
     scrollRestoration: true,
   });
   // Loader-prefetched queries (ensureQueryData) dehydrate into the SSR HTML and

@@ -13,14 +13,7 @@
  * Values arrive as environment variables mapped from repository secrets by
  * the calling workflow.
  */
-const REQUIRED = [
-  "CLOUDFLARE_API_TOKEN",
-  "CLOUDFLARE_ACCOUNT_ID",
-  "ROOT_DOMAIN",
-  "AUTH_EMAIL_FROM",
-  "R2_ACCESS_KEY_ID",
-  "R2_SECRET_ACCESS_KEY",
-] as const;
+const REQUIRED = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "ROOT_DOMAIN", "AUTH_EMAIL_FROM", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const;
 
 const missing = REQUIRED.filter((name) => !process.env[name]);
 for (const name of missing) {

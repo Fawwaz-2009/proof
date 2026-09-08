@@ -31,13 +31,8 @@ export const getAppClient = (): Promise<AppClient> => {
  *   cookies forwarded (see server/backend-client.server.ts).
  */
 const buildAppClient = createIsomorphicFn()
-  .server(
-    (): Promise<AppClient> =>
-      import("./server/backend-client.server").then((server) => Effect.runPromise(server.AppClient)),
-  )
-  .client(
-    (): Promise<AppClient> => Effect.runPromise(HttpApiClient.make(AppApi).pipe(Effect.provide(FetchHttpClient.layer))),
-  );
+  .server((): Promise<AppClient> => import("./server/backend-client.server").then((server) => Effect.runPromise(server.AppClient)))
+  .client((): Promise<AppClient> => Effect.runPromise(HttpApiClient.make(AppApi).pipe(Effect.provide(FetchHttpClient.layer))));
 
 /**
  * Toast/copy text for a failed mutation. `error` is the mutation's decoded
@@ -45,5 +40,4 @@ const buildAppClient = createIsomorphicFn()
  * anything else (defects like the oversize-upload 413, transport failures)
  * gets the caller's fallback.
  */
-export const mutationErrorMessage = (error: unknown, fallback: string): string =>
-  error instanceof ValidationError ? error.message : fallback;
+export const mutationErrorMessage = (error: unknown, fallback: string): string => (error instanceof ValidationError ? error.message : fallback);

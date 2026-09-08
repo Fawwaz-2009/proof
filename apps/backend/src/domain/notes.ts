@@ -49,28 +49,17 @@ const makeNotes = Effect.gen(function* () {
         let imageKey: string | null = null;
         if (input.image) {
           imageKey = `images/${id}/${crypto.randomUUID()}.${extensionByContentType[input.image.contentType] ?? "bin"}`;
-          yield* files
-            .put(imageKey, input.image.bytes, { httpMetadata: { contentType: input.image.contentType } })
-            .pipe(Effect.asVoid, Effect.orDie);
+          yield* files.put(imageKey, input.image.bytes, { httpMetadata: { contentType: input.image.contentType } }).pipe(Effect.asVoid, Effect.orDie);
         }
 
-        const rows = yield* db
-          .insert(Note)
-          .values({ id, userId: user.id, title: input.title, body: input.body, imageKey })
-          .returning()
-          .pipe(Effect.orDie);
+        const rows = yield* db.insert(Note).values({ id, userId: user.id, title: input.title, body: input.body, imageKey }).returning().pipe(Effect.orDie);
         return yield* buildNoteView(rows[0]!);
       }),
 
     listNotes: () =>
       Effect.gen(function* () {
         const user = yield* CurrentUser;
-        const rows = yield* db
-          .select()
-          .from(Note)
-          .where(eq(Note.userId, user.id))
-          .orderBy(desc(Note.createdAt))
-          .pipe(Effect.orDie);
+        const rows = yield* db.select().from(Note).where(eq(Note.userId, user.id)).orderBy(desc(Note.createdAt)).pipe(Effect.orDie);
         return { notes: yield* Effect.all(rows.map(buildNoteView), { concurrency: "unbounded" }) };
       }),
 

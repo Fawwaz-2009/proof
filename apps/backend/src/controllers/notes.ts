@@ -18,7 +18,7 @@ export const notesHandlers = HttpApiBuilder.group(AppApi, "notes", (handlers) =>
     return handlers.handleAll({
       createNote: ({ payload }) =>
         Effect.gen(function* () {
-          const part = payload.image
+          const part = payload.image;
           const image = part
             ? {
                 bytes: yield* fs.readFile(part.path).pipe(Effect.orDie),

@@ -41,8 +41,7 @@ export const AuthRateLimit = Cloudflare.RateLimit("AuthRateLimit", {
  * falling back to the edge-set cf-connecting-ip, then a shared "unknown"
  * bucket when neither exists (local runs).
  */
-export const clientIp = (request: HttpServerRequest): string =>
-  request.headers["x-client-ip"] ?? request.headers["cf-connecting-ip"] ?? "unknown";
+export const clientIp = (request: HttpServerRequest): string => request.headers["x-client-ip"] ?? request.headers["cf-connecting-ip"] ?? "unknown";
 
 const tooManyRequests = HttpServerResponse.text("Too Many Requests", {
   status: 429,
@@ -62,14 +61,18 @@ export class RateLimits extends Context.Service<RateLimits>()("RateLimits", {
 
     return {
       global: (key: string) =>
-        Effect.map(Effect.option(globalLimiter.limit({ key })), Option.getOrElse(() => allowAll)),
+        Effect.map(
+          Effect.option(globalLimiter.limit({ key })),
+          Option.getOrElse(() => allowAll),
+        ),
       auth: (key: string) =>
-        Effect.map(Effect.option(authLimiter.limit({ key })), Option.getOrElse(() => allowAll)),
+        Effect.map(
+          Effect.option(authLimiter.limit({ key })),
+          Option.getOrElse(() => allowAll),
+        ),
       tooManyRequests,
     };
   }),
 }) {
-  static readonly Live = Layer.effect(this, this.make).pipe(
-    Layer.provide(Cloudflare.Workers.RateLimitBinding),
-  );
+  static readonly Live = Layer.effect(this, this.make).pipe(Layer.provide(Cloudflare.Workers.RateLimitBinding));
 }

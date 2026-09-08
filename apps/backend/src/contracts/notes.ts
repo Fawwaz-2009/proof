@@ -42,19 +42,14 @@ export const CreateNoteInput = Schema.Struct({
   image: Schema.optional(
     Multipart.SingleFileSchema.pipe(
       Schema.check(
-        Schema.makeFilter(
-          (file) => imageContentTypeSet.has(file.contentType),
-          {
-            message: "Only PNG, JPEG, WebP, and GIF images are allowed.",
-            identifier: "CreateNoteImageContentTypes",
-          },
-        ),
+        Schema.makeFilter((file) => imageContentTypeSet.has(file.contentType), {
+          message: "Only PNG, JPEG, WebP, and GIF images are allowed.",
+          identifier: "CreateNoteImageContentTypes",
+        }),
       ),
     ),
   ),
-}).pipe(
-  HttpApiSchema.asMultipart({ maxFileSize: MaxImageBytes, maxTotalSize: MaxImageBytes }),
-);
+}).pipe(HttpApiSchema.asMultipart({ maxFileSize: MaxImageBytes, maxTotalSize: MaxImageBytes }));
 export type CreateNoteInput = typeof CreateNoteInput.Type;
 
 export const ListNotes = HttpApiEndpoint.get("listNotes", "/notes", { success: ListNotesResponse });
@@ -67,12 +62,7 @@ export const DestroyNote = HttpApiEndpoint.delete("destroyNote", "/notes/:id", {
   error: [HttpApiError.NotFound],
 });
 
-
-export class ValidationError extends Schema.TaggedError<ValidationError>()(
-  "ValidationError",
-  { message: Schema.String },
-  { httpApiStatus: 400 },
-) {}
+export class ValidationError extends Schema.TaggedError<ValidationError>()("ValidationError", { message: Schema.String }, { httpApiStatus: 400 }) {}
 
 export class SchemaErrorHandler extends HttpApiMiddleware.Service<SchemaErrorHandler, { provides: ValidationError }>()("api/SchemaErrorHandler", {
   error: ValidationError,

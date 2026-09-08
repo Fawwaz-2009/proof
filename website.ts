@@ -55,9 +55,7 @@ const websiteDeployProps = Effect.gen(function* () {
     // Deployed: the stage's Custom Domain (DNS + certificate auto-managed);
     // workers.dev stays off so the custom host is the one canonical URL.
     // Local: the deterministic dev server port instead, no DNS touched.
-    ...(isDev
-      ? { dev: { port: webPort, strictPort: true } }
-      : { domain: websiteUrl, workersDev: false }),
+    ...(isDev ? { dev: { port: webPort, strictPort: true } } : { domain: websiteUrl, workersDev: false }),
     env: {
       // The private backend this Worker proxies to — the only binding the
       // frontend has.
