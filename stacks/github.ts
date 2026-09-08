@@ -45,19 +45,36 @@ export default Alchemy.Stack(
     const repo = { owner, repository };
     const { accountId } = yield* yield* Cloudflare.CloudflareEnvironment;
 
-    // The CI token is created OUTSIDE this stack — in the dashboard, or
-    // minted via the API (`POST /accounts/{id}/tokens`) with the
-    // dashboard-born admin token — and handed over by value through
-    // CLOUDFLARE_CI_TOKEN. Rationale: alchemy's AccountApiToken mint
-    // currently refuses account-owned admin credentials (9109), so the
-    // value is provisioned by hand and only ever WIRED here. It is read
-    // once and never logged.
-    const ciTokenValue = yield* Config.redacted("CLOUDFLARE_CI_TOKEN").pipe(Effect.orDie);
+    // The CI token is minted HERE, by this stack, from the caller's
+    // credential: the mint requires the caller to carry "Account API Tokens:
+    // Edit", which OAuth sessions and API-minted tokens can never hold —
+    // so this ceremony must run with the dashboard-born admin credential
+    // (--profile admin, API-token method).
+    const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("StartingFlareCIToken", {
+      policies: [
+        {
+          effect: "allow",
+          permissionGroups: [
+            "Workers Scripts Write",
+            "Workers KV Storage Write",
+            "Workers R2 Storage Write",
+            "Workers Routes Write",
+            "Workers Tail Read",
+            "Workers Observability Write",
+            "D1 Write",
+            "Email Sending Write",
+            "Secrets Store Write",
+            "Account Settings Read",
+          ],
+          resources: { [`com.cloudflare.api.account.${accountId}`]: "*" },
+        },
+      ],
+    });
 
     yield* GitHub.Secret("cf-api-token", {
       ...repo,
       name: "CLOUDFLARE_API_TOKEN",
-      value: ciTokenValue,
+      value: ciToken.value,
     });
     yield* GitHub.Secret("cf-account-id", {
       ...repo,

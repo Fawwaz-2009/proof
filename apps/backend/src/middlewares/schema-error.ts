@@ -1,5 +1,4 @@
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi";
 import { SchemaErrorHandler, ValidationError } from "../contracts/notes.ts";
 

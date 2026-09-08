@@ -1,0 +1,10 @@
+{
+  "name": "create-starting-flare",
+  "version": "0.1.0",
+  "description": "Scaffold a new product from the starting-flare template: fresh history, renamed identity, wired CI, marker PR.",
+  "type": "module",
+  "bin": {
+    "create-starting-flare": "./src/index.ts"
+  },
+  "private": true
+}

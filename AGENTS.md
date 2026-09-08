@@ -32,13 +32,13 @@ accumulated, so a later layer can never satisfy an earlier one.
 
 ## The layers
 
-| Layer | Location | Job |
-|---|---|---|
-| Contract | `src/contracts/` | endpoints, schemas, limits, middleware declaration |
-| Controller | `src/controllers/` | yields services, adapts payloads to domain inputs |
-| Domain | `src/domain/` | business rules as an Effect service; yields config services |
-| View | `src/views/` | `buildXxxView` factories: domain row → wire shape with URLs |
-| Config services | `config/` | infra resources wrapped as services (see below) |
+| Layer           | Location           | Job                                                         |
+| --------------- | ------------------ | ----------------------------------------------------------- |
+| Contract        | `src/contracts/`   | endpoints, schemas, limits, middleware declaration          |
+| Controller      | `src/controllers/` | yields services, adapts payloads to domain inputs           |
+| Domain          | `src/domain/`      | business rules as an Effect service; yields config services |
+| View            | `src/views/`       | `buildXxxView` factories: domain row → wire shape with URLs |
+| Config services | `config/`          | infra resources wrapped as services (see below)             |
 
 Dependency direction: controller → domain → config services. Resources appear
 only inside `config/`; nothing above depends on alchemy types.
@@ -112,6 +112,7 @@ path in dev. The browser loads images directly; no presigned PUT, no
 base64, no bytes in JSON.
 
 Credential + memory rules:
+
 - R2 S3 credentials are the key pair `R2_ACCESS_KEY_ID` +
   `R2_SECRET_ACCESS_KEY` (Object Read scoped to the bucket); the account id
   is not user-provided — worker.ts derives it from the authenticated
@@ -166,3 +167,23 @@ snapshot, and the D1 resource applies pending SQL per database
 (`__alchemy_migrations` bookkeeping). Migration files under
 `apps/backend/migrations/` are committed source: generate locally, commit,
 every environment replays its own delta. Never hand-edit snapshots.
+
+## Worktrees (parallel agents and developers)
+
+One command sets up an isolated worktree:
+
+    bun scripts/wt.ts <name>          # ../<repo>-wt/<name>, branch <name>
+    bun scripts/wt.ts --list          # existing worktrees
+    bun scripts/wt.ts --remove <name> # remove worktree + branch
+
+It copies `.env` from the main checkout (untracked files do not follow
+branches), runs `bun install`, and prints the exact commands. Inside a
+worktree:
+
+- Run `bun run dev --stage dev-<name>`: that stage's own D1, R2 bucket, and
+  deterministic port. NEVER a bare `bun run dev` in a worktree: the default
+  stage is shared across worktrees and the sessions would collide.
+- If the root `.env` changed after the worktree was created, re-copy it.
+- Commit and open PRs from the worktree as usual (same repository). Every
+  PR gets its own isolated `pr-N` preview stage with the URL posted on the
+  PR; closing the PR destroys the stage.
