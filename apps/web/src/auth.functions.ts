@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { env } from "cloudflare:workers";
-import { ApiPrefix } from "@starting-flare/backend/contract";
+import { ApiPrefix } from "@proof/backend/contract";
 
 /**
  * Read the session server-side before rendering a protected route. The web

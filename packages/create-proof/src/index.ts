@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * create-starting-flare: scaffold a new product from this template.
+ * create-proof: scaffold a new product from this template.
  *
- *   bunx create-starting-flare my-app
+ *   bunx create-proof my-app
  *
  * Flow discipline (Don't Make Me Think): the user answers questions about
  * THEIR product first; machinery runs afterwards, one line per step, and
@@ -71,16 +71,16 @@ const main = async (): Promise<void> => {
       TEMPLATE_ROOT,
       answers.target,
       { slug: answers.slug, display: answers.display },
-      answers.skipRepo
-        ? null
-        : {
-            domain: answers.domain,
-            sender: answers.sender,
-            r2AccessKeyId: answers.r2AccessKeyId,
-            r2SecretAccessKey: answers.r2SecretAccessKey,
-            owner,
-            repo: answers.slug,
-          },
+      {
+        appName: answers.display,
+        slug: answers.slug,
+        domain: answers.domain,
+        sender: answers.sender,
+        r2AccessKeyId: answers.r2AccessKeyId,
+        r2SecretAccessKey: answers.r2SecretAccessKey,
+        owner,
+        repo: answers.slug,
+      },
     );
     if (leftovers.length > 0) warn(`Identity tokens remain in: ${leftovers.join(", ")}`);
     ctx.done(`Scaffolded ${answers.slug} (fresh history, all identity tokens renamed)`);
@@ -139,7 +139,7 @@ const main = async (): Promise<void> => {
   info(`All ${expectedSecrets().length} secrets verified in ${owner}/${answers.slug}`);
 
   let prUrl = "";
-  await phase("Opening the marker PR", async () => {
+  await phase("Opening your first proof PR", async () => {
     prUrl = openMarkerPr(answers.target, markerPrBody(answers.slug, answers.domain, answers.sender));
   });
 
@@ -147,7 +147,7 @@ const main = async (): Promise<void> => {
     `${answers.display} is live`,
     [
       ["repo", `github.com/${owner}/${answers.slug}`],
-      ["marker", prUrl || "(open the PR from the repo page)"],
+      ["first proof", prUrl || "(open the PR from the repo page)"],
       ["local", `cd ${answers.target} && bun run dev`],
     ],
     [

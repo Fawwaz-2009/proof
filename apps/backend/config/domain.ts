@@ -3,31 +3,34 @@ import * as Alchemy from "alchemy";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
-/** The app's identity: every public hostname and sender address derives from it. */
-const APP_SLUG = "starting-flare";
-
 /**
- * The stage's addresses.
+ * The stage's public hostname, or null when no custom domain is configured.
  *
- * `websiteDomain`: the public hostname. The prod stage serves at
- * `<slug>.<root domain>`; every other stage serves at
- * `<slug>-<stage>.<root domain>`. The hostname attaches to the Website
- * Worker as a Cloudflare Custom Domain: DNS and the edge certificate are
- * created with the deploy and destroyed with the stage. Never consumed
- * under `alchemy dev`, so a missing synthesis context is a defect, not a
- * fallback: a fabricated stage would attach the wrong DNS name.
+ * The slug is deployment identity in machine form and lives in env next to
+ * everything else a product renames: `APP_SLUG` prefixes every hostname,
+ * `ROOT_DOMAIN` is the zone it hangs from, `APP_NAME` is what people read.
+ * Rename the product by editing those and redeploying; nothing in code.
+ *
+ * Day zero runs on the platform host (`<worker>.<account>.workers.dev`):
+ * no domain ownership required. Setting `ROOT_DOMAIN` upgrades every
+ * stage to `<slug>.<root domain>` (prod) and `<slug>-<stage>.<root
+ * domain>` (everyone else), attached as Cloudflare Custom Domains: DNS
+ * and the edge certificate are created with the deploy and destroyed
+ * with the stage. The root zone must already exist on the deploy account
+ * before setting it. Never consumed under `alchemy dev`, so a missing
+ * synthesis context is a defect, not a fallback: a fabricated stage
+ * would attach the wrong DNS name.
  */
 export const websiteDomain = Effect.gen(function* () {
-  // The root zone must already exist on the deploy account (Cloudflare
-  // attaches the Custom Domain to it). Set ROOT_DOMAIN in .env before
-  // deploying; the neutral default keeps the template publishable.
-  const baseDomain = yield* Config.string("ROOT_DOMAIN").pipe(Config.withDefault("example.com"), Effect.orDie);
+  const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("proof"), Effect.orDie);
+  const baseDomain = yield* Config.option(Config.string("ROOT_DOMAIN")).pipe(Effect.orDie);
   const stack = yield* Effect.serviceOption(Stack);
   if (stack._tag === "None") {
     return yield* Effect.die("websiteDomain: no synthesis context (Stack service missing)");
   }
   const stage = stack.value.stage;
-  return stage === "prod" ? `${APP_SLUG}.${baseDomain}` : `${APP_SLUG}-${stage}.${baseDomain}`;
+  if (baseDomain._tag === "None") return null;
+  return stage === "prod" ? `${appSlug}.${baseDomain.value}` : `${appSlug}-${stage}.${baseDomain.value}`;
 });
 
 /**

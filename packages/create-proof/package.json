@@ -1,13 +1,14 @@
 {
-  "name": "create-starting-flare",
+  "name": "create-proof",
   "version": "0.1.1",
-  "description": "Scaffold a production-grade Bun + Effect v4 + Cloudflare Workers product from the starting-flare template: fresh history, renamed identity, wired CI, marker PR.",
+  "description": "Scaffold a production-grade Bun + Effect v4 + Cloudflare Workers product from the proof template: fresh history, renamed identity, wired CI, marker PR.",
   "type": "module",
   "bin": {
-    "create-starting-flare": "./src/index.ts"
+    "create-proof": "./src/index.ts"
   },
   "files": [
     "src",
+    "scaffold",
     "template",
     "README.md"
   ],

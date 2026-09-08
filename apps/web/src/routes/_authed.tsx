@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 import { authClient } from "../auth-client.ts";
+import { getAppMeta } from "./__root";
 import { getSession } from "../auth.functions.ts";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async () => {
@@ -13,10 +13,16 @@ export const Route = createFileRoute("/_authed")({
 
     return { user: session.user };
   },
+  loader: async () => {
+    const { appName } = await getAppMeta();
+    return { appName };
+  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
+  const { appName } = Route.useLoaderData();
+
   const signOut = async () => {
     await authClient.signOut();
     window.location.href = "/login";
@@ -24,13 +30,19 @@ function AuthenticatedLayout() {
 
   return (
     <div className="min-h-svh">
-      <header className="flex items-center justify-between border-b bg-card px-6 py-3">
-        <a className="font-bold" href="/">
-          Starting Flare
-        </a>
-        <Button variant="outline" size="sm" onClick={signOut}>
-          Sign out
-        </Button>
+      <header className="border-b border-zinc-200 dark:border-zinc-800">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <a href="/" className="font-bold tracking-tight">
+            {appName}
+          </a>
+          <button
+            type="button"
+            onClick={signOut}
+            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
       <Outlet />
     </div>
