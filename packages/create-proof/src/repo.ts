@@ -47,6 +47,8 @@ export const expectedSecrets = (): Array<string> => [
   "CLOUDFLARE_ACCOUNT_ID",
   "ROOT_DOMAIN",
   "AUTH_EMAIL_FROM",
+  "APP_NAME",
+  "APP_SLUG",
   "R2_ACCESS_KEY_ID",
   "R2_SECRET_ACCESS_KEY",
 ];
@@ -61,21 +63,24 @@ export const openMarkerPr = (cwd: string, body: string): string => {
     const r = run("git", cmd, { cwd });
     if (!r.ok) throw new Error(`git ${cmd[0]} failed: ${r.stderr}`);
   }
-  const pr = run("gh", ["pr", "create", "--base", "main", "--head", "first-light", "--title", "First light", "--body", body], { cwd });
+  const pr = run("gh", ["pr", "create", "--base", "main", "--head", "first-light", "--title", "Your first proof", "--body", body], { cwd });
   if (!pr.ok) throw new Error(`gh pr create failed: ${pr.stderr}`);
   return pr.stdout.split("\n").at(-1) ?? "";
 };
 
+/** The branch marker PR body: proof language and the one manual step. */
 export const markerPrBody = (slug: string, domain: string, sender: string): string =>
   [
-    "## First light",
+    "## Your first proof",
     "",
-    "The scaffold is live. This PR proves the pipeline end to end: opening it",
-    "deploys an isolated `pr-1` preview stage and posts its URL as a comment.",
+    "The scaffold is live, and this PR is the proof that the pipeline works:",
+    "opening it deployed an isolated `pr-1` preview stage and posted its URL",
+    "as a comment. Test the running app on that URL; the diff can wait.",
     "",
     "## One step before merging",
     "",
-    "Merging arms production, which sends real email. Create the sender first:",
+    "Merging arms production, which sends real sign-in email. Create the",
+    "sender first:",
     "",
     "1. Cloudflare dashboard, Email > Email Routing > Destination addresses:",
     `   add \`${sender}\` and click the verification link in that inbox.`,

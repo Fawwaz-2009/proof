@@ -16,9 +16,9 @@ export type Args = {
 };
 
 export const HELP = `
-create-starting-flare: scaffold a product from the starting-flare template.
+create-proof: scaffold a product from the proof template.
 
-  bunx create-starting-flare my-app [flags]
+  bunx create-proof my-app [flags]
 
 What it does:
   1. checks prerequisites (bun, git, gh authenticated, git identity)

@@ -52,7 +52,7 @@ const askText = async (message: string, fallback: string, validate?: (v: string)
 export const collectAnswers = async (args: Args): Promise<Answers> => {
   // ---- target ------------------------------------------------------------
   let target = args.target;
-  if (!target && args.yes) fail("No target directory given. Usage: create-starting-flare my-app [flags]");
+  if (!target && args.yes) fail("No target directory given. Usage: create-proof my-app [flags]");
   while (!target) {
     target = await askText("Project name (also the directory)", "");
     if (!target) p.log.warn("A name is required.");

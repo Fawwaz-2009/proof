@@ -38,7 +38,7 @@ const probeMint = async (token: string, accountId: string): Promise<void> => {
     throw new Error(`missing "Account API Tokens: Read" (${groups.errors[0]?.message ?? "no access"})`);
   }
   const created = await cf<{ id: string }>("POST", `/accounts/${accountId}/tokens`, token, {
-    name: `create-starting-flare-probe-${Date.now()}`,
+    name: `create-proof-probe-${Date.now()}`,
     policies: [
       {
         effect: "allow",

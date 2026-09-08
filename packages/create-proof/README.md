@@ -1,13 +1,17 @@
-# create-starting-flare
+# create-proof
+
+From zero to AI-driven development in under two minutes. You don't review
+diffs: every pull request ships with a proof, the real app running isolated
+on your own domain. Mark it up, merge, and it ships.
 
 Scaffold a production-grade product from the
-[starting-flare](https://github.com/Fawwaz-2009/starting-flare) template: a
+[proof](https://github.com/Fawwaz-2009/proof) template: a
 Bun monorepo on Effect v4 + Cloudflare Workers + Alchemy v2, with Better Auth
 email OTP, TanStack Start, per-PR preview deployments, and a merge-to-main
 production pipeline.
 
 ```sh
-bunx create-starting-flare my-app
+bunx create-proof my-app
 ```
 
 One command, a finished day zero:
@@ -16,8 +20,8 @@ One command, a finished day zero:
 - finds or guides a one-time Cloudflare admin credential (the power to mint
   the CI token), verified with a live mint probe before use
 - copies the template with a FRESH git history (no template commits)
-- renames every identity token: display name, stack name, slug, package
-  scope, plus fresh rate-limit namespaces
+- renames every identity token: app name (as the APP_NAME env var), stack
+  name, slug, package scope, plus fresh rate-limit namespaces
 - creates the GitHub repo, mints the least-privilege CI token, writes every
   repo secret, and opens the marker PR with the remaining-setup checklist
 
@@ -27,7 +31,7 @@ Every prompt has a flag or environment equivalent, so agents drive the same
 flow non-interactively:
 
 ```sh
-bunx create-starting-flare my-app --domain myapp.dev \
+bunx create-proof my-app --domain myapp.dev \
   --r2-access-key-id <id> --r2-secret-access-key <key> --yes
 ```
 

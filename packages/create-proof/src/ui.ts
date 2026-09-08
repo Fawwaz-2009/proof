@@ -16,7 +16,7 @@ export const banner = (): void => {
   const flame = gradient(["#f97316", "#facc15"]);
   const brand = gradient(["#a78bfa", "#22d3ee"]);
   console.log(flame(BOLT));
-  p.intro(`${brand("create-starting-flare")}  ${chalk.dim("from template to first light")}`);
+  p.intro(`${brand("create-proof")}  ${chalk.dim("from zero to proof in two minutes")}`);
 };
 
 export const outro = (message: string): void => p.outro(message);
