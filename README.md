@@ -128,6 +128,7 @@ One-time ceremony (your machine, never CI) — the header of
 `stacks/github.ts` carries the full permission list and the gotchas:
 
 ```sh
+GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
 ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \
 R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
 GITHUB_TOKEN=$(gh auth token) \
@@ -135,11 +136,12 @@ bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 ```
 
 That mints the least-privilege CI token and writes every secret the
-workflows need. API-minted tokens cannot carry token-creation rights, so
-the deploying token itself is always dashboard-born: the platform's one
-irreducible human step. Acceptance is the peace-sign ritual: open a marker
-PR, see the preview carry it, merge, watch prod migrate, then a removal PR
-cleans up.
+workflows need. Two platform walls shape the ceremony: the deploying token
+is always dashboard-born (API-minted tokens cannot carry token-creation
+rights), and it must itself include "Account API Tokens: Edit" — the one
+group that lets it mint the CI child token. Acceptance is the peace-sign
+ritual: open a marker PR, see the preview carry it, merge, watch prod
+migrate, then a removal PR cleans up.
 
 ## Layout
 

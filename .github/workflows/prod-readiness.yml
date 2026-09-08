@@ -46,7 +46,8 @@ jobs:
                carry token-creation rights). Custom token permissions:
                Workers Scripts / KV Storage / R2 Storage / Routes: Edit,
                D1: Edit, Workers Tail: Read, Workers Observability: Edit,
-               Email Sending: Edit, Secrets Store: Edit, Account Settings: Read.
+               Email Sending: Edit, Secrets Store: Edit, Account Settings: Read,
+               Account API Tokens: Edit (the ceremony mints the CI child token).
             3. R2 S3 credentials for the Files bucket (Object Read scope).
 
           Then, from the repository root, wire everything in one command:
