@@ -16,7 +16,7 @@
 //   3. Run:
 //
 //      GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
-//      ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \
+//      ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Proof <noreply@<domain>>" \
 //      R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
 //      GITHUB_TOKEN=$(gh auth token) \
 //      bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
@@ -34,7 +34,7 @@ import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 
 export default Alchemy.Stack(
-  "StartingFlareGitHub",
+  "ProofGitHub",
   {
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
     state: Cloudflare.state(),
@@ -50,7 +50,7 @@ export default Alchemy.Stack(
     // Edit", which OAuth sessions and API-minted tokens can never hold —
     // so this ceremony must run with the dashboard-born admin credential
     // (--profile admin, API-token method).
-    const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("StartingFlareCIToken", {
+    const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("ProofCIToken", {
       policies: [
         {
           effect: "allow",
@@ -87,11 +87,25 @@ export default Alchemy.Stack(
     // account at synthesis (worker.ts reads CloudflareEnvironment). R2
     // credentials are the static pattern (one Object Read token, shared by
     // stages); upgrading to per-stage minting also removes these.
+    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("Proof"), Effect.orDie);
+    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("proof"), Effect.orDie);
     const rootDomain = yield* Config.string("ROOT_DOMAIN").pipe(Effect.orDie);
     const authEmailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Effect.orDie);
     const r2AccessKeyId = yield* Config.string("R2_ACCESS_KEY_ID").pipe(Effect.orDie);
     const r2SecretAccessKey = yield* Config.string("R2_SECRET_ACCESS_KEY").pipe(Effect.orDie);
 
+    // The display name rides the deploys so scaffolded apps greet their
+    // owner's product, not the template's.
+    yield* GitHub.Secret("app-name", {
+      ...repo,
+      name: "APP_NAME",
+      value: Redacted.make(appName),
+    });
+    yield* GitHub.Secret("app-slug", {
+      ...repo,
+      name: "APP_SLUG",
+      value: Redacted.make(appSlug),
+    });
     yield* GitHub.Secret("root-domain", {
       ...repo,
       name: "ROOT_DOMAIN",

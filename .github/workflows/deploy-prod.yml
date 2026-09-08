@@ -25,6 +25,8 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      APP_SLUG: ${{ secrets.APP_SLUG }}
       AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

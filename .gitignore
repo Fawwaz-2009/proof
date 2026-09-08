@@ -7,5 +7,6 @@ dist
 .env
 .env.*
 !.env.example
-packages/create-starting-flare/template/
+packages/create-proof/template/
 *.tgz
+tmp/

@@ -62,10 +62,13 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: yield* (
-          isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Starting Flare <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")
-        ).pipe(Effect.orDie),
-        AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl}`,
+        AUTH_EMAIL_FROM: yield* (isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Proof <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")).pipe(
+          Effect.orDie,
+        ),
+        // Without ROOT_DOMAIN the site lives on the platform host, and the
+        // wildcard admits whatever `<name>.<account>.workers.dev` resolves
+        // to. With one, only the stage's custom host is trusted.
+        AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl ?? "*.workers.dev"}`,
         R2_BUCKET_NAME: filesBucket.bucketName,
         R2_ACCOUNT_ID: accountId,
         R2_ACCESS_KEY_ID: yield* (isDev ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault("")) : Config.string("R2_ACCESS_KEY_ID")).pipe(Effect.orDie),

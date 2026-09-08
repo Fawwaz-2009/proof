@@ -1,5 +1,5 @@
 {
-  "name": "starting-flare",
+  "name": "proof",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "packages/*"
   ],
   "bin": {
-    "starting-flare": "packages/create-starting-flare/src/index.ts",
-    "create-starting-flare": "packages/create-starting-flare/src/index.ts"
+    "proof": "packages/create-proof/src/index.ts",
+    "create-proof": "packages/create-proof/src/index.ts"
   },
   "scripts": {
     "dev": "alchemy dev",

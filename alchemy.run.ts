@@ -1,4 +1,4 @@
-// starting-flare infrastructure as code: Alchemy v2, Effect-native. ONE stack at the
+// proof infrastructure as code: Alchemy v2, Effect-native. ONE stack at the
 // workspace root: one plan, one state file, deploying BOTH apps — the private
 // Backend Worker (apps/backend, no public URL, owns D1/R2/Email + auth) and
 // the public Website.Vite frontend (apps/web, the sole ingress, forwarding
@@ -27,6 +27,12 @@ import { d1Database } from "./apps/backend/config/database/index.ts";
 import { FilesBucket } from "./apps/backend/config/storage.ts";
 import { Website } from "./website.ts";
 
+// The stack name is the infrastructure's state scope: the address under
+// which alchemy remembers every resource it made. Renaming this string
+// orphans the existing D1, R2, and workers under an empty scope: the
+// next deploy provisions fresh ones beside them. It is set once (at
+// scaffold time for scaffolded apps, at origin for this repository) and
+// never edited after the first deploy. See docs/faq.md.
 export default Alchemy.Stack(
   "StartingFlare",
   {

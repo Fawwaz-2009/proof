@@ -37,9 +37,9 @@ if (missing.length > 0) {
   Then, from the repository root, wire everything in one command:
 
     GITHUB_OWNER=<you> GITHUB_REPO=<repo> \\
-    ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Starting Flare <noreply@<domain>>" \\
+    ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Proof <noreply@<domain>>" \\
     R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \\
-    GITHUB_TOKEN=\$(gh auth token) \\
+    GITHUB_TOKEN=$(gh auth token) \\
     bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 
   That mints the least-privilege CI token and writes every secret these

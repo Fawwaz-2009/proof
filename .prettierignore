@@ -5,3 +5,4 @@ dist/
 node_modules/
 apps/web/src/routeTree.gen.ts
 bun.lock
+packages/create-proof/template/

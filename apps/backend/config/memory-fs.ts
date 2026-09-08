@@ -47,7 +47,7 @@ export const MemoryFsLive = Layer.succeed(
         }),
         (dir) =>
           Effect.sync(() => {
-            for (const path of [...store.keys()]) {
+            for (const path of store.keys()) {
               if (path.startsWith(`${dir}/`)) store.delete(path);
             }
             dirs.delete(dir);
