@@ -1,11 +1,39 @@
-# starting-flare
+# proof
 
-starting-flare is an Effect-native starting template on alchemy v2: one stack,
+proof is an Effect-native starting template on alchemy v2: one stack,
 two workers, a private backend (D1, R2, better-auth) and a public TanStack Start
 website that proxies
 `/api/*` to the backend over a service binding. The backend is the reference
-implementation of the app's architecture; copy its patterns, don't invent new
-ones.
+implementation of the app's architecture; copy its patterns, don't invent
+new ones. Concept questions (what a proof is, why hashed ports, the view
+concept) live in `docs/faq.md`.
+
+## The loop: every issue ends in a PR
+
+An issue is done when a pull request exists, never when you say "done":
+
+1. Work in a worktree (`bun scripts/wt.ts <name>`), never on a shared
+   checkout.
+2. Open the PR against `main` when the change is complete and the
+   verification gate passes (`bun run check`).
+3. The PR description is the **proof brief**. Use this shape:
+
+   ```markdown
+   ## What changed
+
+   <the change, mapped to the issue's acceptance criteria>
+
+   ## What fought back
+
+   <errors hit, judgement calls, anything a diff cannot show>
+
+   ## How to check the proof
+
+   <exact steps on the preview URL: route, input, expected result>
+   ```
+
+The reviewer tests the running preview and comments; they do not review
+the diff first. Merging ships production.
 
 ## Commands
 
