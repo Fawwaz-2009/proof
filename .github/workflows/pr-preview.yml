@@ -2,14 +2,10 @@ name: PR preview
 
 # Every PR gets a fully isolated stage `pr-<n>`: its own Workers, D1 and R2
 # (Alchemy stage-scopes each physical name), and email captured to logs —
-# nothing real is ever sent outside prod. The preview URL is posted on the PR;
-# closing the PR destroys the stage (the cleanup safety check refuses any
-# non-pr-* stage).
-#
-# URL derivation: with the ROOT_DOMAIN secret set, the URL is deterministic —
-# `https://starting-flare-<stage>.<ROOT_DOMAIN>` — a mirror of the derivation
-# in apps/backend/config/domain.ts. Keep the two in sync. Without it, the
-# workers.dev URL is extracted from the deploy output.
+# nothing real is ever sent outside prod. The stack itself posts the preview
+# URL comment on the PR (the GitHub.Comment resource in alchemy.run.ts,
+# guarded by PULL_REQUEST), and closing the PR destroys the stage (the
+# cleanup safety check refuses any non-pr-* stage).
 
 on:
   pull_request:
@@ -38,31 +34,15 @@ jobs:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       # Deploy stamp — identifies the exact merge result the preview serves.
-      GITHUB_SHA: ${{ github.sha }}
+      PULL_REQUEST: ${{ github.event.number }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - run: bun run typecheck
       - name: Deploy preview stage
-        run: |
-          set -o pipefail
-          bunx alchemy deploy --stage "$STAGE" --yes 2>&1 | tee deploy-output.txt
-      - name: Resolve preview URL
-        run: |
-          if [ -n "$ROOT_DOMAIN" ]; then
-            echo "PREVIEW_URL=https://starting-flare-$STAGE.$ROOT_DOMAIN" >> "$GITHUB_ENV"
-          else
-            url=$(grep -oE 'https://[a-zA-Z0-9.-]+' deploy-output.txt | grep 'workers.dev' | head -1 || true)
-            echo "PREVIEW_URL=$url" >> "$GITHUB_ENV"
-          fi
-      - name: Comment preview URL
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          body="🔎 **Preview:** ${PREVIEW_URL:-_(workers.dev URL in workflow logs)_} · stage \`$STAGE\` · \`${{ github.sha }}\`"
-          gh pr comment "${{ github.event.number }}" --edit-last --body "$body" \
-            || gh pr comment "${{ github.event.number }}" --body "$body"
+        run: bunx alchemy deploy --stage "$STAGE" --yes
 
   cleanup:
     if: github.event.action == 'closed'
