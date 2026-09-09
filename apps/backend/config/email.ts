@@ -5,9 +5,6 @@ import * as Effect from "effect/Effect";
 import { environment } from "./environment.ts";
 import { Context, Layer } from "effect";
 
-// Declared outside so the stack and the worker reference the same resource.
-export const EmailResource = Cloudflare.Email.SendEmail("Email");
-
 /**
  * The from address for outgoing email. The localhost default is load-bearing:
  * the init gen runs during `alchemy dev` synthesis (via Auth.Live) outside any
@@ -22,6 +19,15 @@ export class Email extends Context.Service<Email>()("Email", {
     const env = yield* environment;
     const from = yield* emailFromConfig.pipe(Effect.orDie);
 
+    // The send_email binding registers at PLAN time, inside the factories:
+    // both must be yielded BEFORE any stage branch, or synthesis (where no
+    // stage exists yet) takes the capture path, the binding never lands on
+    // the deployed worker, and production reads env["Email"] as undefined.
+    // The handle reads the binding lazily at send time; at plan evaluation
+    // it is undefined by design and never invoked.
+    const descriptor = yield* Cloudflare.Email.SendEmail("Email");
+    const email = yield* Cloudflare.Email.Send(descriptor);
+
     if (env !== "prod") {
       return {
         mode: "captured" as const,
@@ -30,7 +36,6 @@ export class Email extends Context.Service<Email>()("Email", {
       };
     }
 
-    const email = yield* Cloudflare.Email.Send(EmailResource);
     return {
       mode: "sent" as const,
       send: (message: { to: string; subject: string; text?: string; html?: string }) =>
