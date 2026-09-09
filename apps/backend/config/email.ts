@@ -43,7 +43,7 @@ export class Email extends Context.Service<Email>()("Email", {
           })
           .pipe(
             Effect.asVoid,
-            Effect.catch(() => Effect.log(`[email] delivery to ${message.to} failed`).pipe(Effect.asVoid)),
+            Effect.catch((error) => Effect.log(`[email] delivery to ${message.to} failed: ${JSON.stringify(error)}`).pipe(Effect.asVoid)),
             Effect.provide(Alchemy.RuntimeContext.phantom),
           ),
     };
