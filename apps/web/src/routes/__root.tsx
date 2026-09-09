@@ -4,6 +4,7 @@ import { env } from "cloudflare:workers";
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import appCss from "../styles.css?url";
+import geistFont from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -25,7 +26,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   loader: () => getAppMeta(),
   head: ({ match }) => ({
     meta: [{ charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" }, { title: match.loaderData?.appName ?? "Proof" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    // The font is discovered only after the stylesheet parses, which leaves the
+    // first paint in a fallback face. Preloading races it with the CSS instead.
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preload", href: geistFont, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
+    ],
   }),
   component: RootComponent,
   // Without this, any request that 404s during dev teardown logs the router's
