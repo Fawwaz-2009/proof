@@ -7,7 +7,6 @@ import { Footer } from "./-components/footer";
 import { GettingStarted } from "./-components/getting-started";
 import { Hero } from "./-components/hero";
 import { Nav } from "./-components/nav";
-import { What } from "./-components/what";
 
 export const Route = createFileRoute("/")({
   component: Storefront,
@@ -41,7 +40,6 @@ function Storefront() {
         <Hero />
         <BuiltWith />
         <Boring />
-        <What />
         <Features />
         <GettingStarted />
         <Faq />

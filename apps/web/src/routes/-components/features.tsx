@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Activity, Braces, Eye, Gauge, GitBranch, GitMerge, KeyRound, Mail, TextCursorInput } from "lucide-react";
+import { Activity, Bot, Braces, Eye, Gauge, GitMerge, KeyRound, Mail, TextCursorInput } from "lucide-react";
 import { Chip } from "./chip";
 
 // The reference overview grid, from its code: white cells on a micro-dot
@@ -12,10 +12,9 @@ const cell =
 function FeatureCell({ icon: Icon, title, children }: { icon: typeof Braces; title: string; children: ReactNode }) {
   return (
     <div className={cell}>
-      <div className="relative -mr-8 flex h-12 items-center sm:-mr-[31.2px] lg:mb-12">
-        <span className="absolute inset-y-0 right-0 left-12 bg-micro-dots opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden="true" />
+      <div className="relative flex h-12 items-center lg:mb-12">
         <div className="relative flex size-12 items-center justify-center bg-micro-dots bg-center text-zinc-800 transition-colors duration-200 group-hover:text-primary-foreground dark:text-zinc-50 dark:group-hover:text-primary-foreground">
-          <span className="flex size-7 items-center justify-center bg-background">
+          <span className="flex size-7 items-center justify-center bg-background text-zinc-800 dark:text-zinc-50">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
         </div>
@@ -68,7 +67,7 @@ export function Features() {
               Effect Schema validates the payload on the wire and the form in the browser, through React Hook Form. The error your user sees is the error the contract
               declares.
             </FeatureCell>
-            <FeatureCell icon={GitBranch} title="Built for agents">
+            <FeatureCell icon={Bot} title="Built for agents">
               Worktrees per issue, hashed ports, an AGENTS.md that carries the proof brief. Parallel agents never share a checkout, and every issue ends in a proof.
             </FeatureCell>
           </div>

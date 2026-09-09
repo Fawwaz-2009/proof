@@ -31,8 +31,9 @@ function BoltArt() {
   );
 }
 
-const pill =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2 text-xl font-medium leading-8 transition-transform duration-150 ease-out active:scale-[0.96] sm:w-auto";
+// Squared CTAs: the design system has no round buttons. Corners join the
+// square chips; weight comes from size and the solid/outline pair.
+const cta = "inline-flex w-full items-center justify-center gap-2 px-6 py-2.5 text-xl font-medium leading-8 transition-colors duration-150 sm:w-auto";
 
 // The reference hero, translated: a parked full-viewport artwork zone the
 // copy band slides over, headline left, CTAs bottom right.
@@ -58,14 +59,14 @@ export function Hero() {
             </div>
           </div>
           <div className="hero-enter flex flex-col gap-3 [animation-delay:160ms] sm:flex-row lg:justify-end">
-            <a href="#getting-started" className={`${pill} bg-foreground text-background hover:bg-foreground/85`}>
+            <a href="#getting-started" className={`${cta} bg-foreground text-background hover:bg-foreground/85`}>
               Get started
             </a>
             <a
               href="https://github.com/Fawwaz-2009/proof"
               target="_blank"
               rel="noreferrer"
-              className={`${pill} border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background`}
+              className={`${cta} border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background`}
             >
               <GithubMark className="h-5 w-5" aria-hidden="true" />
               See it on GitHub
