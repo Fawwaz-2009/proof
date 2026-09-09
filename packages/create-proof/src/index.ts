@@ -18,6 +18,7 @@ import { HELP, parseArgs } from "./args.ts";
 import { resolveAdmin } from "./cloudflare.ts";
 import { collectAnswers } from "./prompts.ts";
 import { scaffold, TEMPLATE_ROOT } from "./scaffold.ts";
+import type { AdminCredential } from "./cloudflare.ts";
 import { adoptRepo, createRepo, expectedSecrets, ghOwner, ghToken, listSecrets, markerPrBody, openMarkerPr, repoExists, runCeremony } from "./repo.ts";
 
 const main = async (): Promise<void> => {
@@ -28,19 +29,26 @@ const main = async (): Promise<void> => {
   }
   banner();
 
-  // ---- the user's product, first: no external systems touched yet ---------
   const answers = await collectAnswers(args);
+  const owner = ghOwner();
 
-  const owner = args.owner ?? process.env.GITHUB_OWNER ?? ghOwner();
+  // The Cloudflare credential is verified BEFORE anything is created: it is
+  // silent when a stored profile resolves, and a missing or broken
+  // credential must surface before a repo exists, not after.
+  let admin: AdminCredential | undefined;
+  if (!answers.skipRepo) {
+    admin = await phase("Verifying your Cloudflare credential", () => resolveAdmin(args));
+    info(admin.summary);
+  }
 
   summary(
     `Create ${answers.display}?`,
     [
       ["dir", answers.target],
       ["slug", answers.slug],
-      ["domain", answers.domain],
+      ["domain", answers.domain || "(none yet: platform host; add later in .env)"],
       ["repo", answers.skipRepo ? "(skipped)" : `${owner}/${answers.slug}`],
-      ["prod", `https://${answers.slug}.${answers.domain}`],
+      ["prod", answers.domain ? `https://${answers.slug}.${answers.domain}` : "platform host (.workers.dev)"],
     ],
     ["This copies the template, renames every identity token, and wires CI."],
   );
@@ -76,8 +84,6 @@ const main = async (): Promise<void> => {
         slug: answers.slug,
         domain: answers.domain,
         sender: answers.sender,
-        r2AccessKeyId: answers.r2AccessKeyId,
-        r2SecretAccessKey: answers.r2SecretAccessKey,
         owner,
         repo: answers.slug,
       },
@@ -119,15 +125,15 @@ const main = async (): Promise<void> => {
     }
   });
 
-  // ---- Cloudflare credential + ceremony ----------------------------------
-  const admin = await phase("Verifying your Cloudflare credential", () => resolveAdmin(args));
-  info(admin.summary);
-
+  // ---- ceremony: uses the credential verified before the plan ------------
   await phase("Minting the CI token and writing repo secrets", async () => {
     const result = runCeremony(answers.target, ghToken());
     if (!result.ok) {
+      // alchemy logs its errors to stdout (pretty logger); stderr is often
+      // empty, so surface both tails or the real cause stays invisible.
+      const tail = `${result.stdout}\n${result.stderr}`.split("\n").filter(Boolean).slice(-15).join("\n");
       fail(
-        `The ceremony failed:\n${result.stderr.split("\n").slice(-15).join("\n")}\n` +
+        `The ceremony failed:\n${tail}\n` +
           "  Fix the cause, then rerun from the project root:\n" +
           "    bunx alchemy deploy stacks/github.ts --profile admin --stage bootstrap --yes",
       );

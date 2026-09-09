@@ -1,23 +1,25 @@
 // The admin trust-root stack — run LOCALLY ONLY, never in CI.
 //
-// It mints the least-privilege CI token and writes every secret the workflows
-// need into the GitHub repository. It WIRES, never MINTS the deploying
-// credential: API-minted tokens refuse token-creation rights, so the one
-// dashboard-born token (created by hand, permissions listed below) is the
-// platform's irreducible human step.
+// It mints the least-privilege CI token, mints the R2 presign credentials
+// (Cloudflare R2 S3 credentials ARE API tokens: access key id = token id,
+// secret = the SHA-256 of the token value), and writes every secret the
+// workflows need into the GitHub repository. It WIRES, never MINTS the
+// deploying credential: API-minted tokens refuse token-creation rights, so
+// the one dashboard-born token (created by hand, permissions listed below)
+// is the platform's irreducible human step.
 //
 // One-time ceremony (from the repository root, on a clean main):
 //   1. Create the dashboard-born token — My Profile → API Tokens → Create
 //      Custom Token, with the `permissionGroups` list below PLUS
-//      "Account API Tokens: Edit" (the caller needs it to mint this CI child
-//      token at all; OAuth and API-minted tokens can never carry it).
+//      "Account API Tokens: Edit" (the caller needs it to mint the child
+//      tokens at all; OAuth and API-minted tokens can never carry it).
 //   2. Authenticate alchemy with it: CLOUDFLARE_API_TOKEN=<token> (or
 //      `alchemy login` via the API-token method).
 //   3. Run:
 //
 //      GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
-//      ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Proof <noreply@<domain>>" \
-//      R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
+//      APP_NAME="My App" APP_SLUG=my-app ROOT_DOMAIN=<domain> \
+//      AUTH_EMAIL_FROM="My App <noreply@<domain>>" \
 //      GITHUB_TOKEN=$(gh auth token) \
 //      bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 //
@@ -25,8 +27,10 @@
 // branch whose stack file you mean to deploy (a stale working tree silently
 // no-ops), and never from CI — this stack holds the trust root.
 
+import { createHash } from "node:crypto";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import * as Output from "alchemy/Output";
 import * as GitHub from "alchemy/GitHub";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -84,15 +88,14 @@ export default Alchemy.Stack(
 
     // App-level values the workflows re-resolve on every deploy. The R2
     // account id is not among them: it is derived from the authenticated
-    // account at synthesis (worker.ts reads CloudflareEnvironment). R2
-    // credentials are the static pattern (one Object Read token, shared by
-    // stages); upgrading to per-stage minting also removes these.
+    // account at synthesis (worker.ts reads CloudflareEnvironment).
     const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("Proof"), Effect.orDie);
     const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("proof"), Effect.orDie);
-    const rootDomain = yield* Config.string("ROOT_DOMAIN").pipe(Effect.orDie);
+    // Day zero may ship on the platform host: an empty ROOT_DOMAIN is
+    // legal (the deploy-time domain config treats empty as absent), and
+    // the secret is written anyway so the workflows always resolve it.
+    const rootDomain = yield* Config.string("ROOT_DOMAIN").pipe(Config.withDefault(""), Effect.orDie);
     const authEmailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Effect.orDie);
-    const r2AccessKeyId = yield* Config.string("R2_ACCESS_KEY_ID").pipe(Effect.orDie);
-    const r2SecretAccessKey = yield* Config.string("R2_SECRET_ACCESS_KEY").pipe(Effect.orDie);
 
     // The display name rides the deploys so scaffolded apps greet their
     // owner's product, not the template's.
@@ -116,15 +119,39 @@ export default Alchemy.Stack(
       name: "AUTH_EMAIL_FROM",
       value: Redacted.make(authEmailFrom),
     });
+
+    // The R2 presign credentials are minted HERE, not pasted by the user:
+    // R2 S3 credentials are Account API tokens. Per Cloudflare's spec, the
+    // access key id is the token's id and the secret access key is the
+    // SHA-256 hex digest of its value.
+    //
+    // Scope trade-off, verified against the API: account-owned tokens
+    // reject wildcard bucket resources ("must specify a bucket"), and the
+    // ceremony cannot know future pr-N bucket names. So the token carries
+    // the account-level storage groups: object read, write, and list on
+    // every bucket, plus bucket administration. Narrower than the CI
+    // token, broader than one bucket; per-stage minting at deploy time is
+    // the refinement path if that ever matters.
+    const toR2SecretAccessKey = (value: Redacted.Redacted<string>): Redacted.Redacted<string> =>
+      Redacted.make(createHash("sha256").update(Redacted.value(value)).digest("hex"));
+    const r2Token = yield* Cloudflare.ApiToken.AccountApiToken("ProofR2Presign", {
+      policies: [
+        {
+          effect: "allow",
+          permissionGroups: ["Workers R2 Storage Read", "Workers R2 Storage Write"],
+          resources: { [`com.cloudflare.api.account.${accountId}`]: "*" },
+        },
+      ],
+    });
     yield* GitHub.Secret("r2-access-key-id", {
       ...repo,
       name: "R2_ACCESS_KEY_ID",
-      value: Redacted.make(r2AccessKeyId),
+      value: Output.map(r2Token.tokenId, (id) => Redacted.make(id)),
     });
     yield* GitHub.Secret("r2-secret-access-key", {
       ...repo,
       name: "R2_SECRET_ACCESS_KEY",
-      value: Redacted.make(r2SecretAccessKey),
+      value: Output.map(r2Token.value, toR2SecretAccessKey),
     });
 
     return { tokenName: "CLOUDFLARE_API_TOKEN", repository: `${owner}/${repository}` };

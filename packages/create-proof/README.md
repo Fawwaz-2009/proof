@@ -31,13 +31,15 @@ Every prompt has a flag or environment equivalent, so agents drive the same
 flow non-interactively:
 
 ```sh
-bunx create-proof my-app --domain myapp.dev \
-  --r2-access-key-id <id> --r2-secret-access-key <key> --yes
+bunx create-proof my-app --domain myapp.dev --yes
+
+Omit --domain to ship on the platform host; add your domain later by
+setting ROOT_DOMAIN in .env and redeploying.
 ```
 
 `--help` lists all flags. Environment equivalents: `ROOT_DOMAIN`,
-`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `AUTH_EMAIL_FROM`,
-`CLOUDFLARE_API_TOKEN`, `GITHUB_OWNER`.
+`ROOT_DOMAIN`, `AUTH_EMAIL_FROM`, `CLOUDFLARE_API_TOKEN`, `GITHUB_OWNER`.
+R2 credentials are minted for you by the ceremony.
 
 ## Requirements
 

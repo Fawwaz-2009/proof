@@ -1,22 +1,16 @@
 import chalk from "chalk";
-import gradient from "gradient-string";
+import cfonts from "cfonts";
 import * as p from "@clack/prompts";
 
 const tty = process.stdout.isTTY === true;
 
-const BOLT = `
-      ▄█▄
-      ▀███
-       ▄███
-     ▄████
-      ▀███
-       ▀▀▀`;
-
 export const banner = (): void => {
-  const flame = gradient(["#f97316", "#facc15"]);
-  const brand = gradient(["#a78bfa", "#22d3ee"]);
-  console.log(flame(BOLT));
-  p.intro(`${brand("create-proof")}  ${chalk.dim("from zero to proof in two minutes")}`);
+  cfonts.say("proof", {
+    font: "block",
+    gradient: ["#f97316", "#facc15"],
+    space: false,
+  });
+  p.intro(`${chalk.bold("create-proof")}  ${chalk.dim("from zero to proof in two minutes")}`);
 };
 
 export const outro = (message: string): void => p.outro(message);

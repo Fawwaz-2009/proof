@@ -4,8 +4,6 @@ export type Args = {
   slug?: string;
   display?: string;
   domain?: string;
-  r2AccessKeyId?: string;
-  r2SecretAccessKey?: string;
   sender?: string;
   cfToken?: string;
   owner?: string;
@@ -30,11 +28,11 @@ What it does:
      token, writes all repo secrets), and opens the marker PR
 
 Flags:
-  --domain <d>                  required: a zone on your Cloudflare account
-  --r2-access-key-id <id>       required: R2 S3 credential (Object Read)
-  --r2-secret-access-key <k>    required: R2 S3 credential
+  --domain <d>                  optional: your root domain (omit for the
+                                platform host; add later via .env)
   --display <name>              display name (default: title-cased slug)
-  --sender <addr>               sender (default: "Display <noreply@domain>")
+  --sender <addr>               sender (default: "Display <noreply@domain
+                                or localhost>")
   --cf-token <tok>              Cloudflare admin token (else stored profile)
   --owner <login>               GitHub owner (default: gh-authed user)
   --public                      public repo (default: private)
@@ -42,8 +40,8 @@ Flags:
   --yes, -y                     non-interactive (for agents); fails instead
                                 of prompting when something is missing
 
-Environment equivalents: ROOT_DOMAIN, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-AUTH_EMAIL_FROM, CLOUDFLARE_API_TOKEN, GITHUB_OWNER.
+Environment equivalents: ROOT_DOMAIN, AUTH_EMAIL_FROM,
+CLOUDFLARE_API_TOKEN, GITHUB_OWNER. R2 credentials are minted for you.
 `.trimStart();
 
 export const parseArgs = (): Args => {
@@ -85,14 +83,6 @@ export const parseArgs = (): Args => {
         break;
       case "--domain":
         args.domain = value(argv, i, a);
-        i++;
-        break;
-      case "--r2-access-key-id":
-        args.r2AccessKeyId = value(argv, i, a);
-        i++;
-        break;
-      case "--r2-secret-access-key":
-        args.r2SecretAccessKey = value(argv, i, a);
         i++;
         break;
       case "--sender":

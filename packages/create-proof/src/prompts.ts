@@ -10,13 +10,20 @@ export type Answers = {
   display: string;
   domain: string;
   sender: string;
-  r2AccessKeyId: string;
-  r2SecretAccessKey: string;
   skipRepo: boolean;
 };
 
 const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+$/;
+
+// localhost is legitimate: non-prod stages capture codes to logs and never
+// send, so the zero-config default sender has no dot in its host.
+const looksLikeAddress = (sender: string): boolean => {
+  const address = sender.match(/<([^>]+)>/)?.[1] ?? sender;
+  if (!EMAIL_RE.test(address)) return false;
+  const host = address.split("@")[1] ?? "";
+  return host === "localhost" || host.includes(".");
+};
 
 export const slugify = (name: string): string =>
   name
@@ -70,50 +77,40 @@ export const collectAnswers = async (args: Args): Promise<Answers> => {
   if (!display && !args.yes) display = await askText("Display name", defaultDisplay);
   if (!display) display = defaultDisplay;
 
-  // ---- domain ------------------------------------------------------------
-  let domain = args.domain ?? process.env.ROOT_DOMAIN;
-  while (!domain) {
-    const raw = await askText("Root domain (a zone on your Cloudflare account, e.g. myapp.dev)", "");
-    const cleaned = cleanDomain(raw);
-    if (cleaned && !DOMAIN_RE.test(cleaned)) p.log.warn("That does not look like a hostname (no scheme, no path).");
-    else if (cleaned) domain = cleaned;
-  }
-  if (!domain || !DOMAIN_RE.test(domain)) {
-    fail("A valid --domain (ROOT_DOMAIN) is required: a zone on the Cloudflare account.");
-  }
-  domain = cleanDomain(domain);
-
-  // ---- R2 credentials ----------------------------------------------------
-  let r2AccessKeyId = args.r2AccessKeyId ?? process.env.R2_ACCESS_KEY_ID ?? "";
-  let r2SecretAccessKey = args.r2SecretAccessKey ?? process.env.R2_SECRET_ACCESS_KEY ?? "";
   let skipRepo = args.skipRepo;
-  if ((!r2AccessKeyId || !r2SecretAccessKey) && !args.yes) {
-    p.log.message("R2 S3 credentials presign image URLs. Create them once in the dashboard\n" + "(R2 > Manage R2 API tokens, Object Read scope).");
+  // ---- domain (optional: day zero runs on the platform host) -------------
+  let domain = args.domain ?? process.env.ROOT_DOMAIN ?? "";
+  if (!domain && !args.yes) {
+    const wantsDomain = await p.confirm({
+      message: "Deploy to your own domain? (enter for no: the app ships on the platform host)",
+      initialValue: false,
+    });
+    if (p.isCancel(wantsDomain)) cancelled();
+    if (wantsDomain === true) {
+      while (!domain) {
+        const raw = await askText("Root domain (a zone on your Cloudflare account, e.g. myapp.dev)", "");
+        const cleaned = cleanDomain(raw);
+        if (cleaned && !DOMAIN_RE.test(cleaned)) p.log.warn("That does not look like a hostname (no scheme, no path).");
+        else if (cleaned) domain = cleaned;
+      }
+    }
   }
-  while (!r2AccessKeyId || !r2SecretAccessKey) {
-    if (args.yes) fail("Missing R2 credentials: pass --r2-access-key-id and --r2-secret-access-key (or the env equivalents).");
-    const accessKey = (await askText("R2 access key id (or 'skip' to set up later without CI)", "")).toLowerCase();
-    if (accessKey === "skip") {
-      skipRepo = true;
-      break;
+  if (domain) {
+    if (!DOMAIN_RE.test(cleanDomain(domain))) {
+      fail("A valid --domain (ROOT_DOMAIN) is required: a zone on the Cloudflare account.");
     }
-    const secretKey = await askText("R2 secret access key", "");
-    if (accessKey && secretKey) {
-      r2AccessKeyId = accessKey;
-      r2SecretAccessKey = secretKey;
-    } else {
-      p.log.warn("Both key and secret are needed.");
-    }
+    domain = cleanDomain(domain);
   }
 
   // ---- sender ------------------------------------------------------------
-  const defaultSender = `${display} <noreply@${domain}>`;
+  const hostForMail = domain || "localhost";
+  const defaultSender = `${display} <noreply@${hostForMail}>`;
   let sender = args.sender ?? process.env.AUTH_EMAIL_FROM ?? "";
   if (!sender && !args.yes) sender = await askText("Sender for sign-in codes", defaultSender);
   if (!sender) sender = defaultSender;
-  if (!EMAIL_RE.test(sender.match(/<([^>]+)>/)?.[1] ?? sender)) {
+  if (!looksLikeAddress(sender)) {
     fail(`Invalid sender address: ${sender}`);
   }
 
-  return { target, slug, display, domain, sender, r2AccessKeyId, r2SecretAccessKey, skipRepo };
+  return { target, slug, display, domain, sender, skipRepo };
 };

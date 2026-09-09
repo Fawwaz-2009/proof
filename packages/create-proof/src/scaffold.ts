@@ -136,8 +136,6 @@ export type EnvValues = {
   slug: string;
   domain: string;
   sender: string;
-  r2AccessKeyId: string;
-  r2SecretAccessKey: string;
   owner: string;
   repo: string;
 };
@@ -150,8 +148,6 @@ const writeEnv = (root: string, v: EnvValues): void => {
     `APP_SLUG=${v.slug}`,
     `ROOT_DOMAIN=${v.domain}`,
     `AUTH_EMAIL_FROM=${v.sender}`,
-    `R2_ACCESS_KEY_ID=${v.r2AccessKeyId}`,
-    `R2_SECRET_ACCESS_KEY=${v.r2SecretAccessKey}`,
     "# Ceremony inputs (rerun: bunx alchemy deploy stacks/github.ts --profile admin --stage bootstrap --yes)",
     `GITHUB_OWNER=${v.owner}`,
     `GITHUB_REPO=${v.repo}`,
