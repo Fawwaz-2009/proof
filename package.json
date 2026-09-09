@@ -5,13 +5,8 @@
   "type": "module",
   "packageManager": "bun@1.3.14",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
-  "bin": {
-    "proof": "packages/create-proof/src/index.ts",
-    "create-proof": "packages/create-proof/src/index.ts"
-  },
   "scripts": {
     "dev": "alchemy dev",
     "destroy": "alchemy destroy",

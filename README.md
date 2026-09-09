@@ -11,20 +11,12 @@ TanStack Start website as the sole ingress.
 
 ## Start a new app
 
-```sh
-bunx create-proof my-app
-```
-
-One command, a finished day zero: it checks prerequisites, guides the one
-Cloudflare credential that can mint others, copies the bundled template with
-a FRESH git history (no template commits), renames every identity token,
-assigns fresh rate-limit namespaces, creates the GitHub repo, runs the
-ceremony (mints the least-privilege CI token, writes every repo secret), and
-opens your first proof PR with the remaining-setup checklist. Flags in
-`--help` let agents run the same flow non-interactively. Because the
-template ships inside the package, the command works whatever this
-repository's visibility is, and every CLI release carries a template
-snapshot you can test before it becomes the default anyone scaffolds.
+Create a GitHub repository from this template, then paste the getting-started prompt from
+[proof.fawwaz.dev](https://proof.fawwaz.dev) into your coding agent. It clones the repository, renames
+every identity token to your app, walks you through the one hand-made Cloudflare credential, runs the
+ceremony that mints the CI token and R2 keys and writes the repo secrets, and opens your first pull
+request with a deployed preview. When the readiness check is green and you have signed in on production,
+the loop below is yours.
 
 ## The loop
 
@@ -215,7 +207,6 @@ apps/backend/config/  the infra room: D1/R2/bucket declarations + tags, stage sw
                       auth options, dev-port + domain derivation (route manifest: inline in worker.ts)
 apps/web/             the public site (routes, typed client, auth gate)
 docs/faq.md           the decisions ledger, question-shaped
-packages/create-proof/  the scaffold CLI (template snapshot synced at pack time)
 patches/              better-auth + kysely D1-introspection fixes (bun patchedDependencies)
 scripts/wt.ts         the worktree helper
 ```

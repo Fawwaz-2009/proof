@@ -15,24 +15,48 @@ interface RouterContext {
  * follow APP_NAME, and STAGE tells preview deploys where they are. Server
  * function so the env import never reaches the client bundle.
  */
+// The production origin, as a constant: canonical and og:url point here
+// even from a preview stage, which is what search engines should index.
+const SITE_URL = "https://proof.fawwaz.dev";
+
 export const getAppMeta = createServerFn({ method: "GET" }).handler(async () => {
   return {
     appName: (env.APP_NAME as string | undefined) ?? "Proof",
     stage: (env.STAGE as string | undefined) ?? "",
+    url: SITE_URL,
   };
 });
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   loader: () => getAppMeta(),
-  head: ({ match }) => ({
-    meta: [{ charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" }, { title: match.loaderData?.appName ?? "Proof" }],
-    // The font is discovered only after the stylesheet parses, which leaves the
-    // first paint in a fallback face. Preloading races it with the CSS instead.
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preload", href: geistFont, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
-    ],
-  }),
+  head: ({ match }) => {
+    const { appName, url } = match.loaderData ?? { appName: "Proof", url: "" };
+    const description =
+      "Proof is a starter with a pipeline: an agent builds each issue in isolation, every pull request ships with a running proof on your own domain, and merge ships it.";
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: appName },
+        { name: "description", content: description },
+        { property: "og:title", content: appName },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        ...(url ? [{ property: "og:url", content: url }] : []),
+        { name: "twitter:card", content: "summary" },
+        { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#ffffff" },
+        { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09090b" },
+      ],
+      // The font is discovered only after the stylesheet parses, which leaves the
+      // first paint in a fallback face. Preloading races it with the CSS instead.
+      links: [
+        ...(url ? [{ rel: "canonical", href: url }] : []),
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "stylesheet", href: appCss },
+        { rel: "preload", href: geistFont, as: "font", type: "font/woff2", crossOrigin: "anonymous" as const },
+      ],
+    };
+  },
   component: RootComponent,
   // Without this, any request that 404s during dev teardown logs the router's
   // "notFoundError was encountered" warning on shutdown.
