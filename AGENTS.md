@@ -44,15 +44,17 @@ the CI token and R2 keys and writes every secret, then the first pull
 request) is driven by the getting-started prompt on the project site.
 The two commands an agent needs:
 
-    bun run ceremony            # mint CI token + R2 keys, write repo secrets
-    bun run wt <name>           # a worktree for the first change
+    bun run update-stack-secrets   # mint CI token + R2 keys, write repo secrets
+    bun run wt <name>              # a worktree for the first change
 
-The ceremony reads its inputs from the environment (GITHUB_OWNER,
+update-stack-secrets reads its inputs from the environment (GITHUB_OWNER,
 GITHUB_REPO, APP_NAME, APP_SLUG, ROOT_DOMAIN, AUTH_EMAIL_FROM) and is
-safe to re-run whenever those values change. NEVER run it from CI: it
-holds the trust root. NEVER run it before the admin credential exists:
-see the header of stacks/github.ts for the permission list and the
-walkthrough.
+safe to re-run whenever those values change. It authenticates with the
+stored admin profile (--profile admin): run bun alchemy login --profile
+admin first, or the mint fails with Unauthorized. NEVER run it from CI:
+it holds the trust root. NEVER run it before the admin credential
+exists: see the header of stacks/github.ts for the permission list and
+the walkthrough.
 
 ## Commands
 
