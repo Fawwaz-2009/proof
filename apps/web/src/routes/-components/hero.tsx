@@ -1,3 +1,4 @@
+import { DotField } from "./dot-field";
 import { GithubMark } from "./github-mark";
 
 // The bolt rendered as artwork: echo outline, soft shadow, gradient face,
@@ -11,7 +12,7 @@ function BoltArt() {
           reference's dots punch through its green wash. */}
       <div className="absolute left-1/2 top-1/2 h-64 w-[145%] -translate-x-1/2 -translate-y-1/2 -rotate-[32deg] bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 blur-2xl dark:via-primary/45" />
       <div className="absolute left-1/2 top-1/2 hidden h-[340px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/25 blur-[100px] dark:block" />
-      <div className="bg-dots absolute inset-0" />
+      <DotField />
       <svg viewBox="0 0 24 24" className="absolute left-1/2 top-[45%] h-auto w-[min(78vw,620px)] -translate-x-1/2 -translate-y-1/2 -rotate-[12deg]">
         <path
           className="bolt-echo"
