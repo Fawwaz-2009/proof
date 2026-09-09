@@ -71,10 +71,11 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         AUTH_ALLOWED_HOSTS: `localhost:*,127.0.0.1:*,${websiteUrl ?? "*.workers.dev"}`,
         R2_BUCKET_NAME: filesBucket.bucketName,
         R2_ACCOUNT_ID: accountId,
-        R2_ACCESS_KEY_ID: yield* (isDev ? Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault("")) : Config.string("R2_ACCESS_KEY_ID")).pipe(Effect.orDie),
-        R2_SECRET_ACCESS_KEY: yield* (
-          isDev ? Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make(""))) : Config.redacted("R2_SECRET_ACCESS_KEY")
-        ).pipe(Effect.orDie),
+        // Optional by design: without them the app deploys, destroys, and
+        // serves; images simply render without presigned URLs. CI always
+        // receives minted values from the ceremony.
+        R2_ACCESS_KEY_ID: yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""), Effect.orDie),
+        R2_SECRET_ACCESS_KEY: yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")), Effect.orDie),
       },
     };
   }),

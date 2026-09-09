@@ -13,7 +13,10 @@
  * Values arrive as environment variables mapped from repository secrets by
  * the calling workflow.
  */
-const REQUIRED = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "ROOT_DOMAIN", "AUTH_EMAIL_FROM", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const;
+// ROOT_DOMAIN is deliberately NOT required: day zero ships on the platform
+// host, and a custom domain is an upgrade (set the secret, redeploy). R2
+// credentials are minted by the ceremony, not pasted by the user.
+const REQUIRED = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AUTH_EMAIL_FROM", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const;
 
 const missing = REQUIRED.filter((name) => !process.env[name]);
 for (const name of missing) {
@@ -23,27 +26,28 @@ for (const name of missing) {
 if (missing.length > 0) {
   console.log(`
   Production is not set up yet. Clear the blockers above in one command once
-  three inputs exist:
+  two inputs exist:
 
-    1. A domain on the Cloudflare account. Buy it in the dashboard, or have
-       your agent do it via the Cloudflare MCP registrar tools.
-    2. A dashboard-born Cloudflare API token (API-minted tokens cannot carry
+    1. A dashboard-born Cloudflare API token (API-minted tokens cannot carry
        token-creation rights). Custom token permissions: Workers Scripts /
        KV Storage / R2 Storage / Routes: Edit, D1: Edit, Workers Tail: Read,
        Workers Observability: Edit, Email Sending: Edit, Secrets Store: Edit,
        Account Settings: Read, Account API Tokens: Edit.
-    3. R2 S3 credentials for the Files bucket (Object Read scope).
+    2. A domain on the Cloudflare account, only if you want a custom host
+       (the platform host works without one). Optional: a verified sender
+       inbox under Email Routing, so prod sign-in codes really arrive.
 
   Then, from the repository root, wire everything in one command:
 
     GITHUB_OWNER=<you> GITHUB_REPO=<repo> \\
-    ROOT_DOMAIN=<domain> AUTH_EMAIL_FROM="Proof <noreply@<domain>>" \\
-    R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \\
+    APP_NAME="My App" APP_SLUG=my-app ROOT_DOMAIN=<domain> \\
+    AUTH_EMAIL_FROM="My App <noreply@<domain>>" \\
     GITHUB_TOKEN=$(gh auth token) \\
     bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 
-  That mints the least-privilege CI token and writes every secret these
-  checks need. Re-run this workflow and it goes green.
+  That mints the least-privilege CI token, mints the R2 presign
+  credentials, and writes every secret these checks need. Re-run this
+  workflow and it goes green.
 `);
   process.exit(1);
 }

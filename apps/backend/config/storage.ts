@@ -39,9 +39,15 @@ export class Files extends Context.Service<Files>()("Files", {
       Effect.gen(function* () {
         // Locally the object lives in the dev simulator, not real R2, so a
         // presigned URL for the real host would 404. Dev views point at the
-        // localhost gateway route instead (see config/dev-files.ts).
+        // localhost gateway route instead (see config/dev-files.ts). This
+        // branch needs no credentials at all: the dev gateway serves the
+        // object through the bucket binding.
         const isDev = yield* ALCHEMY_DEV;
         if (isDev) return `/api/dev/files/${key}`;
+        // Empty credentials mean presigning is unavailable: the note
+        // renders without its image rather than with a URL that cannot
+        // possibly work. CI always receives minted credentials.
+        if (!accountId || !accessKeyId || Redacted.value(secretAccessKey) === "") return null;
         // The bucket name is a deploy-time output of the FilesBucket
         // resource: bound via props env, readable from the worker env at
         // request time (alchemy wires the env ConfigProvider per request).
