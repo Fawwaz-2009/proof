@@ -43,7 +43,9 @@ SETUP
 8. Run the setup: bun run update-stack-secrets, prefixed with
    GITHUB_OWNER, GITHUB_REPO, APP_NAME, APP_SLUG, ROOT_DOMAIN (if any),
    and AUTH_EMAIL_FROM. It authenticates with the admin profile from
-   step 4; without it the token mint fails with Unauthorized. It mints the least-privilege CI token, mints the
+   step 4; without it the token mint fails with Unauthorized. Re-running
+   it later rotates live credentials: if a stage is already deployed,
+   redeploy it right after. It mints the least-privilege CI token, mints the
    R2 keys, and writes every repo secret. Verify with gh secret list.
    Safe to re-run whenever the values change.
 
