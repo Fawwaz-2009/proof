@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { authClient } from "../auth-client.ts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
   component: Login,
 });
-
-const inputClass =
-  "mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-800 dark:bg-zinc-900";
 
 function Login() {
   const { appName } = Route.useLoaderData() ?? { appName: "Proof" };
@@ -70,58 +71,45 @@ function Login() {
 
   return (
     <main className="mx-auto max-w-sm px-6 py-24">
-      <h1 className="text-2xl font-bold tracking-tight">Sign in to {appName}</h1>
-      <div className="mt-6 rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
-        {step === "email" ? (
-          <form onSubmit={sendCode}>
-            <label htmlFor="email" className="text-sm font-semibold">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className={inputClass}
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-4 w-full rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
-            >
-              {submitting ? "Sending..." : "Send a code"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={verifyCode}>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">We sent a 6-digit code to {email}.</p>
-            <label htmlFor="otp" className="mt-3 block text-sm font-semibold">
-              Code
-            </label>
-            <input
-              id="otp"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              value={otp}
-              onChange={(event) => setOtp(event.target.value)}
-              className={inputClass}
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-4 w-full rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
-            >
-              {submitting ? "Verifying..." : "Verify and continue"}
-            </button>
-          </form>
-        )}
-        {error ? <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
-      </div>
-      <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-500">Passwordless: the first sign-in with any email creates the account.</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Sign in to {appName}</CardTitle>
+          <CardDescription>Passwordless: the first sign-in with any email creates the account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {step === "email" ? (
+            <form onSubmit={sendCode} className="flex flex-col gap-3">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? "Sending..." : "Send a code"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={verifyCode} className="flex flex-col gap-3">
+              <p className="text-sm text-muted-foreground">We sent a 6-digit code to {email}.</p>
+              <Label htmlFor="otp">Code</Label>
+              <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? "Verifying..." : "Verify and continue"}
+              </Button>
+            </form>
+          )}
+          {error ? (
+            <p className="mt-3 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -86,9 +86,25 @@ create-next-app model: every release carries a tested snapshot, so a
 release can be rehearsed before it becomes anyone's default, and
 scaffolding works regardless of the template repo's visibility.
 
-**Why raw Tailwind and no component library?**
+**Why is there no component library pre-installed?**
 A starter should not choose your UI library. The demo uses plain Tailwind
-classes; replace it with your product and bring whatever you like.
+classes, and no components ship in the box. What does ship is the shadcn/ui
+wiring (`components.json`, the `cn` util, theme variables), so the day you
+want it: `npx shadcn add <component>` just works, and a theme you design at
+ui.shadcn.com/create applies with `npx shadcn apply --preset <code>`. The
+reverse also works: `npx shadcn preset resolve` prints the create-page URL
+for the theme your project already carries.
+
+**How should I build forms?**
+React Hook Form is included. The demo note form (`-components/note-form.tsx`)
+shows the pattern: a schema validates client-side through Effect Schema's
+Standard Schema interface (the same library that types the wire contract),
+react-hook-form drives the fields, and the create mutation lives inside
+the component that owns the form. The delete button
+(`-components/delete-note-button.tsx`) is the small case: its mutation and
+its error display live beside its two lines of UI. Supporting UI lives in
+the dash-prefixed `-components` folder next to the route, which TanStack
+Router excludes from the route tree.
 
 ## The two phases
 

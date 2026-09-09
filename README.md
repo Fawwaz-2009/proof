@@ -52,6 +52,8 @@ the view concept) are answered in [docs/faq.md](docs/faq.md).
 - **Web app** (`apps/web`): TanStack Start on `Cloudflare.Website.Vite`; the
   `/api/*` catch-all forwards to the backend over the `BACKEND` service
   binding, and the SSR session gate dispatches in-process (no self-fetch).
+  Forms run on React Hook Form with Effect Schema validation; shadcn/ui is
+  wired (`npx shadcn add <component>` on day one) but ships no components.
 - **Shared contract**: `apps/backend/src/contracts` + `src/views` are the
   browser-safe HTTP interface. The web app imports them as
   `@proof/backend/contract` and derives its typed client from them: no

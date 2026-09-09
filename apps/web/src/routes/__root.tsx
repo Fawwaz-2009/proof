@@ -64,6 +64,15 @@ function Document({ children }: Readonly<{ children: ReactNode }>) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* Dark mode is class-based (shadcn variables read html.dark); this
+            syncs the OS preference before first paint. The full three-way
+            toggle (light, dark, system with localStorage) is the same line
+            with a stored preference folded in: see docs/faq.md. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches)`,
+          }}
+        />
       </head>
       <body className="bg-white font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         {children}
