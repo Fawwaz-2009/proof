@@ -18,12 +18,24 @@
 // credentials are minted by the ceremony, not pasted by the user.
 const REQUIRED = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AUTH_EMAIL_FROM", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const;
 
+// A placeholder sender passes a non-empty check but production sign-in
+// still cannot deliver codes: treat it as absent until it is real.
+const PLACEHOLDER_SENDER = /localhost|example\.com|test\.local/i;
+
 const missing = REQUIRED.filter((name) => !process.env[name]);
 for (const name of missing) {
   console.error(`::error::${name} is not set in repository secrets`);
 }
 
-if (missing.length > 0) {
+const sender = process.env.AUTH_EMAIL_FROM ?? "";
+const senderIsPlaceholder = sender.length > 0 && PLACEHOLDER_SENDER.test(sender);
+if (senderIsPlaceholder) {
+  console.error(
+    `::error::AUTH_EMAIL_FROM is a placeholder ("${sender}"): production cannot deliver sign-in codes until it is a real sender on your domain. Update it and re-run the ceremony.`,
+  );
+}
+
+if (missing.length > 0 || senderIsPlaceholder) {
   console.log(`
   Production is not set up yet. Clear the blockers above in one command once
   two inputs exist:
@@ -34,8 +46,9 @@ if (missing.length > 0) {
        Workers Observability: Edit, Email Sending: Edit, Secrets Store: Edit,
        Account Settings: Read, Account API Tokens: Edit.
     2. A domain on the Cloudflare account, only if you want a custom host
-       (the platform host works without one). Optional: a verified sender
-       inbox under Email Routing, so prod sign-in codes really arrive.
+       (the platform host works without one), with a verified sender inbox
+       under Email Routing so prod sign-in codes really arrive. Required
+       before merging: a placeholder sender fails this check by design.
 
   Then, from the repository root, wire everything in one command:
 

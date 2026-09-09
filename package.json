@@ -21,7 +21,9 @@
     "format": "prettier . --write --ignore-unknown",
     "format:check": "prettier . --check --ignore-unknown",
     "check": "bun run lint && bun run typecheck && bun run format:check && bun run build",
-    "deploy": "alchemy deploy"
+    "deploy": "alchemy deploy",
+    "ceremony": "GITHUB_TOKEN=$(gh auth token) bunx alchemy deploy stacks/github.ts --stage bootstrap --yes",
+    "wt": "bun scripts/wt.ts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260819.1",

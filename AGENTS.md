@@ -35,6 +35,25 @@ An issue is done when a pull request exists, never when you say "done":
 The reviewer tests the running preview and comments; they do not review
 the diff first. Merging ships production.
 
+## First run (fresh clone)
+
+A fresh clone is not ready to deploy: the repo secrets do not exist yet,
+and production sign-in needs a real sender. The setup flow (identity
+tokens, the one hand-made Cloudflare credential, the ceremony that mints
+the CI token and R2 keys and writes every secret, then the first pull
+request) is driven by the getting-started prompt on the project site.
+The two commands an agent needs:
+
+    bun run ceremony            # mint CI token + R2 keys, write repo secrets
+    bun run wt <name>           # a worktree for the first change
+
+The ceremony reads its inputs from the environment (GITHUB_OWNER,
+GITHUB_REPO, APP_NAME, APP_SLUG, ROOT_DOMAIN, AUTH_EMAIL_FROM) and is
+safe to re-run whenever those values change. NEVER run it from CI: it
+holds the trust root. NEVER run it before the admin credential exists:
+see the header of stacks/github.ts for the permission list and the
+walkthrough.
+
 ## Commands
 
     alchemy dev                  # both workers locally (backend 23454, website 22343)
@@ -226,9 +245,9 @@ every environment replays its own delta. Never hand-edit snapshots.
 
 One command sets up an isolated worktree:
 
-    bun scripts/wt.ts <name>          # ../<repo>-wt/<name>, branch <name>
-    bun scripts/wt.ts --list          # existing worktrees
-    bun scripts/wt.ts --remove <name> # remove worktree + branch
+    bun run wt <name>           # ../<repo>-wt/<name>, branch <name>
+    bun run wt --list           # existing worktrees
+    bun run wt --remove <name>  # remove worktree + branch
 
 It copies `.env` from the main checkout (untracked files do not follow
 branches), runs `bun install`, and prints the exact commands. Inside a
