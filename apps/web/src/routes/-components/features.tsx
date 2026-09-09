@@ -28,22 +28,6 @@ function FeatureCell({ icon: Icon, title, children }: { icon: typeof Braces; tit
   );
 }
 
-const tree = `proof
-├─ alchemy.run.ts          one stack: providers, state, the units
-├─ website.ts              the public deploy unit, sole ingress
-├─ apps
-│  ├─ backend
-│  │  ├─ config            infra room: D1, R2, auth, limits, hosts
-│  │  ├─ src/contracts     the shared, typed HTTP interface
-│  │  ├─ src/controllers   adapt payloads, yield services
-│  │  ├─ src/domain        business rules as services
-│  │  ├─ src/views         row to wire shape, signed links included
-│  │  └─ migrations        committed SQL, replayed per stage
-│  └─ web                  TanStack Start site, typed client, auth gate
-├─ docs/faq.md             every decision, question-shaped
-├─ stacks/github.ts        the one-time credential ceremony
-└─ scripts/wt.ts           worktrees for parallel agents`;
-
 export function Features() {
   return (
     <section id="features" className="scroll-mt-20 border-t border-zinc-200 dark:border-zinc-800">
@@ -88,27 +72,6 @@ export function Features() {
               Worktrees per issue, hashed ports, an AGENTS.md that carries the proof brief. Parallel agents never share a checkout, and every issue ends in a proof.
             </FeatureCell>
           </div>
-        </div>
-
-        <div className="mt-16 grid items-center gap-10 border-t border-zinc-200 pt-16 lg:grid-cols-2 dark:border-zinc-800">
-          <div>
-            <Chip>Boring is a feature</Chip>
-            <h3 className="mt-6 max-w-[827px] text-3xl font-normal leading-tight tracking-[-0.24px] text-foreground">The whole product fits in one screen.</h3>
-            <p className="mt-4 max-w-xl leading-relaxed text-zinc-600 dark:text-zinc-400">
-              No magic directories, no hidden generators, no second framework hiding in the config: what you see is what deploys. An agent reads this tree in one prompt
-              and knows where everything lives.
-            </p>
-            <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-500">
-              Every decision and its why:{" "}
-              <a href="https://github.com/Fawwaz-2009/proof/blob/main/docs/faq.md" className="font-medium text-zinc-700 underline underline-offset-4 dark:text-zinc-300">
-                docs/faq.md
-              </a>
-              .
-            </p>
-          </div>
-          <pre className="overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-5 font-mono text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-            {tree}
-          </pre>
         </div>
       </div>
     </section>

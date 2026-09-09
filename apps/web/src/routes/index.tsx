@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Boring } from "./-components/boring";
 import { BuiltWith } from "./-components/built-with";
 import { Faq } from "./-components/faq";
 import { Features } from "./-components/features";
@@ -38,8 +39,9 @@ function Storefront() {
       <Nav />
       <main>
         <Hero />
-        <What />
         <BuiltWith />
+        <Boring />
+        <What />
         <Features />
         <GettingStarted />
         <Faq />
