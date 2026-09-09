@@ -32,6 +32,7 @@ function Storefront() {
       <main>
         <Hero />
         <Loop />
+        <Features />
         <TryIt />
         <Decisions />
       </main>
@@ -142,6 +143,35 @@ function Loop() {
   );
 }
 
+const features = [
+  { term: "Proofs", line: "Every pull request deploys the real app to an isolated stage on your host. Automatically." },
+  { term: "Merge is production", line: "Migrations ride the deploy. A readiness gate blocks the merge until setup is whole." },
+  { term: "Auth", line: "Passwordless email codes via Better Auth: hashed at rest, rate-limited, gated at SSR." },
+  { term: "Email", line: "Real delivery in prod through Cloudflare; captured to logs everywhere else. Bounces never happen by accident." },
+  { term: "Database", line: "D1 with Drizzle: typed relational queries, migration SQL generated at deploy, applied per stage." },
+  { term: "Files", line: "A private R2 bucket: multipart upload with contract-enforced limits, presigned reads, owner-scoped." },
+  { term: "End-to-end types", line: "One shared contract generates the browser's client. No hand-written URLs, no decoding, typed errors." },
+  { term: "Agents", line: "Worktrees per issue, hashed ports, AGENTS.md with the proof brief, a CLI with agent flags." },
+];
+
+function Features() {
+  return (
+    <section id="features" className="border-t border-zinc-200 px-6 py-16 dark:border-zinc-800">
+      <div className="mx-auto max-w-3xl">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">What you get</h2>
+        <dl className="mt-8 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          {features.map((feature) => (
+            <div key={feature.term}>
+              <dt className="font-bold">{feature.term}</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{feature.line}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
 function TryIt() {
   return (
     <section id="try" className="border-t border-zinc-200 px-6 py-16 dark:border-zinc-800">
@@ -155,6 +185,9 @@ function TryIt() {
           The image you attach lives in a private bucket, and the link you get is signed for you alone: no public keys, no second endpoint, no re-validation. That is the
           view concept, and it is why the demo has images at all.
         </p>
+        <div className="mt-8 flex aspect-video items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+          <p className="text-sm text-zinc-500 dark:text-zinc-500">Demo video in the works. Until then, it is live: sign in and break a note.</p>
+        </div>
         <Link to="/login" className="mt-6 inline-block rounded-lg bg-amber-500 px-5 py-2.5 font-semibold text-zinc-950 hover:bg-amber-400">
           Sign in and try it
         </Link>
@@ -177,6 +210,27 @@ function Decisions() {
     <section id="decisions" className="border-t border-zinc-200 px-6 py-16 dark:border-zinc-800">
       <div className="mx-auto max-w-3xl">
         <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Boring is a feature.</h2>
+        <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-400">
+          The whole product fits in one screen. No magic directories, no hidden generators: what you see is what deploys.
+        </p>
+        <pre className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-5 font-mono text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+          {`proof
+├─ alchemy.run.ts          one stack: providers, state, the units
+├─ website.ts              the public deploy unit, sole ingress
+├─ apps
+│  ├─ backend
+│  │  ├─ config            infra room: D1, R2, auth, limits, hostnames
+│  │  ├─ src/contracts     the shared, typed HTTP interface
+│  │  ├─ src/controllers   adapt payloads, yield services
+│  │  ├─ src/domain        business rules as services
+│  │  ├─ src/views         row to wire shape, presigned links included
+│  │  └─ migrations        committed SQL, replayed per stage
+│  └─ web                  TanStack Start site, typed client, auth gate
+├─ docs/faq.md             every decision, question-shaped
+├─ packages/create-proof   the scaffold CLI
+└─ scripts/wt.ts           worktrees for parallel agents`}
+        </pre>
+        <h2 className="mt-14 text-2xl font-bold tracking-tight sm:text-3xl">And the decisions behind it</h2>
         <dl className="mt-8 grid gap-x-10 gap-y-6 sm:grid-cols-2">
           {decisions.map((decision) => (
             <div key={decision.term}>

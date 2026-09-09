@@ -89,3 +89,28 @@ scaffolding works regardless of the template repo's visibility.
 **Why raw Tailwind and no component library?**
 A starter should not choose your UI library. The demo uses plain Tailwind
 classes; replace it with your product and bring whatever you like.
+
+## The two phases
+
+**Why does alchemy have two phases?**
+Because resources and requests live in different worlds. Resources (the
+D1 binding, the R2 bucket, the auth instance) exist at deploy time and at
+cold start: that is the init phase, where `worker.ts` reads config,
+builds every service once, and provides them into the router. Requests
+arrive later, one at a time: that is the runtime phase, where each
+request gets a context (who is calling, the request itself). A service
+built in init closes over its resources; a request handler closes over
+the built services. The type system enforces the split: init may not ask
+for a request, and handlers may not reach for resources directly.
+
+**Why does domain code yield services instead of importing them?**
+The yield chain is the provisioning chain. When `domain/notes.ts`
+declares `yield* AppDatabase`, it is not calling anything: it is
+registering a requirement that flows up to the init phase, where the
+database binding exists and the service gets built. Importing and
+calling directly would bypass that chain, and the code would die at the
+discharge edge (`HttpRouter.toHttpEffect`) with a type error listing
+exactly what nobody provided. Three rules keep you safe: never import a
+resource outside `config/`, never call a service without yielding it,
+and when a requirement is missing at the discharge edge, add a
+`Layer.provide` upstream rather than casting.

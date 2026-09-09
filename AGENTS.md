@@ -58,6 +58,32 @@ Everything the routes need must be provided INTO the router before
 providers in the pipe: each `Layer.provide` discharges requirements already
 accumulated, so a later layer can never satisfy an earlier one.
 
+### Why domain code yields everything
+
+The yield chain IS the provisioning chain. A resource (the D1 binding, the
+R2 bucket) only exists during init: that is where `worker.ts` reads
+`Config`, yields `FilesBucket`, and builds the services that wrap those
+resources. A domain function never imports a resource or calls a service
+directly, it declares what it needs with `yield*` (`AppDatabase`, `Files`,
+`CurrentUser`) and lets the requirement flow upward:
+
+    domain/notes.ts      yield* AppDatabase   (requirement declared)
+    worker.ts init gen   AppDatabase built from the D1 binding, provided
+    fetch handler        closes over the BUILT service; per request only
+                         request-scoped requirements remain (CurrentUser)
+
+Follow `Notes` for the canonical trace: `makeNotes` yields `AppDatabase`,
+`Files`, and `makeBuildNoteView` when it is CONSTRUCTED (init), so its
+methods carry only `CurrentUser` at runtime. Three rules follow:
+
+1. Never import a resource outside `config/`; resources are init-phase
+   values, and reaching for one from domain or controller code bypasses
+   the provision chain and dies at the discharge edge (type error).
+2. Never call a service function directly; yield the service. The yield
+   is what makes the init phase build and provide it.
+3. If the type system says a requirement is missing at the discharge
+   edge, the fix is always a `Layer.provide` upstream, never a cast.
+
 ## The layers
 
 | Layer           | Location           | Job                                                         |

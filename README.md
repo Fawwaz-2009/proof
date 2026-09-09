@@ -170,15 +170,16 @@ list and the gotchas for the manual path:
 
 ```sh
 GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
-APP_NAME="My App" ROOT_DOMAIN=<domain> \
+APP_NAME="My App" APP_SLUG=my-app ROOT_DOMAIN=<domain> \
 AUTH_EMAIL_FROM="My App <noreply@<domain>>" \
-R2_ACCESS_KEY_ID=<id> R2_SECRET_ACCESS_KEY=<secret> \
 GITHUB_TOKEN=$(gh auth token) \
 bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
 ```
 
-That mints the least-privilege CI token and writes every secret the
-workflows need (including `APP_NAME`, the display name your app renders).
+That mints the least-privilege CI token, mints the R2 presign credentials
+(nothing to paste: R2 S3 keys are API tokens, and the ceremony creates
+them), and writes every secret the workflows need (including `APP_NAME`,
+the display name your app renders).
 Two platform walls shape the ceremony: the deploying token is always
 dashboard-born (API-minted tokens cannot carry token-creation rights), and
 it must itself include "Account API Tokens: Edit", the one group that lets
