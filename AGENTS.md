@@ -233,10 +233,23 @@ Email recipients are NEVER fake. NEVER trigger an email send (or an auth
 flow that sends) against a live transport with a placeholder recipient
 (`test.local`, `example.com`, invented inboxes): bounces from fake
 recipients permanently damage the sending domain's reputation. Local and
-preview stages capture to logs and never send; only the `prod` stage
-delivers. When testing anything that can really send, use a real, verified
-inbox supplied at test time (env or secret), never an address committed to
-the source tree.
+preview stages capture and never send; only the `prod` stage delivers.
+On capture stages an address whose local part is exactly six digits
+signs in with those digits (`123456@dev.example.com`): the code lives
+in the address, so there is no mailbox to read and no way to see
+another address's code. Production ignores the format and mails a
+random code. When testing anything that can really send, use a
+real, verified inbox supplied at test time (env or secret), never an
+address committed to the source tree.
+
+## Web forms
+
+One pattern, no drift: every form is react-hook-form + an Effect Schema
+(Standard Schema resolver) + TanStack Query useMutation; field errors
+render under their input, server errors in one alert. The only per-form
+difference is the client a mutation calls: the contract-derived client
+for `/api/*` (see `apps/web/src/http-client.ts`), better-auth's client
+for `/api/auth/*` (see `apps/web/src/routes/login`).
 
 ## Migrations
 

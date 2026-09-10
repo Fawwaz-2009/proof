@@ -17,6 +17,20 @@ import { d1Database } from "./database/index.ts";
  */
 export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
 
+/**
+ * The dev sign-in trick: on capture stages an address whose local part is
+ * exactly six digits signs in with those digits (123456@dev.example.com
+ * gets 123456). The anchor is the whole security story: a real address
+ * cannot be made to carry a six-digit local part, so no crafted address
+ * predicts someone else's code; the only addresses that work this way are
+ * ones the visitor invented on a throwaway stage. Production ignores the
+ * format entirely.
+ */
+export const otpFromAddress = (email: string): string | null => {
+  const match = /^(\d{6})@/.exec(email);
+  return match?.[1] ?? null;
+};
+
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
@@ -48,6 +62,11 @@ export class Auth extends Context.Service<Auth>()("Auth", {
           expiresIn: 15 * 60,
           otpLength: 6,
           storeOTP: "hashed",
+          // Capture stages only (mail.mode is the same switch that decides
+          // delivery): the code is the address's six digits, so the login
+          // page needs no mailbox and no log-digging. Returning undefined
+          // keeps better-auth's random code everywhere else.
+          generateOTP: ({ email }) => (mail.mode === "captured" ? (otpFromAddress(email) ?? undefined) : undefined),
           sendVerificationOTP: async ({ email, otp, type }) => {
             if (type !== "sign-in") return;
             await Effect.runPromiseWith(effectContext)(

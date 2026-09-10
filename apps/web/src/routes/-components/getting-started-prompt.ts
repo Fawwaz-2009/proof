@@ -74,8 +74,10 @@ docs/faq.md are the rules; read them before making changes.
     delivered. Under it: the proof brief from AGENTS.md and the
     production checklist.
 11. CI posts the preview URL on the pull request. Share it and wait for
-    feedback. Fix, repeat. Previews capture sign-in codes to the stage
-    logs, so the proof works before email is real.
+    feedback. Fix, repeat. On previews and local dev, sign in with any
+    address whose name is exactly six digits, like 123456@dev.example.com:
+    the code is 123456, no email involved. Production addresses get a
+    real emailed code and ignore the format.
 12. To go live: add the root domain and a real sender if they were
     skipped (update .env, re-run the setup from step 9), and the
     readiness check turns green. With feedback handled and readiness

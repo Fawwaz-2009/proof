@@ -11,9 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedDemoRouteImport } from './routes/_authed/demo'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as LoginCodeRouteImport } from './routes/login/code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,11 +23,6 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedDemoRoute = AuthedDemoRouteImport.update({
@@ -39,40 +35,61 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginCodeRoute = LoginCodeRouteImport.update({
+  id: '/login/code',
+  path: '/login/code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
   '/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
+  '/login/': typeof LoginIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
   '/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
+  '/login': typeof LoginIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
-  '/login': typeof LoginRoute
   '/_authed/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
+  '/login/': typeof LoginIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/demo' | '/api/$'
+  fullPaths: '/' | '/demo' | '/api/$' | '/login/code' | '/login/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/demo' | '/api/$'
-  id: '__root__' | '/' | '/_authed' | '/login' | '/_authed/demo' | '/api/$'
+  to: '/' | '/demo' | '/api/$' | '/login/code' | '/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authed'
+    | '/_authed/demo'
+    | '/api/$'
+    | '/login/code'
+    | '/login/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
-  LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  LoginCodeRoute: typeof LoginCodeRoute
+  LoginIndexRoute: typeof LoginIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -91,13 +108,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed/demo': {
       id: '/_authed/demo'
       path: '/demo'
@@ -110,6 +120,20 @@ declare module '@tanstack/react-router' {
       path: '/api/$'
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/code': {
+      id: '/login/code'
+      path: '/login/code'
+      fullPath: '/login/code'
+      preLoaderRoute: typeof LoginCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -129,8 +153,9 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
-  LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
+  LoginCodeRoute: LoginCodeRoute,
+  LoginIndexRoute: LoginIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

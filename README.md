@@ -90,8 +90,10 @@ docs/faq.md are the rules; read them before making changes.
     delivered. Under it: the proof brief from AGENTS.md and the
     production checklist.
 11. CI posts the preview URL on the pull request. Share it and wait for
-    feedback. Fix, repeat. Previews capture sign-in codes to the stage
-    logs, so the proof works before email is real.
+    feedback. Fix, repeat. On previews and local dev, sign in with any
+    address whose name is exactly six digits, like 123456@dev.example.com:
+    the code is 123456, no email involved. Production addresses get a
+    real emailed code and ignore the format.
 12. To go live: add the root domain and a real sender if they were
     skipped (update .env, re-run the setup from step 9), and the
     readiness check turns green. With feedback handled and readiness
@@ -147,8 +149,9 @@ Sign-in is a 6-digit emailed code (Better Auth `emailOTP`, hashed at rest,
 database-backed rate limits). The transport branches on the stage:
 
 - `local` (`alchemy dev`) and `preview` stages (any deploy not named `prod`)
-  **capture** the code: it appears as `[email] captured (...)` in the
-  runner or deploy logs. No email leaves the account.
+  **capture**: nothing is delivered. Sign in with any address whose name is
+  exactly six digits (`123456@dev.example.com`) and the code is `123456`.
+  No email leaves the account.
 - The `prod` stage **delivers** through the Cloudflare send_email binding,
   from `AUTH_EMAIL_FROM` (required to deploy; set it to an address on a
   domain with Email Sending or Routing enabled in your Cloudflare account).
