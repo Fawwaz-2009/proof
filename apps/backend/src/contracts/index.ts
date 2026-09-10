@@ -7,4 +7,4 @@ export const ApiPrefix = "/api";
 export { CreateNote, CreateNoteInput, DestroyNote, ImageContentTypes, ListNotes, ListNotesResponse, MaxImageBytes, NotesApi, ValidationError } from "./notes.ts";
 export { Authenticated, CurrentUser, SessionUser, Unauthorized } from "./auth.ts";
 
-export class AppApi extends HttpApi.make("proof").add(NotesApi).prefix(ApiPrefix) {}
+export class AppApi extends HttpApi.make("app").add(NotesApi).prefix(ApiPrefix) {}

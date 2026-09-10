@@ -27,16 +27,16 @@
 // branch whose stack file you mean to deploy (a stale working tree silently
 // no-ops), and never from CI: this stack holds the trust root.
 
-// The stack name and token names below are string literals, renamed once
-// at creation (same ritual as the stack name in alchemy.run.ts), and
-// never derived from APP_SLUG at runtime: a product rename edits the env
-// and must never move this stack's state scope, or the next ceremony
-// would provision duplicate tokens beside the live ones. Each app's
-// repository carries its own literals, which is what keeps two apps
-// bootstrapped on one Cloudflare account from fighting over
-// account-singleton token names.
+// The stack scope and the account-global token names below derive from
+// STACK in identity.ts: one literal, set once at clone time, before the
+// first alchemy deploy. A product rename edits the env and must never
+// move this stack's state scope, or the next ceremony would provision
+// duplicate tokens beside the live ones. Deriving from the shared
+// literal keeps two apps bootstrapped on one Cloudflare account from
+// fighting over singleton token names.
 
 import { createHash } from "node:crypto";
+import { STACK } from "../identity.ts";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Output from "alchemy/Output";
@@ -47,7 +47,7 @@ import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 
 export default Alchemy.Stack(
-  "ProofGitHub",
+  `${STACK}GitHub`,
   {
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
     state: Cloudflare.state(),
@@ -63,7 +63,7 @@ export default Alchemy.Stack(
     // Edit", which OAuth sessions and API-minted tokens can never hold,
     // so this ceremony must run with the dashboard-born admin credential
     // (--profile admin, API-token method).
-    const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("ProofCIToken", {
+    const ciToken = yield* Cloudflare.ApiToken.AccountApiToken(`${STACK}CIToken`, {
       policies: [
         {
           effect: "allow",
@@ -98,8 +98,8 @@ export default Alchemy.Stack(
     // App-level values the workflows re-resolve on every deploy. The R2
     // account id is not among them: it is derived from the authenticated
     // account at synthesis (worker.ts reads CloudflareEnvironment).
-    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("Proof"), Effect.orDie);
-    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("proof"), Effect.orDie);
+    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
     // Day zero may ship on the platform host: an empty ROOT_DOMAIN is
     // legal (the deploy-time domain config treats empty as absent), and
     // the secret is written anyway so the workflows always resolve it.
@@ -143,7 +143,7 @@ export default Alchemy.Stack(
     // the refinement path if that ever matters.
     const toR2SecretAccessKey = (value: Redacted.Redacted<string>): Redacted.Redacted<string> =>
       Redacted.make(createHash("sha256").update(Redacted.value(value)).digest("hex"));
-    const r2Token = yield* Cloudflare.ApiToken.AccountApiToken("ProofR2Presign", {
+    const r2Token = yield* Cloudflare.ApiToken.AccountApiToken(`${STACK}R2Presign`, {
       policies: [
         {
           effect: "allow",

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { MaxImageBytes } from "@proof/backend/contract";
+import { MaxImageBytes } from "@app/backend/contract";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

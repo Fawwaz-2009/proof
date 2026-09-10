@@ -20,7 +20,7 @@ const REQUIRED = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "AUTH_EMAIL_F
 
 // A placeholder sender passes a non-empty check but production sign-in
 // still cannot deliver codes: treat it as absent until it is real.
-const PLACEHOLDER_SENDER = /localhost|example\.com|test\.local/i;
+const PLACEHOLDER_SENDER = /localhost|example\.com|test\.local|yourdomain\.com/i;
 
 const missing = REQUIRED.filter((name) => !process.env[name]);
 for (const name of missing) {

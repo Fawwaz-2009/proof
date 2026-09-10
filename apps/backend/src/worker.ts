@@ -62,7 +62,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: yield* (isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Proof <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")).pipe(
+        AUTH_EMAIL_FROM: yield* (isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")).pipe(
           Effect.orDie,
         ),
         // Without ROOT_DOMAIN the site lives on the platform host, and the

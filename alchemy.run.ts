@@ -1,4 +1,4 @@
-// proof infrastructure as code: Alchemy v2, Effect-native. ONE stack at the
+// infrastructure as code: Alchemy v2, Effect-native. ONE stack at the
 // workspace root: one plan, one state file, deploying BOTH apps — the private
 // Backend Worker (apps/backend, no public URL, owns D1/R2/Email + auth) and
 // the public Website.Vite frontend (apps/web, the sole ingress, forwarding
@@ -33,8 +33,10 @@ import { Website } from "./website.ts";
 // first alchemy command runs; renaming it later orphans the existing D1,
 // R2, and workers under an empty scope while the next deploy provisions
 // fresh ones beside them. See docs/faq.md.
+import { STACK } from "./identity.ts";
+
 export default Alchemy.Stack(
-  "Proof",
+  STACK,
   {
     providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers(), GitHub.providers()),
     state: Cloudflare.state(),

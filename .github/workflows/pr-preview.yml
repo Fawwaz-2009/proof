@@ -32,7 +32,7 @@ jobs:
       ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
       APP_NAME: ${{ secrets.APP_NAME }}
       APP_SLUG: ${{ secrets.APP_SLUG }}
-      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'Proof Preview <noreply@localhost>' }}
+      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'App Preview <noreply@localhost>' }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       # Deploy stamp — identifies the exact merge result the preview serves.
@@ -62,7 +62,7 @@ jobs:
       ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
       APP_NAME: ${{ secrets.APP_NAME }}
       APP_SLUG: ${{ secrets.APP_SLUG }}
-      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'Proof Preview <noreply@localhost>' }}
+      AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'App Preview <noreply@localhost>' }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
     steps:

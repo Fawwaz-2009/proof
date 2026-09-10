@@ -21,17 +21,22 @@ import { HttpServerResponse } from "effect/unstable/http";
  *   per-route limits (config/auth.ts) sit underneath as the fine-grained,
  *   identity-keyed tier.
  *
- * namespaceId is ACCOUNT-global: two bindings sharing one id share counters,
- * across Workers and across apps. 9001/9002 belong to proof; pick fresh ids
- * for sibling products on the same Cloudflare account.
+ * namespaceId is ACCOUNT-global: two bindings sharing one id share
+ * counters, across Workers and across apps. The ids derive from APP_SLUG,
+ * so every project lands on its own namespaces without hand-picked
+ * numbers colliding with sibling products on the same account.
  */
+const slug = typeof process !== "undefined" ? (process.env.APP_SLUG ?? "app") : "app";
+const slugSeed = [...slug].reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 7);
+const namespaceId = (salt: number) => (slugSeed + salt) % 1_000_000;
+
 export const GlobalRateLimit = Cloudflare.RateLimit("GlobalRateLimit", {
-  namespaceId: 9001,
+  namespaceId: namespaceId(1),
   simple: { limit: 300, period: 60 },
 });
 
 export const AuthRateLimit = Cloudflare.RateLimit("AuthRateLimit", {
-  namespaceId: 9002,
+  namespaceId: namespaceId(2),
   simple: { limit: 5, period: 60 },
 });
 

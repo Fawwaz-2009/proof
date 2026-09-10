@@ -1,9 +1,9 @@
 {
-  "name": "@proof/backend",
+  "name": "@app/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "proof backend: the private Effect-native Worker (D1, R2, email, Better Auth), deployed by the root Alchemy stack.",
+  "description": "The private Effect-native Worker (D1, R2, email, Better Auth), deployed by the root Alchemy stack.",
   "exports": {
     "./contract": "./src/contracts/index.ts",
     "./contract/*": "./src/contracts/*.ts"

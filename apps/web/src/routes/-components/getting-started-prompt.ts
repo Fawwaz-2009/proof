@@ -5,7 +5,9 @@
 // agent zero room to guess: every step says what to run and what proves
 // it worked, the questions are batched up front, and the deep knowledge
 // stays in the files it points at (AGENTS.md, docs/faq.md,
-// stacks/github.ts) so nothing drifts.
+// stacks/github.ts) so nothing drifts. The same text lives in README.md
+// inside a fenced block (GitHub renders it with a copy button); edit
+// both together.
 export const getStartedPrompt = `Set up the proof starter template as a new project:
 https://github.com/Fawwaz-2009/proof
 

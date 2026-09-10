@@ -17,7 +17,7 @@
       },
     },
     "apps/backend": {
-      "name": "@proof/backend",
+      "name": "@app/backend",
       "version": "0.1.0",
       "dependencies": {
         "@alchemy.run/better-auth": "2.0.0-beta.76",
@@ -35,12 +35,12 @@
       },
     },
     "apps/web": {
-      "name": "@proof/web",
+      "name": "@app/web",
       "version": "0.1.0",
       "dependencies": {
+        "@app/backend": "workspace:*",
         "@fontsource-variable/geist": "^5.3.0",
         "@hookform/resolvers": "^5.9.1",
-        "@proof/backend": "workspace:*",
         "@tanstack/react-query": "^5.100.14",
         "@tanstack/react-router": "^1.170.10",
         "@tanstack/react-router-ssr-query": "^1.167.1",
@@ -84,6 +84,10 @@
     "@alchemy.run/floci": ["@alchemy.run/floci@2.0.0-beta.76", "", { "peerDependencies": { "effect": ">=4.0.0-rc.112 || >=4.0.0" } }, "sha512-UIKd+Hki3t5seDpLfyRBwWiNukKlbAqDCTOYBD+n49b/WQIgEWHhYXzGtnwC7OY/b3KAv5p7gsdn8IpPnRXR8g=="],
 
     "@alchemy.run/node-utils": ["@alchemy.run/node-utils@2.0.0-beta.76", "", {}, "sha512-KUAlGdoeWeMEToUP1V3I+mEf6FVzUjU+6Tc8savNvMsXN9t3uwZVqD1FeMzTMzMTJJijjxVljQTCtyoeE9W43w=="],
+
+    "@app/backend": ["@app/backend@workspace:apps/backend"],
+
+    "@app/web": ["@app/web@workspace:apps/web"],
 
     "@aws-crypto/crc32": ["@aws-crypto/crc32@5.2.0", "", { "dependencies": { "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "tslib": "^2.6.2" } }, "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg=="],
 
@@ -542,10 +546,6 @@
     "@prisma/get-platform": ["@prisma/get-platform@7.2.0", "", { "dependencies": { "@prisma/debug": "7.2.0" } }, "sha512-k1V0l0Td1732EHpAfi2eySTezyllok9dXb6UQanajkJQzPUGi3vO2z7jdkz67SypFTdmbnyGYxvEvYZdZsMAVA=="],
 
     "@prisma/query-plan-executor": ["@prisma/query-plan-executor@7.2.0", "", {}, "sha512-EOZmNzcV8uJ0mae3DhTsiHgoNCuu1J9mULQpGCh62zN3PxPTd+qI9tJvk5jOst8WHKQNwJWR3b39t0XvfBB0WQ=="],
-
-    "@proof/backend": ["@proof/backend@workspace:apps/backend"],
-
-    "@proof/web": ["@proof/web@workspace:apps/web"],
 
     "@puppeteer/browsers": ["@puppeteer/browsers@3.2.1", "", { "dependencies": { "modern-tar": "^0.8.0", "yargs": "^18.0.0" }, "peerDependencies": { "proxy-agent": ">=8.0.1", "yauzl": "^2.10.0 || ^3.4.0" }, "optionalPeers": ["proxy-agent", "yauzl"], "bin": { "browsers": "lib/main-cli.js" } }, "sha512-KDz+3qDRdBAlRlMjmKyj6dEs33YHTk/xRHEENSXq6TNnhgoU15ruSHtEBeVF6OZ9tBDY55Se4P0nFMNsipzU9A=="],
 

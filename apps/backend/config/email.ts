@@ -12,7 +12,7 @@ import { Context, Layer } from "effect";
  * cosmetic there. Deploys go through worker.ts, which requires the real
  * address (see the props gen).
  */
-export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("Proof <noreply@localhost>"));
+export const emailFromConfig = Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>"));
 
 export class Email extends Context.Service<Email>()("Email", {
   make: Effect.gen(function* () {

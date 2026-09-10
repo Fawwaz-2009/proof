@@ -1,9 +1,9 @@
 {
-  "name": "@proof/web",
+  "name": "@app/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "proof web app: TanStack Start on Cloudflare Workers, the sole public ingress.",
+  "description": "TanStack Start on Cloudflare Workers, the sole public ingress.",
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json"
@@ -11,7 +11,7 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
-    "@proof/backend": "workspace:*",
+    "@app/backend": "workspace:*",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.10",
     "@tanstack/react-router-ssr-query": "^1.167.1",

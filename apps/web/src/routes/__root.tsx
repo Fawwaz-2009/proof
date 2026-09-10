@@ -15,13 +15,16 @@ interface RouterContext {
  * follow APP_NAME, and STAGE tells preview deploys where they are. Server
  * function so the env import never reaches the client bundle.
  */
-// The production origin, as a constant: canonical and og:url point here
-// even from a preview stage, which is what search engines should index.
-const SITE_URL = "https://proof.fawwaz.dev";
+// The production origin: canonical and og:url point here even from a
+// preview stage, which is what search engines should index. Empty until
+// the project has a final origin (the platform workers.dev URL after the
+// first prod deploy, or https://<slug>.<ROOT_DOMAIN> once a domain
+// lands); the head block omits canonical and og:url while it is empty.
+const SITE_URL = "";
 
 export const getAppMeta = createServerFn({ method: "GET" }).handler(async () => {
   return {
-    appName: (env.APP_NAME as string | undefined) ?? "Proof",
+    appName: (env.APP_NAME as string | undefined) ?? "App",
     stage: (env.STAGE as string | undefined) ?? "",
     url: SITE_URL,
   };
@@ -30,7 +33,7 @@ export const getAppMeta = createServerFn({ method: "GET" }).handler(async () => 
 export const Route = createRootRouteWithContext<RouterContext>()({
   loader: () => getAppMeta(),
   head: ({ match }) => {
-    const { appName, url } = match.loaderData ?? { appName: "Proof", url: "" };
+    const { appName, url } = match.loaderData ?? { appName: "App", url: "" };
     const description =
       "Proof is a starter with a pipeline: an agent builds each issue in isolation, every pull request ships with a running proof on your own domain, and merge ships it.";
     return {

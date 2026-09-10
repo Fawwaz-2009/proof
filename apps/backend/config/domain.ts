@@ -22,7 +22,7 @@ import * as Effect from "effect/Effect";
  * would attach the wrong DNS name.
  */
 export const websiteDomain = Effect.gen(function* () {
-  const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("proof"), Effect.orDie);
+  const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
   const baseDomain = yield* Config.option(Config.string("ROOT_DOMAIN")).pipe(Effect.orDie);
   const stack = yield* Effect.serviceOption(Stack);
   if (stack._tag === "None") {

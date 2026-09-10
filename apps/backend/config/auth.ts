@@ -20,6 +20,7 @@ export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Confi
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
+    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
       .split(",")
@@ -52,9 +53,9 @@ export class Auth extends Context.Service<Auth>()("Auth", {
             await Effect.runPromiseWith(effectContext)(
               mail.send({
                 to: email,
-                subject: "Your Proof sign-in code",
-                text: `Your Proof sign-in code is ${otp}. It expires in 15 minutes.`,
-                html: `<p>Your Proof sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
+                subject: `Your ${appName} sign-in code`,
+                text: `Your ${appName} sign-in code is ${otp}. It expires in 15 minutes.`,
+                html: `<p>Your ${appName} sign-in code is <strong>${otp}</strong>.</p><p>It expires in 15 minutes.</p>`,
               }),
             );
           },

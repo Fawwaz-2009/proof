@@ -12,7 +12,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const { appName } = Route.useLoaderData() ?? { appName: "Proof" };
+  const { appName } = Route.useLoaderData() ?? { appName: "App" };
 
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");

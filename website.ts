@@ -27,7 +27,7 @@ const websiteDeployProps = Effect.gen(function* () {
   const host = yield* websiteDomain;
   const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   const stage = yield* Effect.serviceOption(Alchemy.Stage).pipe(Effect.map((service) => (service._tag === "Some" ? service.value : "")));
-  const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("Proof"), Effect.orDie);
+  const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
 
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the
@@ -48,7 +48,7 @@ const websiteDeployProps = Effect.gen(function* () {
       traces: { enabled: true, headSamplingRate: 0.01 },
     },
     memo: {
-      // The site imports @proof/backend/contract (a sibling workspace
+      // The site imports @app/backend/contract (a sibling workspace
       // package); the default hash scope only covers apps/web, so the shared
       // contract sources are added explicitly and the lockfile stays in the
       // hash (providing `include` drops it otherwise).
