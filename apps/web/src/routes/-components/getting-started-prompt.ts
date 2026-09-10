@@ -44,15 +44,15 @@ docs/faq.md are the rules; read them before making changes.
    rename comes first: the stack name in alchemy.run.ts ("Proof" -> the
    project name in PascalCase). It scopes the ID of every resource
    alchemy creates, so it must be set BEFORE any alchemy command runs
-   (the ceremony in step 8 is the first one); renaming it after a deploy
-   orphans the database, bucket, and workers. Then the rest: the package
-   names (@proof/backend, @proof/web, the root name), every source
-   import of @proof/backend, the "@proof/Notes" service tag, and
-   APP_NAME / APP_SLUG in .env (create .env from .env.example). Verify:
-   names (@proof/backend, @proof/web, the root name), every source
-   import of @proof/backend, the "@proof/Notes" service tag, and
-   APP_NAME / APP_SLUG in .env (create .env from .env.example). Verify:
-   grep -rn "@proof/" apps/ returns nothing.
+   (the ceremony in step 9 is the first one); renaming it after a deploy
+   orphans the database, bucket, and workers. Give stacks/github.ts the
+   same treatment: its string literals ("ProofGitHub", "ProofCIToken",
+   "ProofR2Presign") gain the project's PascalCase prefix. They are
+   hardcoded on purpose: a later APP_SLUG rename must never move them.
+   Then the rest: the package names (@proof/backend, @proof/web, the
+   root name), every source import of @proof/backend, the "@proof/Notes"
+   service tag, and APP_NAME / APP_SLUG in .env (create .env from
+   .env.example). Verify: grep -rn "@proof/" apps/ returns nothing.
 8. Commit the rename on main.
 9. Run the setup: bun run update-stack-secrets, prefixed with
    GITHUB_OWNER, GITHUB_REPO (from git remote), APP_NAME, APP_SLUG,

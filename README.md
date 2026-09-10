@@ -1,6 +1,6 @@
 # proof
 
-From zero to AI-driven development in under two minutes. You don't review
+From zero to AI driven development, in under 2 mins. You don't review
 diffs: every pull request ships with a proof, the real app running isolated
 on your own host. Mark it up, merge, and it ships.
 
@@ -11,12 +11,16 @@ TanStack Start website as the sole ingress.
 
 ## Start a new app
 
-Create a GitHub repository from this template, then paste the getting-started prompt from
-[proof.fawwaz.dev](https://proof.fawwaz.dev) into your coding agent. It clones the repository, renames
-every identity token to your app, walks you through the one hand-made Cloudflare credential, runs the
-ceremony that mints the CI token and R2 keys and writes the repo secrets, and opens your first pull
-request with a deployed preview. When the readiness check is green and you have signed in on production,
-the loop below is yours.
+Copy the getting-started prompt from [proof.fawwaz.dev](https://proof.fawwaz.dev)
+and paste it into your coding agent in an empty directory: that is the whole
+manual part. The agent asks for a project name and visibility, creates the
+repository from this template with the GitHub CLI (fresh history, no clicks),
+installs dependencies, renames every identity token to your app, walks
+through the one hand-made Cloudflare credential, runs `bun run
+update-stack-secrets` to mint the CI token and R2 keys and write the repo
+secrets, and opens your first pull request with a deployed preview. When the
+readiness check is green and you have signed in on production, the loop
+below is yours.
 
 ## The loop
 
@@ -28,9 +32,9 @@ the loop below is yours.
 | Markup    | You test it and comment. The diff is for the compiler; the proof is for you. |
 | Ship      | Merge ships it. That is the whole pipeline.                                  |
 
-Everything below documents the template itself; it applies to the
-scaffolded app as-is. Concept questions (what is a proof, why hashed ports,
-the view concept) are answered in [docs/faq.md](docs/faq.md).
+Everything below documents the template itself; it applies to your app
+as-is. Concept questions (what is a proof, why hashed ports, the view
+concept) are answered in [docs/faq.md](docs/faq.md).
 
 ## What is in the box
 
@@ -143,13 +147,13 @@ bun run check    # lint + typecheck (iac, backend, web) + format + build
 Two GitHub Actions workflows ship with the template (`.github/workflows/`),
 plus one merge blocker:
 
-- **PR preview** — every pull request deploys a fully isolated `pr-<n>` stage
+- **PR preview**: every pull request deploys a fully isolated `pr-<n>` stage
   (own Workers, D1, R2; email captured) and posts the preview URL on the PR.
   Closing the PR destroys the stage, and the destroy job refuses any
   non-`pr-*` stage.
-- **Prod CD** — merges to `main` deploy production, migrations riding the
+- **Prod CD**: merges to `main` deploy production, migrations riding the
   deploy.
-- **Prod readiness** — the merge blocker: until the repository is
+- **Prod readiness**: the merge blocker. Until the repository is
   production-ready (domain, sender address, R2 credentials), this check is
   red on every PR with the full setup checklist in its output. Mark it as a
   required status check in branch protection and merging is impossible
@@ -158,7 +162,7 @@ plus one merge blocker:
   (platform URLs, captured email), so agents and humans can build before
   the domain lands.
 
-One-time ceremony (your machine, never CI) — the scaffold command above runs
+One-time ceremony (your machine, never CI): the getting-started prompt runs
 it for you; the header of `stacks/github.ts` carries the full permission
 list and the gotchas for the manual path:
 
@@ -166,32 +170,32 @@ list and the gotchas for the manual path:
 GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
 APP_NAME="My App" APP_SLUG=my-app ROOT_DOMAIN=<domain> \
 AUTH_EMAIL_FROM="My App <noreply@<domain>>" \
-GITHUB_TOKEN=$(gh auth token) \
-bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
+bun run update-stack-secrets
 ```
 
 That mints the least-privilege CI token, mints the R2 presign credentials
 (nothing to paste: R2 S3 keys are API tokens, and the ceremony creates
 them), and writes every secret the workflows need (including `APP_NAME`,
-the display name your app renders).
-Two platform walls shape the ceremony: the deploying token is always
-dashboard-born (API-minted tokens cannot carry token-creation rights), and
-it must itself include "Account API Tokens: Edit", the one group that lets
-it mint the CI child token. Acceptance is the peace-sign ritual: open the
-marker PR, see the preview carry it, merge, watch prod migrate, then sign
-in with a real email.
+the display name your app renders). The script pins the admin profile:
+the deploying token must be dashboard-born (API-minted tokens cannot carry
+token-creation rights) and must itself include "Account API Tokens: Edit",
+the one group that lets it mint the CI child token. Acceptance is the loop
+itself: open the first PR, watch the preview carry it, merge, watch prod
+migrate, then sign in with a real email. Re-running is safe whenever values
+change, with one warning: it rotates the CI token and R2 keys, so redeploy
+every deployed stage afterwards.
 
 ## Working with agents
 
-The scaffolded `AGENTS.md` encodes the loop: an issue ends in a pull
+The repo's `AGENTS.md` encodes the loop: an issue ends in a pull
 request, never in "I'm done"; the PR description is the proof brief (what
 changed, what fought back, how to give feedback). Every issue gets its own
 worktree so parallel agents never share a checkout:
 
 ```sh
-bun scripts/wt.ts <name>      # worktree at ../<repo>-wt/<name>, stage dev-<name>
-bun scripts/wt.ts --list
-bun scripts/wt.ts --remove <name>
+bun run wt <name>             # worktree at ../<repo>-wt/<name>, stage dev-<name>
+bun run wt --list
+bun run wt --remove <name>
 ```
 
 Dev ports are hashed from project and stage (`config/domain.ts`), so two
@@ -213,9 +217,13 @@ scripts/wt.ts         the worktree helper
 
 ## Identity and renaming
 
-The scaffold sets every identity token at creation. Renaming the product
-later is configuration, not code: edit `APP_NAME` (what people read) and
-`APP_SLUG` (the hostname prefix) in `.env`, and redeploy. One rule: never
-rename the stack name in `alchemy.run.ts` after the first deploy. It is
-alchemy's state scope; changing it orphans your database and bucket under
-an empty scope. See `docs/faq.md`.
+The getting-started prompt sets every identity token at creation. The
+first and most important is the stack name in `alchemy.run.ts`: it scopes
+the ID of every resource alchemy creates, so it is renamed to your app
+before the first alchemy command runs and never again. The identifiers in
+`stacks/github.ts` (`ProofGitHub`, `ProofCIToken`, `ProofR2Presign`) are
+the same kind of token: string literals, renamed once, deliberately not
+derived from the environment. Renaming the product afterwards is
+configuration, not code: edit `APP_NAME` (what people read) and
+`APP_SLUG` (the hostname prefix) in `.env`, and redeploy. See
+`docs/faq.md`.

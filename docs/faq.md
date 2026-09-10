@@ -2,7 +2,7 @@
 
 The education surface, question-shaped because that is how beginners ask.
 Task questions (rename, domain, add a feature) are answered where they
-arise: `.env.example` comments, the scaffolded AGENTS.md, and comments at
+arise: `.env.example` comments, the repo's AGENTS.md, and comments at
 the code in question. Concept questions live here.
 
 Status: draft. Grows as decisions land.
@@ -52,19 +52,37 @@ sends email from addresses on a zone you control.
 ## Trust
 
 **What can the CI token do?**
-Deploy previews, and nothing else. The scaffold mints it in-stack,
-least-privilege. You never paste a global key into a repo secret.
+Deploy previews, and nothing else. The ceremony (`bun run
+update-stack-secrets`) mints it in-stack, least-privilege. You never paste
+a global key into a repo secret.
 
 **When does production deploy?**
 On merge to main, never before. The readiness gate blocks the merge from
 a half-configured repo: production arms only when every secret checks
 green.
 
-**What does the CLI do with my Cloudflare credentials?**
-Tries existing credentials silently (flag, env, stored profiles), shows
-one outcome line, and only if none can mint tokens walks you through the
-dashboard for the two permissions that matter. Environment credentials
-are never persisted.
+**Why is my first pull request red?**
+The readiness check is the setup checklist wearing a CI hat. Until the
+ceremony has run (domain, sender address, R2 credentials), it fails on
+every PR by design, so a half-configured repo cannot reach production.
+Previews still work from minute one: platform URLs, captured email. Once
+the secrets exist, the check passes silently forever.
+
+**Why does setup need a dashboard-born Cloudflare token?**
+Two platform walls. A token created by an API or a tool cannot carry
+token-creation rights, and the ceremony must mint the CI child token, so
+the credential that runs it has to be born in the dashboard (My Profile >
+API Tokens) and must itself include "Account API Tokens: Edit". The
+getting-started prompt checks for it after the dependency install and, if
+it is missing, stops and walks you through the dashboard; the token never
+enters the chat.
+
+**Is it safe to re-run the ceremony?**
+Yes: it is idempotent, and it is the expected way to change the domain,
+sender, or app identity. One warning: re-running rotates the CI token and
+the R2 keys, and every already-deployed stage keeps serving with the old
+(now deleted) credentials until it is redeployed, which silently breaks
+image signing and the sender. Redeploy every deployed stage afterwards.
 
 ## Craft
 
@@ -81,10 +99,11 @@ canonical case is the image: no exposed keys, no second endpoint, no
 re-validation. It only easily works because Effect makes the pipeline
 compose.
 
-**Why does the CLI ship the template inside itself?**
-create-next-app model: every release carries a tested snapshot, so a
-release can be rehearsed before it becomes anyone's default, and
-scaffolding works regardless of the template repo's visibility.
+**Why is the template the repository itself?**
+No scaffold CLI, no snapshot to keep in sync: the repository carries the
+template flag, and `gh repo create --template` copies it with fresh
+history. A release is just a commit to main; what worked on the site
+yesterday is what a new app clones today.
 
 **Why is there no component library pre-installed?**
 A starter should not choose your UI library. The demo uses plain Tailwind

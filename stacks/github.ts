@@ -1,4 +1,4 @@
-// The admin trust-root stack — run LOCALLY ONLY, never in CI.
+// The admin trust-root stack: run LOCALLY ONLY, never in CI.
 //
 // It mints the least-privilege CI token, mints the R2 presign credentials
 // (Cloudflare R2 S3 credentials ARE API tokens: access key id = token id,
@@ -9,23 +9,32 @@
 // is the platform's irreducible human step.
 //
 // One-time ceremony (from the repository root, on a clean main):
-//   1. Create the dashboard-born token — My Profile → API Tokens → Create
-//      Custom Token, with the `permissionGroups` list below PLUS
+//   1. Create the dashboard-born token (My Profile -> API Tokens -> Create
+//      Custom Token) with the `permissionGroups` list below PLUS
 //      "Account API Tokens: Edit" (the caller needs it to mint the child
 //      tokens at all; OAuth and API-minted tokens can never carry it).
-//   2. Authenticate alchemy with it: CLOUDFLARE_API_TOKEN=<token> (or
-//      `alchemy login` via the API-token method).
-//   3. Run:
+//   2. Authenticate alchemy with it: `bunx alchemy login --profile admin`
+//      (the API-token method; the script below pins that profile).
+//   3. Run the ceremony script, which wraps the raw deploy with the
+//      GitHub token and the admin profile:
 //
 //      GITHUB_OWNER=<you> GITHUB_REPO=<repo> \
 //      APP_NAME="My App" APP_SLUG=my-app ROOT_DOMAIN=<domain> \
 //      AUTH_EMAIL_FROM="My App <noreply@<domain>>" \
-//      GITHUB_TOKEN=$(gh auth token) \
-//      bunx alchemy deploy stacks/github.ts --stage bootstrap --yes
+//      bun run update-stack-secrets
 //
 // Gotchas, both hard-won in the reference implementation: run it FROM the
 // branch whose stack file you mean to deploy (a stale working tree silently
-// no-ops), and never from CI — this stack holds the trust root.
+// no-ops), and never from CI: this stack holds the trust root.
+
+// The stack name and token names below are string literals, renamed once
+// at creation (same ritual as the stack name in alchemy.run.ts), and
+// never derived from APP_SLUG at runtime: a product rename edits the env
+// and must never move this stack's state scope, or the next ceremony
+// would provision duplicate tokens beside the live ones. Each app's
+// repository carries its own literals, which is what keeps two apps
+// bootstrapped on one Cloudflare account from fighting over
+// account-singleton token names.
 
 import { createHash } from "node:crypto";
 import * as Alchemy from "alchemy";
@@ -51,7 +60,7 @@ export default Alchemy.Stack(
 
     // The CI token is minted HERE, by this stack, from the caller's
     // credential: the mint requires the caller to carry "Account API Tokens:
-    // Edit", which OAuth sessions and API-minted tokens can never hold —
+    // Edit", which OAuth sessions and API-minted tokens can never hold,
     // so this ceremony must run with the dashboard-born admin credential
     // (--profile admin, API-token method).
     const ciToken = yield* Cloudflare.ApiToken.AccountApiToken("ProofCIToken", {
@@ -97,7 +106,7 @@ export default Alchemy.Stack(
     const rootDomain = yield* Config.string("ROOT_DOMAIN").pipe(Config.withDefault(""), Effect.orDie);
     const authEmailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Effect.orDie);
 
-    // The display name rides the deploys so scaffolded apps greet their
+    // The display name rides the deploys so renamed apps greet their
     // owner's product, not the template's.
     yield* GitHub.Secret("app-name", {
       ...repo,
