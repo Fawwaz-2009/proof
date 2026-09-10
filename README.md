@@ -1,6 +1,6 @@
 # proof
 
-From zero to AI driven development, in under 2 mins. You don't review
+From zero to AI driven development, in under 4 mins. You don't review
 diffs: every pull request ships with a proof, the real app running isolated
 on your own host. Mark it up, merge, and it ships.
 

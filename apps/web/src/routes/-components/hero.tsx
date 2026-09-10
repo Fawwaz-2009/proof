@@ -49,7 +49,7 @@ export function Hero() {
         <div className="shell grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-12">
           <div className="grid gap-5">
             <h1 className="hero-enter max-w-[827px] text-pretty break-words font-normal text-4xl leading-[1.1] tracking-[-0.24px] text-foreground sm:text-5xl lg:text-[58px]">
-              From zero to AI driven development, in under 2 mins
+              From zero to AI driven development, in under 4 mins
             </h1>
             <div className="hero-enter max-w-[633px] text-lg leading-7 text-muted-foreground [animation-delay:80ms]">
               <p>

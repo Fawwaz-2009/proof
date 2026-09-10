@@ -15,12 +15,13 @@ interface RouterContext {
  * follow APP_NAME, and STAGE tells preview deploys where they are. Server
  * function so the env import never reaches the client bundle.
  */
-// The production origin: canonical and og:url point here even from a
-// preview stage, which is what search engines should index. Empty until
-// the project has a final origin (the platform workers.dev URL after the
-// first prod deploy, or https://<slug>.<ROOT_DOMAIN> once a domain
-// lands); the head block omits canonical and og:url while it is empty.
-const SITE_URL = "";
+// The production origin: canonical, og:url, and og:image point here even
+// from a preview stage, which is what scrapers and search engines should
+// index. The template ships it empty (the head omits canonical and the OG
+// image tags while it is empty) and fills it once a final origin exists:
+// https://<slug>.<ROOT_DOMAIN> after the domain lands. Proof has its
+// domain, so it carries the real one.
+const SITE_URL = "https://proof.fawwaz.dev";
 
 export const getAppMeta = createServerFn({ method: "GET" }).handler(async () => {
   return {
@@ -45,8 +46,16 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { property: "og:title", content: appName },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
-        ...(url ? [{ property: "og:url", content: url }] : []),
-        { name: "twitter:card", content: "summary" },
+        ...(url
+          ? [
+              { property: "og:url", content: url },
+              { property: "og:image", content: `${url}/og.png` },
+              { property: "og:image:width", content: "1200" },
+              { property: "og:image:height", content: "630" },
+              { name: "twitter:card", content: "summary_large_image" },
+              { name: "twitter:image", content: `${url}/og.png` },
+            ]
+          : [{ name: "twitter:card", content: "summary" }]),
         { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#ffffff" },
         { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#09090b" },
       ],
