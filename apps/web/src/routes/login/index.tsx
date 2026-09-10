@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { authClient } from "../auth-client.ts";
+import { authClient } from "../../auth-client.ts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/login/")({
   component: Login,
 });
 
@@ -19,6 +19,7 @@ function Login() {
   const [step, setStep] = useState<"email" | "code">("email");
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  const [autofilled, setAutofilled] = useState(false);
 
   const sendCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -27,6 +28,7 @@ function Login() {
 
     setSubmitting(true);
     setError(undefined);
+    setAutofilled(false);
 
     try {
       const result = await authClient.emailOtp.sendVerificationOtp({
@@ -41,6 +43,14 @@ function Login() {
 
       setEmail(normalizedEmail);
       setStep("code");
+      // Capture stages: a six-digit local part IS the code (config/auth.ts),
+      // so the page can prefill it with no backend call. In prod the code is
+      // random and arrives by email; a failed verify falls back to that.
+      const chosen = /^(\d{6})@/.exec(normalizedEmail)?.[1];
+      if (chosen) {
+        setOtp(chosen);
+        setAutofilled(true);
+      }
     } catch {
       setError("We could not send a sign-in code. Please try again.");
     } finally {
@@ -98,6 +108,7 @@ function Login() {
               <p className="text-sm text-muted-foreground">We sent a 6-digit code to {email}.</p>
               <Label htmlFor="otp">Code</Label>
               <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
+              {autofilled ? <p className="text-xs text-muted-foreground">Dev shortcut: the code is the six digits in the address. No email was sent.</p> : null}
               <Button type="submit" disabled={submitting} className="w-full">
                 {submitting ? "Verifying..." : "Verify and continue"}
               </Button>
