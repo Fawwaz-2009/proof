@@ -40,8 +40,15 @@ docs/faq.md are the rules; read them before making changes.
    placeholder. If neither exists yet, keep the placeholder and warn me
    before the merge.
 7. Rename the identity tokens from the project name; the template ships
-   as "Proof" and must become the project everywhere: the stack name in
-   alchemy.run.ts (set once, never after a first deploy), the package
+   as "Proof" and must become the project everywhere. The MOST important
+   rename comes first: the stack name in alchemy.run.ts ("Proof" -> the
+   project name in PascalCase). It scopes the ID of every resource
+   alchemy creates, so it must be set BEFORE any alchemy command runs
+   (the ceremony in step 8 is the first one); renaming it after a deploy
+   orphans the database, bucket, and workers. Then the rest: the package
+   names (@proof/backend, @proof/web, the root name), every source
+   import of @proof/backend, the "@proof/Notes" service tag, and
+   APP_NAME / APP_SLUG in .env (create .env from .env.example). Verify:
    names (@proof/backend, @proof/web, the root name), every source
    import of @proof/backend, the "@proof/Notes" service tag, and
    APP_NAME / APP_SLUG in .env (create .env from .env.example). Verify:

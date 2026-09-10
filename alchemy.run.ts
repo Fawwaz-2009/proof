@@ -28,13 +28,13 @@ import { FilesBucket } from "./apps/backend/config/storage.ts";
 import { Website } from "./website.ts";
 
 // The stack name is the infrastructure's state scope: the address under
-// which alchemy remembers every resource it made. Renaming this string
-// orphans the existing D1, R2, and workers under an empty scope: the
-// next deploy provisions fresh ones beside them. It is set once (at
-// scaffold time for scaffolded apps, at origin for this repository) and
-// never edited after the first deploy. See docs/faq.md.
+// which alchemy remembers every resource it made, and it determines the
+// ID of every resource created. Set it once, at clone time, before the
+// first alchemy command runs; renaming it later orphans the existing D1,
+// R2, and workers under an empty scope while the next deploy provisions
+// fresh ones beside them. See docs/faq.md.
 export default Alchemy.Stack(
-  "StartingFlare",
+  "Proof",
   {
     providers: Layer.mergeAll(Cloudflare.providers(), Drizzle.providers(), GitHub.providers()),
     state: Cloudflare.state(),
