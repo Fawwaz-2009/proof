@@ -25,8 +25,8 @@ export function GettingStarted() {
             Paste this into your coding agent <em className="italic text-primary">to get started.</em>
           </h2>
           <p className="mt-4 max-w-xl text-lg leading-7 text-muted-foreground">
-            Paste the prompt into your agent anywhere: it clones the template, turns it into the project, walks through the one Cloudflare credential made by hand, and
-            opens the first pull request with a running preview. No manual steps before it, no scaffold CLI under it.
+            Paste the prompt into your agent in an empty folder: it creates the repository from the template, installs, walks through the one Cloudflare credential made
+            by hand, and opens the first pull request with a running preview. No GitHub clicks before it, no scaffold CLI under it.
           </p>
         </div>
         <div className="relative mx-auto mt-10 max-w-[840px] rounded-xl border border-primary/15 bg-primary/5 dark:border-primary/20">
@@ -41,7 +41,7 @@ export function GettingStarted() {
           <pre className="mt-4 max-h-[460px] overflow-y-auto whitespace-pre-wrap p-6 pr-14 font-mono text-sm leading-relaxed text-foreground">{getStartedPrompt}</pre>
         </div>
         <p className="mt-4 text-center font-mono text-xs uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
-          Bun 1.3+ &middot; gh CLI &middot; a Cloudflare account &middot; an agent in your terminal
+          git &middot; bun or npm &middot; the gh CLI &middot; a Cloudflare account &middot; an agent in your terminal
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button asChild variant="outline">

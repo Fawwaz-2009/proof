@@ -1,71 +1,75 @@
 // The getting-started prompt: the whole onboarding in one copyable block.
-// It replaces the scaffold CLI, so it must carry everything the CLI
-// automated: clone, identity rename, a fresh git history, the one
-// hand-made Cloudflare credential, the ceremony, and the first pull
-// request with its proof. It deliberately orchestrates instead of
-// restating: the deep knowledge stays in the files it points at
-// (stacks/github.ts, AGENTS.md, docs/faq.md, README.md) so nothing can
-// drift. The clone link is hardcoded: it is the template's own URL and
-// never changes.
-export const getStartedPrompt = `Set up the proof starter template: https://github.com/Fawwaz-2009/proof
+// The user does exactly one thing: paste this into an agent in an empty
+// directory. The agent creates the repository from the template with the
+// GitHub CLI, installs, and drives the entire flow. It must leave the
+// agent zero room to guess: every step says what to run and what proves
+// it worked, the questions are batched up front, and the deep knowledge
+// stays in the files it points at (AGENTS.md, docs/faq.md,
+// stacks/github.ts) so nothing drifts.
+export const getStartedPrompt = `Set up the proof starter template as a new project:
+https://github.com/Fawwaz-2009/proof
 
 proof is an Effect + Cloudflare starter where every pull request deploys
-its own isolated preview, and merging ships production. Clone it, turn
-it into a working project, and take it from zero to a first merged pull
-request with production live. One step at a time, explaining as you go.
-Once inside, read AGENTS.md and docs/faq.md: they are the rules.
+its own isolated preview, and merging ships production. Work one step at
+a time and explain as you go. Once inside the repository, AGENTS.md and
+docs/faq.md are the rules; read them before making changes.
 
-SETUP
-1. Check the machine: bun 1.3+, git, and the gh CLI logged in
-   (gh auth status).
-2. Clone https://github.com/Fawwaz-2009/proof.
-3. Ask for the project name (it names the directory too) and whether
-   the GitHub repository should be public or private. From the name,
-   set every identity token the README's "Identity and renaming"
-   section lists: the stack name in alchemy.run.ts (set once, never
-   after a first deploy), the package scope, and APP_NAME / APP_SLUG
-   in .env.
-4. Fresh git history: the template's commits are not the project's.
-   Squash everything into a single commit ("fresh start from the proof
-   template").
-5. Create the GitHub repository with gh repo create (source is the
-   current directory, push main), then continue from there.
-6. Cloudflare credential: check bunx alchemy profile show admin, or
-   CLOUDFLARE_API_TOKEN already exported. If neither exists, walk
-   through creating a dashboard API token with the permission groups
-   listed in the header of stacks/github.ts, then run bunx alchemy
-   login --profile admin.
-7. Ask for the root domain and the sender email for auth codes. Both
-   can wait, at a price to explain: previews work without them, but
-   production sign-in cannot deliver email until a real sender on the
-   domain exists. If neither exists yet, use the shipped placeholder
-   and be loud about it at step 11.
-8. Run the setup: bun run update-stack-secrets, prefixed with
-   GITHUB_OWNER, GITHUB_REPO, APP_NAME, APP_SLUG, ROOT_DOMAIN (if any),
-   and AUTH_EMAIL_FROM. It authenticates with the admin profile from
-   step 4; without it the token mint fails with Unauthorized. Re-running
-   it later rotates live credentials: if a stage is already deployed,
-   redeploy it right after. It mints the least-privilege CI token, mints the
-   R2 keys, and writes every repo secret. Verify with gh secret list.
-   Safe to re-run whenever the values change.
-
-FIRST PULL REQUEST
-9. Start a worktree (bun run wt <name>) and pick a small first change:
-   the demo greeting copy, a new field on notes, or a request. Build
-   it by the book, run bun run check, and open the pull request. Its
-   description starts with a warning: merging ships production, and
-   if the sender email is still the placeholder, login codes cannot
-   be delivered. Under it: the proof brief from AGENTS.md, and the
-   production checklist with whatever is still missing.
-10. CI posts the preview URL on the pull request. Share it and wait
-    for feedback. Fix, repeat.
-11. Before merging: if the sender is still the placeholder, walk
-    through creating a real one on the domain and re-run the ceremony
-    so the secrets update. Push until the readiness check is green.
-    Only then merge: production deploys with the migrations.
-12. Share the production URL and have the user sign in with a real
-    email. That sign-in is the acceptance test. From here, AGENTS.md
-    is the operating manual.
+1. Ask for the project name and whether the GitHub repository should be
+   public or private.
+2. Create the repository from the template, clone it, and work from its
+   root:
+   gh repo create <name> --template Fawwaz-2009/proof --private --clone
+   (swap --private for --public if asked).
+3. Install dependencies: bun install, or npm install when bun is not
+   installed.
+4. Read AGENTS.md and docs/faq.md.
+5. Cloudflare credential: run bunx alchemy login --profile admin. If it
+   prints a stored admin credential, continue. If not: STOP and tell me
+   this one-time credential must be created by hand in the Cloudflare
+   dashboard: My Profile -> API Tokens -> Create Token -> Custom Token,
+   with these permission groups: Account Settings Read, Workers Scripts
+   Write, Workers KV Storage Write, Workers R2 Storage Write, Workers
+   Routes Write, Workers Tail Read, Workers Observability Write, D1
+   Write, Email Sending Write, Secrets Store Write, and Account API
+   Tokens Write (a dashboard-born token is required: tokens created by
+   tools like you cannot hold this one). Give me the command to run with
+   my new token and wait until I confirm.
+6. Ask for the root domain and the sender email for auth codes. Both are
+   optional: previews work without them, but production sign-in cannot
+   deliver email until a real sender on the domain replaces the
+   placeholder. If neither exists yet, keep the placeholder and warn me
+   before the merge.
+7. Rename the identity tokens from the project name; the template ships
+   as "Proof" and must become the project everywhere: the stack name in
+   alchemy.run.ts (set once, never after a first deploy), the package
+   names (@proof/backend, @proof/web, the root name), every source
+   import of @proof/backend, the "@proof/Notes" service tag, and
+   APP_NAME / APP_SLUG in .env (create .env from .env.example). Verify:
+   grep -rn "@proof/" apps/ returns nothing.
+8. Commit the rename on main.
+9. Run the setup: bun run update-stack-secrets, prefixed with
+   GITHUB_OWNER, GITHUB_REPO (from git remote), APP_NAME, APP_SLUG,
+   ROOT_DOMAIN (if any), and AUTH_EMAIL_FROM. It mints the
+   least-privilege CI token, mints the R2 keys, and writes every repo
+   secret. Verify with gh secret list. Safe to re-run whenever the
+   values change; re-running rotates live credentials, so redeploy any
+   deployed stage afterwards.
+10. Push main: the production deploy runs green because the secrets
+    already exist.
+11. Start a worktree (bun run wt <name>) and pick a small first change:
+    the demo greeting copy, a new field on notes, or a request. Build it
+    by the book, run bun run check, and open the pull request. Its
+    description starts with a warning: merging ships production, and if
+    the sender email is still the placeholder, login codes cannot be
+    delivered. Under it: the proof brief from AGENTS.md and the
+    production checklist.
+12. CI posts the preview URL on the pull request. Share it and wait for
+    feedback. Fix, repeat.
+13. When the readiness check is green and feedback is handled, merge:
+    production deploys with the migrations.
+14. Share the production URL and have the user sign in with a real
+    email. That sign-in is the acceptance test. From here, AGENTS.md is
+    the operating manual.
 
 Always: never commit secrets, never echo tokens back, confirm before
-anything billable, show real errors instead of papering over them.`;
+anything billable, and show real errors instead of papering over them.`;
