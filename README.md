@@ -57,21 +57,20 @@ docs/faq.md are the rules; read them before making changes.
    deliver email until a real sender on the domain replaces the
    placeholder. If neither exists yet, keep the placeholder and warn me
    before the merge.
-7. Rename the identity tokens from the project name; the template ships
-   as "Proof" and must become the project everywhere. The MOST important
-   rename comes first: the stack name in alchemy.run.ts ("Proof" -> the
-   project name in PascalCase). It scopes the ID of every resource
-   alchemy creates, so it must be set BEFORE any alchemy command runs
-   (the ceremony in step 9 is the first one); renaming it after a deploy
-   orphans the database, bucket, and workers. Give stacks/github.ts the
-   same treatment: its string literals ("ProofGitHub", "ProofCIToken",
-   "ProofR2Presign") gain the project's PascalCase prefix. They are
-   hardcoded on purpose: a later APP_SLUG rename must never move them.
-   Then the rest: the package names (@proof/backend, @proof/web, the
-   root name), every source import of @proof/backend, the "@proof/Notes"
-   service tag, and APP_NAME / APP_SLUG in .env (create .env from
-   .env.example). Verify: grep -rn "@proof/" apps/ returns nothing.
-8. Commit the rename on main.
+7. Set the identity. It lives in exactly two places. First .env (create
+   it from .env.example): APP_NAME is what people read, APP_SLUG is the
+   hostname prefix. Second identity.ts at the repo root: STACK is the
+   infrastructure scope; set it once ("Proof" -> the project name in
+   PascalCase) and never after the first alchemy deploy (the ceremony in
+   step 9 is the first one), because renaming it later orphans the
+   database, bucket, and workers. Nothing else carries identity: package
+   scopes are @app/*, display fallbacks are neutral, and rate-limit
+   namespace ids derive from the slug. Verify: grep -rn "Proof"
+   --include=*.ts apps stacks website.ts alchemy.run.ts returns nothing
+   (identity.ts and this prompt aside).
+8. Commit the identity on main locally, and leave main unpushed:
+    pushing or merging to main ships production, and production waits
+    for a real sender (steps 11 and 12).
 9. Run the setup: bun run update-stack-secrets, prefixed with
    GITHUB_OWNER, GITHUB_REPO (from git remote), APP_NAME, APP_SLUG,
    ROOT_DOMAIN (if any), and AUTH_EMAIL_FROM. It mints the
@@ -79,20 +78,26 @@ docs/faq.md are the rules; read them before making changes.
    secret. Verify with gh secret list. Safe to re-run whenever the
    values change; re-running rotates live credentials, so redeploy any
    deployed stage afterwards.
-10. Push main: the production deploy runs green because the secrets
-    already exist.
-11. Start a worktree (bun run wt <name>) and pick a small first change:
-    the demo greeting copy, a new field on notes, or a request. Build it
-    by the book, run bun run check, and open the pull request. Its
-    description starts with a warning: merging ships production, and if
-    the sender email is still the placeholder, login codes cannot be
+10. Start a worktree (bun run wt <name>) and make the first change: the
+    /demo page heading (apps/web/src/routes/_authed/demo.tsx, currently
+    One of everything), a new field on notes, or a request. Build it by
+    the book, run bun run check, and open the pull request. It carries
+    the identity commit and the change together: main has never been
+    pushed, and this pull request is what turns the template into the
+    app. Its description starts with a warning: merging ships
+    production, and if the sender email is still the placeholder, the
+    readiness check stays red on purpose and login codes cannot be
     delivered. Under it: the proof brief from AGENTS.md and the
     production checklist.
-12. CI posts the preview URL on the pull request. Share it and wait for
-    feedback. Fix, repeat.
-13. When the readiness check is green and feedback is handled, merge:
-    production deploys with the migrations.
-14. Share the production URL and have the user sign in with a real
+11. CI posts the preview URL on the pull request. Share it and wait for
+    feedback. Fix, repeat. Previews capture sign-in codes to the stage
+    logs, so the proof works before email is real.
+12. To go live: add the root domain and a real sender if they were
+    skipped (update .env, re-run the setup from step 9), and the
+    readiness check turns green. With feedback handled and readiness
+    green, merge: the first production deploy ships with the migrations
+    and the real sender.
+13. Share the production URL and have the user sign in with a real
     email. That sign-in is the acceptance test. From here, AGENTS.md is
     the operating manual.
 
@@ -295,13 +300,11 @@ scripts/wt.ts         the worktree helper
 
 ## Identity and renaming
 
-The getting-started prompt sets every identity token at creation. The
-first and most important is the stack name in `alchemy.run.ts`: it scopes
-the ID of every resource alchemy creates, so it is renamed to your app
-before the first alchemy command runs and never again. The identifiers in
-`stacks/github.ts` (`ProofGitHub`, `ProofCIToken`, `ProofR2Presign`) are
-the same kind of token: string literals, renamed once, deliberately not
-derived from the environment. Renaming the product afterwards is
-configuration, not code: edit `APP_NAME` (what people read) and
-`APP_SLUG` (the hostname prefix) in `.env`, and redeploy. See
-`docs/faq.md`.
+Identity lives in exactly two places. `identity.ts` at the repo root
+holds `STACK`, the one literal that scopes the infrastructure: it names
+the app stack and derives the ceremony stack and token names, and it is
+set once, at clone time, before the first alchemy deploy and never
+again. Everything else reads env: `APP_NAME` (what people read) and
+`APP_SLUG` (the hostname prefix) in `.env`. Package scopes are `@app/*`
+and stay generic forever. Renaming the product later is two edits and a
+redeploy. See `docs/faq.md`.

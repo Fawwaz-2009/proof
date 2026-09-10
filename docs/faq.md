@@ -22,12 +22,13 @@ and `APP_NAME` is what people read. Change them in `.env`, redeploy, and
 every hostname re-derives; nothing in code or the database carries the
 old identity.
 
-**Why can't I rename the stack name in `alchemy.run.ts`?**
-`Alchemy.Stack("Proof", ...)` is the infrastructure's memory: the
-scope under which alchemy remembers every resource it made. Rename it and
-the next deploy finds an empty scope and builds a new, empty database and
-bucket beside the old ones. Users, sessions, rows: orphaned. Product
-renames happen in `APP_SLUG` and `APP_NAME`, never here.
+**Why can't I rename the stack name (`STACK` in `identity.ts`)?**
+The stack name is the infrastructure's memory: the scope under which
+alchemy remembers every resource it made. Rename it and the next deploy
+finds an empty scope and builds a new, empty database and bucket beside
+the old ones. Users, sessions, rows: orphaned. It is the one literal in
+the repo; everything else derives from it or reads env. Product renames
+happen in `APP_SLUG` and `APP_NAME`, never here.
 
 ## The loop
 
