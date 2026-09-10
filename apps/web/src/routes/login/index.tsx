@@ -1,126 +1,86 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import * as Schema from "effect/Schema";
+import { useForm } from "react-hook-form";
 import { authClient } from "../../auth-client.ts";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthCard } from "./-components/auth-card";
 
 export const Route = createFileRoute("/login/")({
+  validateSearch: (search: Record<string, unknown>): { email?: string } => ({
+    email: typeof search.email === "string" ? search.email : undefined,
+  }),
   component: Login,
 });
 
+/**
+ * The same form pattern as every form in the app: react-hook-form + an
+ * Effect Schema (Standard Schema resolver) for instant field validation,
+ * useMutation for the async call, one alert for server errors. The only
+ * per-form difference is the client a mutation calls: product routes use
+ * the contract-derived client, auth uses better-auth's.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailFormSchema = Schema.toStandardSchemaV1(
+  Schema.Struct({
+    email: Schema.String.check(Schema.makeFilter((value) => EMAIL_PATTERN.test(value), { message: "Enter a valid email address.", identifier: "LoginEmail" })),
+  }),
+);
+type EmailValues = typeof emailFormSchema.Type;
+
 function Login() {
   const { appName } = Route.useLoaderData() ?? { appName: "App" };
+  const { email: returningEmail } = Route.useSearch();
+  const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [error, setError] = useState<string>();
-  const [submitting, setSubmitting] = useState(false);
-  const [autofilled, setAutofilled] = useState(false);
+  const emailForm = useForm<EmailValues>({
+    resolver: standardSchemaResolver(emailFormSchema),
+    defaultValues: { email: returningEmail ?? "" },
+  });
 
-  const sendCode = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) return;
-
-    setSubmitting(true);
-    setError(undefined);
-    setAutofilled(false);
-
-    try {
-      const result = await authClient.emailOtp.sendVerificationOtp({
-        email: normalizedEmail,
-        type: "sign-in",
-      });
-
-      if (result.error) {
-        setError(result.error.message || "We could not send a sign-in code.");
-        return;
-      }
-
-      setEmail(normalizedEmail);
-      setStep("code");
-      // Capture stages: a six-digit local part IS the code (config/auth.ts),
-      // so the page can prefill it with no backend call. In prod the code is
-      // random and arrives by email; a failed verify falls back to that.
-      const chosen = /^(\d{6})@/.exec(normalizedEmail)?.[1];
-      if (chosen) {
-        setOtp(chosen);
-        setAutofilled(true);
-      }
-    } catch {
-      setError("We could not send a sign-in code. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const verifyCode = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setError(undefined);
-
-    try {
-      const result = await authClient.signIn.emailOtp({ email, otp });
-
-      if (result.error) {
-        setError(result.error.message || "We could not verify that code.");
-        return;
-      }
-
-      window.location.href = "/demo";
-    } catch {
-      setError("We could not verify that code. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const sendCode = useMutation({
+    mutationFn: async (values: EmailValues) => {
+      const normalized = values.email.trim().toLowerCase();
+      const result = await authClient.emailOtp.sendVerificationOtp({ email: normalized, type: "sign-in" });
+      if (result.error) throw new Error(result.error.message || "We could not send a sign-in code.");
+      return normalized;
+    },
+    onSuccess: (normalized) => {
+      navigate({ to: "/login/code", search: { email: normalized } });
+    },
+  });
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-24">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign in to {appName}</CardTitle>
-          <CardDescription>Passwordless: the first sign-in with any email creates the account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === "email" ? (
-            <form onSubmit={sendCode} className="flex flex-col gap-3">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Sending..." : "Send a code"}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={verifyCode} className="flex flex-col gap-3">
-              <p className="text-sm text-muted-foreground">We sent a 6-digit code to {email}.</p>
-              <Label htmlFor="otp">Code</Label>
-              <Input id="otp" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(event) => setOtp(event.target.value)} />
-              {autofilled ? <p className="text-xs text-muted-foreground">Dev shortcut: the code is the six digits in the address. No email was sent.</p> : null}
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Verifying..." : "Verify and continue"}
-              </Button>
-            </form>
-          )}
-          {error ? (
-            <p className="mt-3 text-sm text-destructive" role="alert">
-              {error}
+    <AuthCard title={`Sign in to ${appName}`} description="Passwordless: the first sign-in with any email creates the account.">
+      <form onSubmit={emailForm.handleSubmit((values) => sendCode.mutate(values))} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            {...emailForm.register("email")}
+            aria-invalid={Boolean(emailForm.formState.errors.email)}
+          />
+          {emailForm.formState.errors.email ? (
+            <p className="text-sm text-destructive" role="alert">
+              {emailForm.formState.errors.email.message}
             </p>
           ) : null}
-        </CardContent>
-      </Card>
-    </main>
+        </div>
+        <Button type="submit" disabled={sendCode.isPending} className="w-full">
+          {sendCode.isPending ? "Sending..." : "Send a code"}
+        </Button>
+        {sendCode.isError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {sendCode.error instanceof Error ? sendCode.error.message : "We could not send a sign-in code. Please try again."}
+          </p>
+        ) : null}
+      </form>
+    </AuthCard>
   );
 }

@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedDemoRouteImport } from './routes/_authed/demo'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as LoginCodeRouteImport } from './routes/login/code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,17 +40,24 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginCodeRoute = LoginCodeRouteImport.update({
+  id: '/login/code',
+  path: '/login/code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
   '/login/': typeof LoginIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
   '/login': typeof LoginIndexRoute
 }
 export interface FileRoutesById {
@@ -58,20 +66,29 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_authed/demo': typeof AuthedDemoRoute
   '/api/$': typeof ApiSplatRoute
+  '/login/code': typeof LoginCodeRoute
   '/login/': typeof LoginIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo' | '/api/$' | '/login/'
+  fullPaths: '/' | '/demo' | '/api/$' | '/login/code' | '/login/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo' | '/api/$' | '/login'
-  id: '__root__' | '/' | '/_authed' | '/_authed/demo' | '/api/$' | '/login/'
+  to: '/' | '/demo' | '/api/$' | '/login/code' | '/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authed'
+    | '/_authed/demo'
+    | '/api/$'
+    | '/login/code'
+    | '/login/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
+  LoginCodeRoute: typeof LoginCodeRoute
   LoginIndexRoute: typeof LoginIndexRoute
 }
 
@@ -112,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/code': {
+      id: '/login/code'
+      path: '/login/code'
+      fullPath: '/login/code'
+      preLoaderRoute: typeof LoginCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -130,6 +154,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
+  LoginCodeRoute: LoginCodeRoute,
   LoginIndexRoute: LoginIndexRoute,
 }
 export const routeTree = rootRouteImport

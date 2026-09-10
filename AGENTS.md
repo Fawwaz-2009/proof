@@ -242,6 +242,15 @@ random code. When testing anything that can really send, use a
 real, verified inbox supplied at test time (env or secret), never an
 address committed to the source tree.
 
+## Web forms
+
+One pattern, no drift: every form is react-hook-form + an Effect Schema
+(Standard Schema resolver) + TanStack Query useMutation; field errors
+render under their input, server errors in one alert. The only per-form
+difference is the client a mutation calls: the contract-derived client
+for `/api/*` (see `apps/web/src/http-client.ts`), better-auth's client
+for `/api/auth/*` (see `apps/web/src/routes/login`).
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

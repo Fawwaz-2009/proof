@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import * as Effect from "effect/Effect";
 import { Button } from "@/components/ui/button";
 import { getAppClient, mutationErrorMessage } from "../../../../http-client";
@@ -10,7 +9,6 @@ import { notesQueryKey } from "../-queries";
 // beside the button that caused it.
 export function DeleteNoteButton({ id }: { id: string }) {
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string>();
 
   const destroyNote = useMutation({
     mutationFn: async () => {
@@ -18,10 +16,8 @@ export function DeleteNoteButton({ id }: { id: string }) {
       return Effect.runPromise(client.notes.destroyNote({ params: { id } }));
     },
     onSuccess: () => {
-      setError(undefined);
       queryClient.invalidateQueries({ queryKey: notesQueryKey });
     },
-    onError: (mutationError) => setError(mutationErrorMessage(mutationError, "Could not delete the note.")),
   });
 
   return (
@@ -29,9 +25,9 @@ export function DeleteNoteButton({ id }: { id: string }) {
       <Button type="button" variant="outline" size="sm" disabled={destroyNote.isPending} onClick={() => destroyNote.mutate()}>
         {destroyNote.isPending ? "Deleting..." : "Delete"}
       </Button>
-      {error ? (
+      {destroyNote.isError ? (
         <p className="max-w-48 text-right text-xs text-destructive" role="alert">
-          {error}
+          {mutationErrorMessage(destroyNote.error, "Could not delete the note.")}
         </p>
       ) : null}
     </span>

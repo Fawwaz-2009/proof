@@ -41,7 +41,6 @@ export function NoteForm() {
   });
   const [image, setImage] = useState<File | undefined>();
   const [imageError, setImageError] = useState<string>();
-  const [status, setStatus] = useState<Status>();
 
   const createNote = useMutation({
     mutationFn: async (input: NoteFormValues & { image?: File }) => {
@@ -58,10 +57,16 @@ export function NoteForm() {
       queryClient.invalidateQueries({ queryKey: notesQueryKey });
       form.reset();
       setImage(undefined);
-      setStatus({ kind: "ok", text: "Note added." });
     },
-    onError: (error) => setStatus({ kind: "error", text: mutationErrorMessage(error, "Could not create the note.") }),
   });
+
+  // Server feedback derives from the mutation state: no hand-rolled status
+  // to keep in sync, and a pending retry clears the old message for free.
+  const status: Status | undefined = createNote.isSuccess
+    ? { kind: "ok", text: "Note added." }
+    : createNote.isError
+      ? { kind: "error", text: mutationErrorMessage(createNote.error, "Could not create the note.") }
+      : undefined;
 
   const submit = (values: NoteFormValues) => {
     // Client-side guard is instant UX feedback; the server's multipart
