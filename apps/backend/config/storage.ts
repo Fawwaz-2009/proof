@@ -27,6 +27,10 @@ export class Files extends Context.Service<Files>()("Files", {
     // Empty defaults keep the local dev loop zero-config: capture mode and
     // the dev gateway never sign, so the placeholder creds are never used.
     // Deploys gate on the real values in worker.ts (requireEnv).
+    // These minted credentials exist only for this signer: object reads
+    // and writes go through the bucket binding above. Upstream alchemy
+    // plans presignUrl on the bucket binding, which would drop them
+    // entirely; revisit when bumping alchemy.
     const accountId = yield* Config.string("R2_ACCOUNT_ID").pipe(Config.withDefault(""));
     const accessKeyId = yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""));
     const secretAccessKey = yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")));

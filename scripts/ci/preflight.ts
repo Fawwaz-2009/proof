@@ -10,6 +10,11 @@
  *   merging is impossible until setup is done. Self-removing: once the
  *   secrets exist, it passes silently forever.
  *
+ * Why: production sign-in emails real codes, so it needs the sender and
+ * the R2 signing keys. The deterministic dev OTP is confined to local
+ * and preview by design, so a prod deploy without these credentials
+ * cannot authenticate anyone.
+ *
  * Values arrive as environment variables mapped from repository secrets by
  * the calling workflow.
  */

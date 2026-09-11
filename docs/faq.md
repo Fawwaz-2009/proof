@@ -60,7 +60,9 @@ a global key into a repo secret.
 **When does production deploy?**
 On merge to main, never before. The readiness gate blocks the merge from
 a half-configured repo: production arms only when every secret checks
-green.
+green. Production is always the stage literally named prod, deployed
+only by deploy-prod.yml: stage logic (captured vs sent email, hostnames)
+keys on that name, so never deploy another stage name to a real domain.
 
 **Why is my first pull request red?**
 The readiness check is the setup checklist wearing a CI hat. Until the
@@ -73,8 +75,11 @@ the secrets exist, the check passes silently forever.
 Two platform walls. A token created by an API or a tool cannot carry
 token-creation rights, and the ceremony must mint the CI child token, so
 the credential that runs it has to be born in the dashboard (My Profile >
-API Tokens) and must itself include "Account API Tokens: Edit". The
-getting-started prompt checks for it after the dependency install and, if
+API Tokens) and must itself include "Account API Tokens: Edit". The same
+wall blocks OAuth alchemy logins: they can never carry token-creation
+rights, so the admin profile must be an API token, however broad the
+OAuth scope list looks.
+The getting-started prompt checks for it after the dependency install and, if
 it is missing, stops and walks you through the dashboard; the token never
 enters the chat.
 

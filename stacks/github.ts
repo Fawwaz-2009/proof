@@ -13,8 +13,9 @@
 //      Custom Token) with the `permissionGroups` list below PLUS
 //      "Account API Tokens: Edit" (the caller needs it to mint the child
 //      tokens at all; OAuth and API-minted tokens can never carry it).
-//   2. Authenticate alchemy with it: `bunx alchemy login --profile admin`
-//      (the API-token method; the script below pins that profile).
+//   2. Authenticate alchemy with it: `bunx alchemy profile edit
+//      --profile admin --reconfigure Cloudflare` (choose the API token
+//      method; the script below pins that profile).
 //   3. Run the ceremony script, which wraps the raw deploy with the
 //      GitHub token and the admin profile:
 //

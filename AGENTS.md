@@ -51,14 +51,21 @@ update-stack-secrets reads its inputs from the environment (GITHUB_OWNER,
 GITHUB_REPO, APP_NAME, APP_SLUG, ROOT_DOMAIN, AUTH_EMAIL_FROM) and is
 safe to re-run whenever those values change. Re-running ROTATES the CI
 token and the R2 key pair: any already-deployed stage keeps running with
-the previous (now deleted) keys, so redeploy the stage right after —
+the previous (now deleted) keys, so redeploy the stage right after:
 `bunx alchemy deploy --stage prod --yes` for production. Rotating without
-redeploying breaks image signing and the sender silently. It authenticates with the
-stored admin profile (--profile admin): run bun alchemy login --profile
-admin first, or the mint fails with Unauthorized. NEVER run it from CI:
+redeploying breaks image signing and the sender silently. It
+authenticates with the stored admin profile (--profile admin): run
+`bunx alchemy profile edit --profile admin --reconfigure Cloudflare`
+first (the profile must
+hold an API token: OAuth logins cannot mint the child tokens), or the
+mint fails with Unauthorized. NEVER run it from CI:
 it holds the trust root. NEVER run it before the admin credential
 exists: see the header of stacks/github.ts for the permission list and
 the walkthrough.
+
+Production is exactly the stage named prod: only deploy-prod.yml deploys
+it, and email capture, hostnames, and the dev OTP confinement key on the
+literal name. Never deploy another stage name to a real domain.
 
 ## Commands
 

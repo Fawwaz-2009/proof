@@ -25,17 +25,21 @@ docs/faq.md are the rules; read them before making changes.
 3. Install dependencies: bun install, or npm install when bun is not
    installed.
 4. Read AGENTS.md and docs/faq.md.
-5. Cloudflare credential: run bunx alchemy login --profile admin. If it
-   prints a stored admin credential, continue. If not: STOP and tell me
-   this one-time credential must be created by hand in the Cloudflare
-   dashboard: My Profile -> API Tokens -> Create Token -> Custom Token,
-   with these permission groups: Account Settings Read, Workers Scripts
-   Write, Workers KV Storage Write, Workers R2 Storage Write, Workers
-   Routes Write, Workers Tail Read, Workers Observability Write, D1
-   Write, Email Sending Write, Secrets Store Write, and Account API
-   Tokens Write (a dashboard-born token is required: tokens created by
-   tools like you cannot hold this one). Give me the command to run with
-   my new token and wait until I confirm.
+5. Cloudflare credential: the admin profile must hold a Cloudflare API
+   token, not an OAuth login: the ceremony mints two Cloudflare API
+   tokens, and OAuth logins are forbidden from minting tokens. Run bunx
+   alchemy profile show --profile admin: if it shows a connected
+   Cloudflare API token, continue. If not: STOP and tell me this one-time credential
+   must be created by hand in the Cloudflare dashboard: My Profile ->
+   API Tokens -> Create Token -> Custom Token, with these permission
+   groups: Account Settings Read, Workers Scripts Write, Workers KV
+   Storage Write, Workers R2 Storage Write, Workers Routes Write,
+   Workers Tail Read, Workers Observability Write, D1 Write, Email
+   Sending Write, Secrets Store Write, and Account API Tokens Write (a
+   dashboard-born token is required: tokens created by tools like you
+   cannot hold this one). Then run bunx alchemy profile edit --profile
+   admin --reconfigure Cloudflare, choose the API token method, and
+   paste the token when prompted. Wait until I confirm.
 6. Ask for the root domain and the sender email for auth codes. Both are
    optional: previews work without them, but production sign-in cannot
    deliver email until a real sender on the domain replaces the
@@ -54,7 +58,10 @@ docs/faq.md are the rules; read them before making changes.
    (identity.ts and this prompt aside).
 8. Commit the identity on main locally, and leave main unpushed:
     pushing or merging to main ships production, and production waits
-    for a real sender (steps 11 and 12).
+    for a real sender (steps 11 and 12). Production is exactly the
+    stage named prod: only the deploy-prod workflow deploys it, and
+    stage logic (email capture, hostnames) keys on the literal name,
+    so never deploy another stage name to a real domain.
 9. Run the setup: bun run update-stack-secrets, prefixed with
    GITHUB_OWNER, GITHUB_REPO (from git remote), APP_NAME, APP_SLUG,
    ROOT_DOMAIN (if any), and AUTH_EMAIL_FROM. It mints the
