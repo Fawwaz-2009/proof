@@ -1,4 +1,4 @@
-import * as Config from "effect/Config";
+import { Stack } from "alchemy/Stack";
 import * as Effect from "effect/Effect";
 
 export type Environment = "local" | "preview" | "prod";
@@ -8,16 +8,19 @@ export type Environment = "local" | "preview" | "prod";
  * prod    = the stage literally named "prod"
  * preview = every other deployed stage (pr-N, staging, personal stages)
  *
- * The stage comes from the ALCHEMY_STAGE binding alchemy injects into the
- * Worker env on every deploy (RuntimeBindings.ts, source-verified on
- * beta.76: re-verify the name when bumping alchemy). The previous read went
- * through the Alchemy.Stage service, which exists only during synthesis, so
- * every deployed isolate fell back to "prod" and preview was unreachable.
- * A missing binding (no deploy context at all) maps to preview: capture
- * mail, never deliver by accident.
+ * The stage comes from the Alchemy.Stack service, which the worker runtime
+ * bridge serves from the ALCHEMY_STAGE / ALCHEMY_STACK_NAME bindings that
+ * alchemy injects into every Worker (Cloudflare/Workers/RuntimeBindings.ts).
+ * It resolves in the isolate at cold start; verified on beta.77 in
+ * `alchemy dev` and against a deployed stage. Re-verify when bumping
+ * alchemy. The previous read went through the Alchemy.Stage service, which
+ * exists only during synthesis, so every deployed isolate fell back to
+ * "prod" and preview was unreachable.
+ * A missing stage maps to preview: capture mail, never deliver by
+ * accident.
  */
 export const environment = Effect.gen(function* () {
-  const stage = yield* Config.option(Config.string("ALCHEMY_STAGE")).pipe(Effect.orDie);
-  if (stage._tag === "Some" && stage.value === "prod") return "prod";
+  const { stage } = yield* Stack;
+  if (stage === "prod") return "prod";
   return "preview";
 });
