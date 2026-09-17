@@ -258,6 +258,35 @@ difference is the client a mutation calls: the contract-derived client
 for `/api/*` (see `apps/web/src/http-client.ts`), better-auth's client
 for `/api/auth/*` (see `apps/web/src/routes/login`).
 
+## Mobile (apps/mobile)
+
+The Expo app is a second client of the same contract, nothing more: screens
+call `apps/mobile/src/lib/api-client.ts` (the contract-derived client, the
+same shape as the web's), auth calls better-auth's Expo client, and the
+screens render the view shapes the backend already returns. Identity comes
+from the same env (`APP_NAME`, `APP_SLUG`, `ROOT_DOMAIN`); the one app-only
+value is `EXPO_PUBLIC_API_URL`, the stage the build talks to, baked at
+build/update time.
+
+Three rules earned in the first build:
+
+- File parts must be expo-file-system `File`s. Expo's fetch (the SDK's
+  default global) encodes multipart bodies itself and rejects React Native's
+  legacy `{ uri, name, type }` parts. Ask the picker for the `Compatible`
+  representation too: iPhones hand back HEIC otherwise, and the contract
+  only whitelists types a browser can render.
+- View URLs may be origin-relative (the dev gateway hands out paths). Resolve
+  them against the baked stage with `resolveApiUrl`; native has no
+  same-origin to lean on.
+- The auth gate reads a fetched session (`getSession()` through TanStack
+  Query), not the `useSession()` hook: its cache is hydrated by its own
+  fetches only, so right after sign-in it can report stale-empty and bounce
+  a signed-in user back to sign-in.
+
+Local run: `bun run dev` at the root, then `cd apps/mobile && bunx expo
+start`; set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the site URL the
+root command prints.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

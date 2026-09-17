@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@alchemy.run/better-auth": "2.0.0-beta.76",
+    "@better-auth/expo": "1.7.1",
     "aws4fetch": "^1.0.20",
     "alchemy": "2.0.0-beta.77",
     "better-auth": "1.7.1",

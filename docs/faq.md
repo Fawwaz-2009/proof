@@ -131,6 +131,28 @@ its error display live beside its two lines of UI. Supporting UI lives in
 the dash-prefixed `-components` folder next to the route, which TanStack
 Router excludes from the route tree.
 
+## Mobile
+
+**Why does `apps/mobile` exist next to `apps/web`?**
+One contract, two clients. The app imports the same `@app/backend/contract`
+the web app does and derives the same typed client, so endpoints, payload
+shapes, and errors are never re-declared. Everything stage-specific arrives
+as one env var: `EXPO_PUBLIC_API_URL` is baked at build/update time, which is
+what will let a per-PR update point at that PR's stage.
+
+**Why can't the app use React Native's `{ uri, name, type }` FormData parts?**
+Expo's fetch, the SDK's default global, encodes multipart bodies itself and
+rejects those legacy parts; it accepts strings, `Blob`s, and objects with
+`bytes()`. `expo-file-system`'s `File` is the supported file part, and the
+picker is asked for the `Compatible` representation so HEIC (which no browser
+can render) never reaches the contract's whitelist.
+
+**Why does the notes screen fetch the session instead of using `useSession()`?**
+The hook's cache is hydrated by its own fetches only, so immediately after
+sign-in it can still report stale-empty and bounce a signed-in user back to
+the sign-in screen. The gate goes through `getSession()` in a TanStack Query,
+the same way the web's `_authed` route resolves a session per navigation.
+
 ## The two phases
 
 **Why does alchemy have two phases?**

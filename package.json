@@ -11,7 +11,7 @@
     "dev": "alchemy dev",
     "destroy": "alchemy destroy",
     "build": "cd apps/web && bun run build",
-    "typecheck": "tsc -p tsconfig.iac.json && cd apps/backend && bun run typecheck && cd ../web && bun run typecheck",
+    "typecheck": "tsc -p tsconfig.iac.json && cd apps/backend && bun run typecheck && cd ../web && bun run typecheck && cd ../mobile && bun run typecheck",
     "lint": "oxlint",
     "format": "prettier . --write --ignore-unknown",
     "format:check": "prettier . --check --ignore-unknown",

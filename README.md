@@ -149,6 +149,10 @@ concept) are answered in [docs/faq.md](docs/faq.md).
 - **Demo resource** ("notes"): rows in D1, optional attachments as private R2
   objects, every endpoint owner-scoped by the session user id. Sign in at
   `/login`, then use `/demo`.
+- **Mobile app** (`apps/mobile`): Expo (SDK 57) + expo-router, a second client
+  of the same contract: the same emailed-code sign-in (better-auth's Expo
+  client), the same notes exhibit including the image upload. `bun run dev`
+  plus one env var is the whole local setup (see `apps/mobile/.env.example`).
 
 ## Authentication and email
 
@@ -225,6 +229,19 @@ alchemy dev --stage dev_alice            # a specific developer stage
 alchemy destroy --stage dev_alice --yes  # remove a developer stage
 ```
 
+Mobile, against the same stage and the same data:
+
+```sh
+cd apps/mobile
+cp .env.example .env    # EXPO_PUBLIC_API_URL = the site URL `bun run dev` printed
+bunx expo start         # press i for the simulator; `bun run ios` builds the dev client
+```
+
+The simulator shares the Mac's loopback, so `http://localhost:<port>` works;
+a physical phone needs the Mac's LAN IP. One installed build talks to
+whichever stage its URL was baked with: local dev points at your machine,
+each PR's preview update points at that PR's stage, production points at prod.
+
 ## Deploying
 
 ```sh
@@ -239,7 +256,7 @@ hostname, and capture-only email; only `prod` sends real email.
 ## Verification gate
 
 ```sh
-bun run check    # lint + typecheck (iac, backend, web) + format + build
+bun run check    # lint + typecheck (iac, backend, web, mobile) + format + build
 ```
 
 ## Continuous deployment

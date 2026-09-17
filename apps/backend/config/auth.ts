@@ -1,5 +1,6 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
+import { expo } from "@better-auth/expo";
 import { emailOTP } from "better-auth/plugins";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -35,6 +36,10 @@ export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
     const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    // The native app's deep-link scheme. app.config.ts derives it from the
+    // same env (APP_SLUG), and native auth traffic arrives declaring
+    // `<scheme>://` as its origin, so the backend trusts exactly that.
+    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
       .split(",")
@@ -44,7 +49,7 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     return yield* BetterAuth({
       basePath: "/api/auth",
       baseURL: { allowedHosts, protocol: "auto" },
-      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*"],
+      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*", `${appSlug}://`, `${appSlug}://*`],
       advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
       rateLimit: {
         enabled: true,
@@ -57,6 +62,10 @@ export class Auth extends Context.Service<Auth>()("Auth", {
         },
       },
       plugins: [
+        // Native clients (the Expo app) declare the app scheme as their
+        // origin; the expo plugin teaches better-auth to accept those
+        // requests and answer deep links.
+        expo(),
         emailOTP({
           allowedAttempts: 5,
           expiresIn: 15 * 60,
