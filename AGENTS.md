@@ -307,6 +307,30 @@ project whose slug differs from the app's.
 The icon and splash under `assets/images` are unbranded placeholders:
 replace them when you brand the app, and nothing else changes.
 
+### Preview identity and diagnostics
+
+A PR preview must not collide with the app people actually use, so `APP_VARIANT`
+builds two identities from the same env: `production` keeps `<base>` and
+`<slug>://`, `preview` gets `<base>.preview`, `<slug>-preview://`, and
+`<APP_NAME> Preview` (per build profile in `apps/mobile/eas.json`; an incomplete
+identity fails the build rather than shipping `dev.proof.`). The installed
+preview app is a single app shared by every PR: the stage it talks to is baked
+into each update, and its stored auth state is namespaced by the backend origin
+(`src/lib/session.ts`), so opening PR B never replays PR A's session.
+
+`mobile-preview.config.ts` says what a clone may publish: `enabled: false` keeps
+a web-only clone free of Expo setup, and per-target profiles and build modes
+live beside it. Two read-only commands read that config and the environment:
+
+- `bun run mobile:doctor [--target ios-device] [--json]` reports the exact
+  setup item missing before a preview can build or publish (identity, project
+  id, Expo authentication, build profile, local toolchain). It exits non-zero
+  while anything is missing.
+- `bun run mobile:preview:status --pr <n> [--json]` computes the target's
+  fingerprint and resolves it against existing EAS builds with the same
+  resolver CI uses (`scripts/mobile-preview-resolver.ts`): reusable, building,
+  or explicitly `native-build-required` with the failing check named.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

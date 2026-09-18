@@ -1,5 +1,5 @@
 {
-  "include": ["alchemy.run.ts", "website.ts", "stacks/*.ts", "scripts/**/*.ts", "packages/create-proof/src"],
+  "include": ["alchemy.run.ts", "mobile-preview.config.ts", "website.ts", "stacks/*.ts", "scripts/**/*.ts", "packages/create-proof/src"],
   "compilerOptions": {
     "lib": ["ESNext"],
     "module": "Preserve",
