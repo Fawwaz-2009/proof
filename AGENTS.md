@@ -298,6 +298,12 @@ never load an update published with another), then `cd apps/mobile && bunx
 expo start` with `EXPO_PUBLIC_API_URL` set to the site URL the root command
 prints.
 
+Local EAS commands go through `bun run eas ...` (`build.list`, `credentials`,
+`device:create`): the wrapper loads `apps/mobile/.env` into the child process,
+which the CLI itself does not do, and the app config resolves the project link
+from there. `APP_SLUG` must equal the Expo project's slug: EAS refuses a
+project whose slug differs from the app's.
+
 The icon and splash under `assets/images` are unbranded placeholders:
 replace them when you brand the app, and nothing else changes.
 
