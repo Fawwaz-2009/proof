@@ -2,35 +2,52 @@ import type { ExpoConfig } from "expo/config";
 
 /**
  * Identity derives from env, like every hostname in the stack
- * (apps/backend/config/domain.ts): APP_NAME is what people read, APP_SLUG
- * the machine form (and the deep-link scheme), ROOT_DOMAIN the zone.
+ * (apps/backend/config/domain.ts): APP_NAME is what people read, APP_SLUG the
+ * machine form (and the base of the deep-link schemes), ROOT_DOMAIN the zone.
  *
- * The bundle identifier is the one value that must be globally unique in
- * Apple's registry and stable for the life of the app: reversed domain plus
- * slug (ROOT_DOMAIN=fawwaz.dev + APP_SLUG=proof -> dev.fawwaz.proof).
- * Day zero without a domain falls back to dev.proof.<slug>; pick a real
- * identifier before the first device build.
+ * Two variants share one Expo project:
+ * - `preview` (the default, and what every worktree and PR build uses): the
+ *   installed development client, with a distinct identifier (`<base>.preview`)
+ *   and scheme (`<slug>-preview`) so it can sit beside the production app.
+ * - `production`: the stable identity, selected by the production build profile.
  *
- * EAS_PROJECT_ID arrives with the one-time EAS ceremony (documented
- * alongside the preview pipeline in AGENTS.md). When set, the config links
- * the EAS project, embeds the update URL, and pins the fingerprint runtime
- * version policy, which is what makes per-PR OTA updates possible; without
- * it the app is a plain local build.
+ * APP_VARIANT selects the variant. It is native configuration on purpose: it is
+ * part of the fingerprint, so a preview build can never load a production
+ * update or the other way around.
+ *
+ * Blank env values are treated as absent. `process.env.APP_SLUG ?? "app"` is not
+ * enough: a blank writes an empty string, nullish coalescing keeps it, and the
+ * app ends up with an empty scheme and a `dev.proof.` bundle identifier.
  */
-const appName = process.env.APP_NAME ?? "Proof";
-const appSlug = process.env.APP_SLUG ?? "app";
-const rootDomain = process.env.ROOT_DOMAIN;
+const read = (key: string): string | undefined => {
+  const value = process.env[key]?.trim();
+  return value ? value : undefined;
+};
+
+const variant = read("APP_VARIANT") === "production" ? ("production" as const) : ("preview" as const);
+const explicitSlug = read("APP_SLUG");
+const appSlug = explicitSlug ?? "app";
+const baseName = read("APP_NAME") ?? "Proof";
+const rootDomain = read("ROOT_DOMAIN");
 // Our own variable in GitHub Actions; EAS's built-in during cloud builds
 // (EAS_BUILD_* values exist at config-resolution time, project env vars of
 // secret visibility do not).
-const projectId = process.env.EAS_PROJECT_ID ?? process.env.EAS_BUILD_PROJECT_ID;
+const projectId = read("EAS_PROJECT_ID") ?? read("EAS_BUILD_PROJECT_ID");
 
-const bundleIdentifier = rootDomain ? [...rootDomain.split(".").reverse(), appSlug].join(".") : `dev.proof.${appSlug}`;
+// A distributable artifact must carry a real identity: the fallback slug would
+// make identifiers collide across clones, and unlike a local run it outlives
+// the machine that produced it.
+if (read("EAS_BUILD") === "true" && explicitSlug === undefined) {
+  throw new Error("APP_SLUG is required for EAS builds: set it in the repository .env (`bun run mobile:env`) or in the build environment.");
+}
+
+const baseIdentifier = rootDomain ? [...rootDomain.split(".").reverse(), appSlug].join(".") : `dev.proof.${appSlug}`;
+const bundleIdentifier = variant === "production" ? baseIdentifier : `${baseIdentifier}.preview`;
 
 const config: ExpoConfig = {
-  name: appName,
+  name: variant === "production" ? baseName : `${baseName} Preview`,
   slug: appSlug,
-  scheme: appSlug,
+  scheme: variant === "production" ? appSlug : `${appSlug}-preview`,
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -38,11 +55,16 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier,
     supportsTablet: false,
-    // Declared before the first build on purpose: the build service
-    // otherwise asks the encryption question once and writes the answer
-    // into the project, which changes the native fingerprint and silently
-    // invalidates every update published against the earlier build.
+    // Declared before the first build on purpose: the build service otherwise
+    // asks the encryption question once and writes the answer into the project,
+    // which changes the native fingerprint and silently invalidates every
+    // update published against the earlier build.
     config: { usesNonExemptEncryption: false },
+  },
+  // Android is optional configuration for adopters, not a verified target: the
+  // same identifier scheme keeps a preview APK installable beside production.
+  android: {
+    package: bundleIdentifier,
   },
   plugins: [
     "expo-router",
@@ -50,9 +72,9 @@ const config: ExpoConfig = {
       "expo-build-properties",
       {
         ios: {
-          // SDK 57 opt-in for the iOS 27 SDK's scene life cycle: without it,
-          // an app built with Xcode 27 does not launch on iOS 27. Drop this
-          // once SDK 58 lands, where scene support is the default.
+          // SDK 57 opt-in for the iOS 27 SDK's scene life cycle: without it, an
+          // app built with Xcode 27 does not launch on iOS 27. Drop this once
+          // SDK 58 lands, where scene support is the default.
           enableSceneSupport: true,
         },
       },

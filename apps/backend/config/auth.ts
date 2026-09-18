@@ -8,6 +8,7 @@ import * as Layer from "effect/Layer";
 import { Context } from "effect";
 import { Email } from "./email.ts";
 import { d1Database } from "./database/index.ts";
+import { environment } from "./environment.ts";
 
 /** Hosts the backend accepts auth traffic from. Always bound via props env:
  * derived from the stage's website domain (see worker.ts + config/domain.ts). */
@@ -40,6 +41,7 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     // same env (APP_SLUG), and native auth traffic arrives declaring
     // `<scheme>://` as its origin, so the backend trusts exactly that.
     const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
+    const stage = yield* environment;
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
       .split(",")
@@ -49,14 +51,19 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     return yield* BetterAuth({
       basePath: "/api/auth",
       baseURL: { allowedHosts, protocol: "auto" },
-      // Custom schemes are trusted whole: a host-less entry matches every
-      // host and path of that scheme, which is what the native app needs
-      // (it declares `<scheme>://` as its origin). Expo Go would need
-      // `exp://`; a template that enables magic links or email verification
-      // should also remember that better-auth hands the session cookie to
-      // the deep link's `?cookie=` on those flows, which any app claiming
-      // the scheme can read.
-      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*", `${appSlug}://`],
+      // Custom schemes are trusted whole: a host-less entry matches every host
+      // and path of that scheme. Capture stages accept the preview app's scheme
+      // plus the production one (a production build pointed at a preview
+      // backend); production accepts only the production scheme. No wildcards.
+      // A template that later enables magic links or email verification should
+      // remember that better-auth hands the session cookie to the deep link's
+      // `?cookie=` on those flows, and any app claiming the scheme can read it.
+      trustedOrigins: [
+        ...allowedHosts.map((host) => `https://${host}`),
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        ...(stage === "prod" ? [`${appSlug}://`] : [`${appSlug}-preview://`, `${appSlug}://`]),
+      ],
       advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
       rateLimit: {
         enabled: true,
