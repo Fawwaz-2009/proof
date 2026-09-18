@@ -3,6 +3,8 @@
  * ready to provide into the router. Group layers close over their services
  * at build; request-scoped requirements stay with the handler effects.
  */
+import * as Layer from "effect/Layer";
 import { notesHandlers } from "./notes.ts";
+import { previewHandlers } from "./preview.ts";
 
-export const ApiHandlers = notesHandlers;
+export const ApiHandlers = Layer.mergeAll(notesHandlers, previewHandlers);

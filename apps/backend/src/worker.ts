@@ -19,6 +19,7 @@ import { clientIp, RateLimits } from "../config/rate-limit.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
+import { PreviewStatus } from "./domain/preview.ts";
 import { AuthenticatedLive } from "./middlewares/authentication.ts";
 import { SchemaErrorHandlerLive } from "./middlewares/schema-error.ts";
 import { Files, FilesBucket } from "../config/storage.ts";
@@ -113,6 +114,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       Layer.provide(AuthenticatedLive),
       Layer.provide(Auth.Live),
       Layer.provide(NotesLive),
+      Layer.provide(PreviewStatus.Live),
       Layer.provide(HttpServicesLive),
       Layer.provide(AppDatabase.Live),
       Layer.provide(Files.Live),

@@ -331,6 +331,16 @@ live beside it. Two read-only commands read that config and the environment:
   resolver CI uses (`scripts/mobile-preview-resolver.ts`): reusable, building,
   or explicitly `native-build-required` with the failing check named.
 
+The stage itself answers `GET /api/preview/mobile`
+(`apps/backend/src/contracts/preview.ts`): its own stage and environment, plus
+the mobile preview record trusted CI wrote for this deployment, or
+`record: null` when there is none. The record lives in the stage's own bucket
+under `_proof/mobile/` and is read through the bucket binding: never a
+caller-supplied key, never a list, never a second stage's object. Production
+always answers `record: null`. Every consumer must treat a missing, malformed,
+or foreign-stage record as "no record" rather than as a live status;
+`apps/backend/test/preview-status.test.ts` pins those rules.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module
