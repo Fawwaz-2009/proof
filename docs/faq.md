@@ -152,6 +152,16 @@ The hook's cache is hydrated by its own fetches only, so immediately after
 sign-in it can still report stale-empty and bounce a signed-in user back to
 the sign-in screen. The gate goes through `getSession()` in a TanStack Query,
 the same way the web's `_authed` route resolves a session per navigation.
+The entry gate (`index.tsx`) still uses the hook: on a cold start its cache
+comes from SecureStore, which is exactly the state it was built for.
+
+**What if I add email verification, magic links, or social sign-in later?**
+better-auth's Expo plugin answers those flows by deep-linking back with the
+session cookie in the URL, and a custom scheme can be claimed by any app that
+registers it, so the cookie would be readable by whoever wins the scheme. The
+email OTP flow here returns JSON and never leaves the app, which is why the
+scheme only has to satisfy the origin check. Keep the scheme distinctive if
+you enable the others.
 
 ## The two phases
 

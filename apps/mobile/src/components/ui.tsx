@@ -40,11 +40,11 @@ export function Button({
   );
 }
 
-export function TextField({ label, error, ...input }: TextInputProps & { label: string; error?: string }) {
+export function TextField({ label, error, style, ...input }: TextInputProps & { label: string; error?: string }) {
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput placeholderTextColor={colors.muted} style={[styles.input, error ? styles.inputError : null]} {...input} />
+      <TextInput placeholderTextColor={colors.muted} {...input} style={[styles.input, style, error ? styles.inputError : null]} />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );

@@ -20,4 +20,5 @@ export const appScheme = Array.isArray(scheme) ? (scheme[0] ?? "app") : (scheme 
  * web app) and absolute presigned URLs on deployed stages; native has no
  * same-origin concept, so relative paths resolve here.
  */
-export const resolveApiUrl = (url: string | null): string | undefined => (url ? (url.startsWith("/") ? `${apiUrl}${url}` : url) : undefined);
+const origin = apiUrl.replace(/\/+$/, "");
+export const resolveApiUrl = (url: string | null): string | undefined => (url ? (url.startsWith("/") ? `${origin}${url}` : url) : undefined);

@@ -232,15 +232,17 @@ alchemy destroy --stage dev_alice --yes  # remove a developer stage
 Mobile, against the same stage and the same data:
 
 ```sh
+bun run mobile:env       # mirrors identity from .env into apps/mobile/.env
 cd apps/mobile
-cp .env.example .env    # EXPO_PUBLIC_API_URL = the site URL `bun run dev` printed
-bunx expo start         # press i for the simulator; `bun run ios` builds the dev client
+bunx expo start          # press i for the simulator; `bun run ios` builds the dev client
 ```
 
-The simulator shares the Mac's loopback, so `http://localhost:<port>` works;
-a physical phone needs the Mac's LAN IP. One installed build talks to
-whichever stage its URL was baked with: local dev points at your machine,
-each PR's preview update points at that PR's stage, production points at prod.
+Set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the site URL `bun run dev`
+printed (the sync preserves it). The simulator shares the Mac's loopback, so
+`http://localhost:<port>` works; a physical phone needs the Mac's LAN IP. One
+installed build talks to whichever stage its URL was baked with: local dev
+points at your machine, each PR's preview update points at that PR's stage,
+production points at prod.
 
 ## Deploying
 

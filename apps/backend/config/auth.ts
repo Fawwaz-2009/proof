@@ -49,7 +49,14 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     return yield* BetterAuth({
       basePath: "/api/auth",
       baseURL: { allowedHosts, protocol: "auto" },
-      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*", `${appSlug}://`, `${appSlug}://*`],
+      // Custom schemes are trusted whole: a host-less entry matches every
+      // host and path of that scheme, which is what the native app needs
+      // (it declares `<scheme>://` as its origin). Expo Go would need
+      // `exp://`; a template that enables magic links or email verification
+      // should also remember that better-auth hands the session cookie to
+      // the deep link's `?cookie=` on those flows, which any app claiming
+      // the scheme can read.
+      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*", `${appSlug}://`],
       advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
       rateLimit: {
         enabled: true,

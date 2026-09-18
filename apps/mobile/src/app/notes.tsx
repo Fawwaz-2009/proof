@@ -9,7 +9,7 @@ import { File } from "expo-file-system";
 import { Redirect, router } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { DeleteNoteButton } from "@/components/delete-note-button";
 import { Button, Card, ErrorText, MutedText, TextField } from "@/components/ui";
 import { getAppClient, mutationErrorMessage } from "@/lib/api-client";
@@ -43,7 +43,14 @@ export default function Notes() {
   // `useSession()` can report stale-empty and bounce a signed-in user.
   const sessionQuery = useQuery({
     queryKey: ["session"],
-    queryFn: async () => (await authClient.getSession()).data ?? null,
+    queryFn: async () => {
+      const { data, error } = await authClient.getSession();
+      // "No session" and "could not ask" are different states: the first
+      // redirects, the second shows an error with a retry. Collapsing them
+      // signs people out whenever the network hiccups.
+      if (error) throw new Error(error.message ?? "Could not read the session.");
+      return data ?? null;
+    },
   });
 
   const notesQuery = useQuery({
@@ -74,8 +81,10 @@ export default function Notes() {
         // Expo's fetch (the SDK's default global) only accepts string, Blob,
         // or a `bytes()`-capable File part; React Native's `{ uri, name,
         // type }` convention is rejected. expo-file-system's File is that
-        // part: it reads the picked file lazily and carries name and type.
-        formData.append("image", new File(asset.uri), asset.fileName ?? "image.jpg");
+        // part, and it carries the picked file's own name and content type:
+        // a filename argument here would be silently ignored, because the
+        // FormData patch renames only real Blobs.
+        formData.append("image", new File(asset.uri));
       }
       return Effect.runPromise(client.notes.createNote({ payload: formData }));
     },
@@ -107,14 +116,35 @@ export default function Notes() {
   };
 
   const signOut = async () => {
-    await authClient.signOut();
-    router.replace("/sign-in");
+    try {
+      await authClient.signOut();
+    } catch {
+      // The local session is cleared by the plugin either way; a failed
+      // request should not trap the user on a signed-in screen.
+    } finally {
+      // The QueryClient lives for the process, not the session: without
+      // clearing it, the next account on this device reads the previous
+      // user's session and notes out of cache.
+      queryClient.clear();
+      router.replace("/sign-in");
+    }
   };
 
-  if (sessionQuery.isPending) {
+  // A cached `null` while the mount refetch is still in flight is not a
+  // verdict: without this, signing in within the cache window bounces the
+  // user straight back to sign-in.
+  if (sessionQuery.isPending || (sessionQuery.isFetching && !sessionQuery.data)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
+      </View>
+    );
+  }
+  if (sessionQuery.isError) {
+    return (
+      <View style={styles.center}>
+        <ErrorText>{mutationErrorMessage(sessionQuery.error, "Could not reach the server.")}</ErrorText>
+        <Button label="Retry" variant="secondary" onPress={() => sessionQuery.refetch()} />
       </View>
     );
   }
@@ -127,6 +157,7 @@ export default function Notes() {
       data={notesQuery.data ?? []}
       keyExtractor={(note) => note.id}
       keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={notesQuery.isFetching} onRefresh={() => void notesQuery.refetch()} tintColor={colors.muted} />}
       ListHeaderComponent={
         <View style={styles.header}>
           <View style={styles.topBar}>
@@ -211,7 +242,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.background,
     flex: 1,
+    gap: spacing.md,
     justifyContent: "center",
+    padding: spacing.lg,
   },
   list: {
     backgroundColor: colors.background,

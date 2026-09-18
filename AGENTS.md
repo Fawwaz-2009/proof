@@ -275,17 +275,31 @@ Three rules earned in the first build:
   legacy `{ uri, name, type }` parts. Ask the picker for the `Compatible`
   representation too: iPhones hand back HEIC otherwise, and the contract
   only whitelists types a browser can render.
+- That encoder buffers the whole body in JS before native sees it, so the
+  picker path suits images, not media: for large files use expo-file-system's
+  upload task (`File.createUploadTask`), which streams from disk and
+  bypasses the typed client's transport. Do not set
+  `EXPO_PUBLIC_USE_RN_FETCH=1`: React Native's fetch would accept the old
+  `{ uri }` parts but not `File` parts, so uploads would break the other way.
 - View URLs may be origin-relative (the dev gateway hands out paths). Resolve
   them against the baked stage with `resolveApiUrl`; native has no
   same-origin to lean on.
-- The auth gate reads a fetched session (`getSession()` through TanStack
-  Query), not the `useSession()` hook: its cache is hydrated by its own
-  fetches only, so right after sign-in it can report stale-empty and bounce
-  a signed-in user back to sign-in.
+- The post-sign-in gate reads a fetched session (`getSession()` through
+  TanStack Query), not the `useSession()` hook: its cache is hydrated by its
+  own fetches only, so right after sign-in it can report stale-empty and
+  bounce a signed-in user. The entry gate (`index.tsx`) may use the hook:
+  on a cold start its cache is hydrated from SecureStore, which is the case
+  it exists for.
 
-Local run: `bun run dev` at the root, then `cd apps/mobile && bunx expo
-start`; set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the site URL the
-root command prints.
+Local run: `bun run dev` at the root, then `bun run mobile:env` (mirrors the
+repository `.env` identity into `apps/mobile/.env`; the app config takes part
+in the runtime fingerprint, so a build made with a different identity can
+never load an update published with another), then `cd apps/mobile && bunx
+expo start` with `EXPO_PUBLIC_API_URL` set to the site URL the root command
+prints.
+
+The icon and splash under `assets/images` are unbranded placeholders:
+replace them when you brand the app, and nothing else changes.
 
 ## Migrations
 

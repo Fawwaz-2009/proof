@@ -29,11 +29,11 @@ const transport = HttpClient.make((request, url, signal) =>
       if (value !== undefined) headers.set(key, value);
     }
     if (cookie) headers.set("cookie", cookie);
-    // A FormData body must carry the boundary RN's fetch generates, so the
-    // contract's bare `multipart/form-data` header (and any stale length)
-    // has to go: the platform sets both, per body.
-    headers.delete("content-length");
-    if (request.body._tag === "FormData") headers.delete("content-type");
+    // No content-type fixups: Effect strips content-type and content-length
+    // for FormData bodies, and expo/fetch sets the multipart boundary
+    // itself. `credentials: omit` matches better-auth's own client: the
+    // cookie comes from SecureStore, so the platform cookie jar must not
+    // add a second one.
     const body =
       request.body._tag === "Raw" || request.body._tag === "Uint8Array"
         ? (request.body.body as globalThis.BodyInit)
@@ -47,6 +47,7 @@ const transport = HttpClient.make((request, url, signal) =>
           headers,
           body,
           signal,
+          credentials: "omit",
         }),
       catch: (cause) =>
         new HttpClientError.HttpClientError({

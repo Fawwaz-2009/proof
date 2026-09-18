@@ -6,7 +6,7 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "expo customize tsconfig.json && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@app/backend": "workspace:*",
