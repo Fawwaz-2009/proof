@@ -1,28 +1,34 @@
 // Preview operations for the native app: what this clone can do, and what a PR
-// can already reuse. Read-only by design: nothing here starts a build, spends
-// quota, or publishes an update, so a reviewer running diagnostics can never
-// mutate an account.
+// can already reuse.
+//
+// Read-only, and provably so: nothing here calls `eas fingerprint:generate`
+// (the pinned CLI uploads fingerprint metadata to the account), starts a build,
+// or publishes an update. Diagnostics are local reads plus provider reads; the
+// fingerprint that compatibility is keyed on comes from the *deployed record*
+// the publication path wrote, which is the only fingerprint that describes a
+// real artifact rather than a locally re-derived configuration.
 //
 //   bun run mobile:doctor --target ios-device
-//   bun run mobile:preview:status --pr 12 [--json]
+//   bun run mobile:preview:status --pr 12 [--stage-url https://…] [--json]
 //
-// Both commands share one resolver (scripts/mobile-preview-resolver.ts) with the
-// CI publication path: "reuse this artifact or build" must not have two
-// implementations.
+// Both commands share the resolver (scripts/mobile-preview-resolver.ts) and the
+// provider seam (scripts/eas-builds.ts) with the CI publication path.
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { distributableIdentityProblems } from "../apps/mobile/app.config.ts";
 import {
-  type MobilePreviewConfig,
   type MobileTargetId,
   enabledTargets,
   mobilePreviewConfig,
   mobileTargetIds,
   validateMobilePreviewConfig,
+  type MobilePreviewConfig,
 } from "../mobile-preview.config.ts";
-import { type NativeBuild, resolveCompatibility } from "./mobile-preview-resolver.ts";
-import { type Env, bundleIdentifierFor, envValue, resolveEnv, resolveIdentity } from "./env.ts";
+import { buildLookupArgs, stageUrlFor, toNativeBuilds } from "./eas-builds.ts";
+import { bundleIdentifierFor, type Env, envValue, resolveEnv, resolveIdentity } from "./env.ts";
+import { resolveCompatibility } from "./mobile-preview-resolver.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = join(root, "apps/mobile");
@@ -73,37 +79,6 @@ const appEnv = (): Env => resolveEnv([join(root, ".env"), join(appDir, ".env")])
 
 type Check = { readonly name: string; readonly ok: boolean; readonly detail: string };
 
-const identityChecks = (env: Env): Check[] => {
-  const identity = resolveIdentity(env);
-  const projectId = envValue(env, "EAS_PROJECT_ID");
-  return [
-    {
-      name: "identity",
-      ok: true,
-      detail: `APP_NAME=${identity.appName} APP_SLUG=${identity.appSlug}${identity.rootDomain === undefined ? " (no ROOT_DOMAIN: preview bundle id falls back to dev.proof.<slug>.preview)" : ` ROOT_DOMAIN=${identity.rootDomain}`}, preview bundle id ${bundleIdentifierFor(identity, "preview")}, scheme ${identity.appSlug}-preview.`,
-    },
-    projectId === undefined
-      ? {
-          name: "EAS project",
-          ok: false,
-          detail: "EAS_PROJECT_ID is unset: run `bunx eas init` in apps/mobile and put the project id in apps/mobile/.env (or set it in CI secrets).",
-        }
-      : { name: "EAS project", ok: true, detail: `EAS_PROJECT_ID=${projectId}` },
-  ];
-};
-
-const expoAuthCheck = (env: Env): Check => {
-  if (envValue(env, "EXPO_TOKEN") !== undefined || (process.env.EXPO_TOKEN?.trim() !== undefined && process.env.EXPO_TOKEN.trim().length > 0))
-    return { name: "Expo authentication", ok: true, detail: "EXPO_TOKEN is set (the non-interactive path CI uses)." };
-  const whoami = run(easBinary, ["whoami"], { cwd: appDir, env });
-  if (!whoami.ok)
-    return { name: "Expo authentication", ok: false, detail: `could not ask eas whoami (${whoami.problem}). Run \`bun run eas login\`, or set EXPO_TOKEN for CI.` };
-  const who = String(whoami.value).trim();
-  return who.length === 0
-    ? { name: "Expo authentication", ok: false, detail: "eas is not logged in. Run `bun run eas login`, or set EXPO_TOKEN for CI." }
-    : { name: "Expo authentication", ok: true, detail: `eas is logged in as ${who}.` };
-};
-
 const profileCheck = (target: MobileTargetId): Check => {
   const profile = config.targets[target].profile;
   const path = join(appDir, "eas.json");
@@ -119,6 +94,43 @@ const profileCheck = (target: MobileTargetId): Check => {
   }
 };
 
+/** A verified read, not a token-presence guess: presence proves nothing about a token's validity. */
+const accountChecks = (env: Env): Check[] => {
+  const whoami = run(easBinary, ["whoami"], { cwd: appDir, env });
+  const who = whoami.ok ? String(whoami.value).trim() : "";
+  const auth: Check =
+    who.length > 0
+      ? { name: "Expo authentication", ok: true, detail: `verified: eas is authenticated as ${who}.` }
+      : {
+          name: "Expo authentication",
+          ok: false,
+          detail: `could not authenticate (${whoami.ok ? "empty account" : whoami.problem}). Run \`bun run eas login\`, or set a valid EXPO_TOKEN for CI.`,
+        };
+  // `project:info` prints a table, not JSON (`--json` is not implemented for it),
+  // so the values are read from the text and checked against the configured id.
+  const project = run(easBinary, ["project:info"], { cwd: appDir, env });
+  if (!project.ok)
+    return [
+      auth,
+      { name: "Expo project access", ok: false, detail: `could not read the project (${project.problem}). Verify EAS_PROJECT_ID and that this account owns it.` },
+    ];
+  const text = String(project.value);
+  const id = /(?:^|\n)ID\s+([0-9a-fA-F-]{36})/.exec(text)?.[1];
+  const fullName = /(?:^|\n)fullName\s+(\S+)/.exec(text)?.[1];
+  const configured = envValue(env, "EAS_PROJECT_ID") ?? envValue(env, "EAS_BUILD_PROJECT_ID");
+  if (id === undefined) return [auth, { name: "Expo project access", ok: false, detail: "project:info printed no project id, so access cannot be verified." }];
+  if (configured !== undefined && configured !== id)
+    return [
+      auth,
+      {
+        name: "Expo project access",
+        ok: false,
+        detail: `EAS_PROJECT_ID is ${configured} but this account reads ${id} (${fullName ?? "unknown"}) here: publishing would target the wrong project.`,
+      },
+    ];
+  return [auth, { name: "Expo project access", ok: true, detail: `verified: ${fullName ?? "project"} (${id}) is readable by this account and matches EAS_PROJECT_ID.` }];
+};
+
 const toolchainChecks = (target: MobileTargetId): Check[] => {
   if (config.targets[target].nativeBuild !== "local")
     return [{ name: "native build mode", ok: true, detail: "cloud-manual: builds go through the manual workflow, so no local toolchain is required." }];
@@ -127,7 +139,11 @@ const toolchainChecks = (target: MobileTargetId): Check[] => {
     const sdk = process.env.ANDROID_HOME?.trim() || process.env.ANDROID_SDK_ROOT?.trim();
     return [
       { name: "android toolchain", ok: java.ok, detail: java.ok ? "java is available." : "java is missing: a local Android build needs a JDK." },
-      { name: "android SDK", ok: sdk !== undefined, detail: sdk === undefined ? "ANDROID_HOME/ANDROID_SDK_ROOT is unset." : `SDK at ${sdk}.` },
+      {
+        name: "android SDK",
+        ok: sdk !== undefined && sdk.length > 0,
+        detail: sdk === undefined || sdk.length === 0 ? "ANDROID_HOME/ANDROID_SDK_ROOT is unset." : `SDK at ${sdk}.`,
+      },
     ];
   }
   const xcode = run("xcodebuild", ["-version"]);
@@ -135,58 +151,11 @@ const toolchainChecks = (target: MobileTargetId): Check[] => {
     {
       name: "ios toolchain",
       ok: xcode.ok,
-      detail: xcode.ok ? String(xcode.value).trim().split("\n").join(" · ") : "xcodebuild is missing: iOS local builds need macOS with Xcode.",
+      detail: xcode.ok
+        ? `${String(xcode.value).trim().split("\n").join(" · ")} (a toolchain; signing and device enrollment are separate, unverified here).`
+        : "xcodebuild is missing: iOS local builds need macOS with Xcode.",
     },
   ];
-};
-
-const fingerprintFor = (target: MobileTargetId, env: Env): { ok: true; value: string } | { ok: false; problem: string } => {
-  const platform = target === "android" ? "android" : "ios";
-  // The variant is explicit: the fingerprint must describe the preview identity
-  // the build and update commands use, never an incidental NODE_ENV.
-  const result = run(easBinary, ["fingerprint:generate", "--platform", platform, "--json", "--non-interactive"], {
-    cwd: appDir,
-    json: true,
-    env: { ...env, APP_VARIANT: "preview" },
-  });
-  if (!result.ok) return { ok: false, problem: result.problem };
-  const parsed = result.value as { hash?: unknown };
-  return typeof parsed.hash === "string" ? { ok: true, value: parsed.hash } : { ok: false, problem: "fingerprint:generate printed no hash" };
-};
-
-/**
- * Map `eas build:list --json` records onto the resolver's shape. Fields the CLI
- * does not report stay null, which the resolver treats as unusable: a build
- * whose native facts nobody recorded must not be silently reused.
- */
-const toNativeBuilds = (records: unknown): NativeBuild[] => {
-  if (!Array.isArray(records)) return [];
-  return records.flatMap((record) => {
-    if (typeof record !== "object" || record === null) return [];
-    const value = record as Record<string, unknown>;
-    const text = (key: string): string | null => (typeof value[key] === "string" ? (value[key] as string) : null);
-    const platform = text("platform")?.toLowerCase();
-    if (platform !== "ios" && platform !== "android") return [];
-    const artifacts = typeof value.artifacts === "object" && value.artifacts !== null ? (value.artifacts as Record<string, unknown>) : {};
-    const id = text("id");
-    return [
-      {
-        id: id ?? "unknown",
-        platform,
-        simulator: value.simulator === true,
-        appIdentifier: text("appIdentifier") ?? "",
-        developmentClient: value.developmentClient === true || text("developerClient") === "true",
-        distribution: text("distribution"),
-        runtimeVersion: text("runtimeVersion"),
-        fingerprint: text("fingerprint") ?? text("fingerprintHash"),
-        status: text("status") ?? "UNKNOWN",
-        artifactUrl: typeof artifacts.buildUrl === "string" ? artifacts.buildUrl : null,
-        profile: text("buildProfile") ?? text("profile"),
-        createdAt: text("createdAt") ?? "",
-        detailsUrl: id === null ? null : `https://expo.dev/builds/${id}`,
-      },
-    ];
-  });
 };
 
 const doctor = (): void => {
@@ -204,7 +173,17 @@ const doctor = (): void => {
     },
   ];
   if (config.enabled) {
-    checks.push(...identityChecks(env), expoAuthCheck(env), profileCheck(target), ...toolchainChecks(target));
+    const identity = resolveIdentity(env);
+    const identityProblems = distributableIdentityProblems(env);
+    for (const problem of identityProblems) checks.push({ name: "app identity", ok: false, detail: problem });
+    if (identityProblems.length === 0) {
+      checks.push({
+        name: "app identity",
+        ok: true,
+        detail: `APP_NAME=${identity.appName} APP_SLUG=${identity.appSlug}, preview bundle id ${bundleIdentifierFor(identity, "preview")}, scheme ${identity.appSlug}-preview.`,
+      });
+    }
+    checks.push(...accountChecks(env), profileCheck(target), ...toolchainChecks(target));
   } else {
     checks.push({
       name: "mobile publishing",
@@ -228,10 +207,27 @@ const doctor = (): void => {
   process.exit(ok ? 0 : 1);
 };
 
-const status = (): void => {
+/** The deployed record, or why it could not be read. Never inferred from the local checkout. */
+const fetchDeployedStatus = async (
+  stageUrl: string,
+): Promise<{ ok: true; value: { stage?: unknown; environment?: unknown; record?: unknown } } | { ok: false; problem: string }> => {
+  try {
+    const response = await fetch(new URL("/api/preview/mobile", stageUrl), {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!response.ok) return { ok: false, problem: `${stageUrl}/api/preview/mobile answered ${response.status}` };
+    return { ok: true, value: (await response.json()) as { stage?: unknown; environment?: unknown; record?: unknown } };
+  } catch (error) {
+    return { ok: false, problem: `${stageUrl} is unreachable (${error instanceof Error ? error.message : String(error)})` };
+  }
+};
+
+const status = async (): Promise<void> => {
   const pr = flag("--pr");
   if (pr === undefined || !/^\d+$/.test(pr)) {
-    console.error("Usage: bun run mobile:preview:status --pr <number> [--target ios-device] [--json]");
+    console.error("Usage: bun run mobile:preview:status --pr <number> [--stage-url https://…] [--target ios-device] [--json]");
     process.exit(2);
   }
   const problems = validateMobilePreviewConfig(config);
@@ -243,32 +239,127 @@ const status = (): void => {
     console.error("Mobile previews are disabled for this clone (mobile-preview.config.ts): nothing to report.");
     process.exit(1);
   }
+
   const env = appEnv();
   const identity = resolveIdentity(env);
-  const appIdentifier = bundleIdentifierFor(identity, "preview");
+  const previewBundleIdentifier = bundleIdentifierFor(identity, "preview");
+  const stage = `pr-${pr}`;
+  const stageUrl =
+    flag("--stage-url") ?? stageUrlFor(stage, identity.appSlug === "app" && envValue(env, "APP_SLUG") === undefined ? undefined : identity.appSlug, identity.rootDomain);
   const requested = targetArg();
   const targets = requested === undefined ? enabledTargets(config) : [requested];
 
-  const results = targets.map((target) => {
-    const fingerprint = fingerprintFor(target, env);
-    if (!fingerprint.ok) return { target, state: "failed", reason: `fingerprint: ${fingerprint.problem}` };
-    const builds = run(easBinary, ["build:list", "--platform", target === "android" ? "android" : "ios", "--limit", "50", "--json", "--non-interactive"], {
-      cwd: appDir,
-      json: true,
-      env,
-    });
-    if (!builds.ok) return { target, state: "failed", reason: `build lookup: ${builds.problem}` };
-    // The fingerprint doubles as the runtime version under the app's
-    // fingerprint policy (apps/mobile/app.config.ts), which is exactly what a
-    // device enforces when it decides whether an update may load.
-    const compatibility = resolveCompatibility(
-      { target, appIdentifier, runtimeVersion: fingerprint.value, fingerprint: fingerprint.value },
-      toNativeBuilds(builds.value),
-    );
-    return { target, appIdentifier, scheme: `${identity.appSlug}-preview`, fingerprint: fingerprint.value, ...compatibility };
-  });
+  // Local facts only. They describe this checkout, not the PR, and never decide
+  // compatibility: that comes from the deployed record below.
+  const checkout = {
+    previewBundleIdentifier,
+    scheme: `${identity.appSlug}-preview`,
+    identityProblems: distributableIdentityProblems(env),
+    note: "describes this checkout; it is not PR state",
+  };
 
-  console.log(JSON.stringify({ pr: Number(pr), stage: `pr-${pr}`, targets: results }, null, 2));
+  if (stageUrl === null) {
+    console.log(
+      JSON.stringify(
+        {
+          pr: Number(pr),
+          stage,
+          deployed: null,
+          checkout,
+          targets: targets.map((target) => ({
+            target,
+            state: "unresolved",
+            reason:
+              "no stage URL: ROOT_DOMAIN (or an explicit APP_SLUG) is not configured here, so pass --stage-url, or run this from CI where the deploy output knows it.",
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
+
+  const deployed = await fetchDeployedStatus(stageUrl);
+  if (!deployed.ok) {
+    console.log(
+      JSON.stringify(
+        { pr: Number(pr), stage, stageUrl, deployed: null, checkout, targets: targets.map((target) => ({ target, state: "unresolved", reason: deployed.problem })) },
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
+
+  const record =
+    typeof deployed.value.record === "object" && deployed.value.record !== null
+      ? (deployed.value.record as { testedCommit?: unknown; deploymentId?: unknown; targets?: unknown })
+      : null;
+  const recordTargets =
+    typeof record?.targets === "object" && record.targets !== null
+      ? (record.targets as Record<string, { nativeFingerprint?: unknown; runtimeVersion?: unknown; appIdentifier?: unknown }>)
+      : {};
+
+  // One report per target: the resolver's verdict when it could be evaluated,
+  // or an explicit "could not resolve" state when it could not. Never a reused
+  // build claimed without the deployed record behind it.
+  type TargetReport = {
+    readonly target: MobileTargetId;
+    readonly state: string;
+    readonly reason?: string;
+    readonly buildId?: string;
+    readonly detailsUrl?: string | null;
+    readonly note?: string;
+  };
+  const results: TargetReport[] = [];
+  for (const target of targets) {
+    const entry = recordTargets[target];
+    const fingerprint = typeof entry?.nativeFingerprint === "string" ? entry.nativeFingerprint : null;
+    const runtimeVersion = typeof entry?.runtimeVersion === "string" ? entry.runtimeVersion : null;
+    const appIdentifier = typeof entry?.appIdentifier === "string" ? entry.appIdentifier : previewBundleIdentifier;
+    if (record === null) {
+      results.push({ target, state: "no-record", reason: "this deployment has published no mobile preview yet, so there is nothing to reuse and nothing to claim." });
+      continue;
+    }
+    if (fingerprint === null || runtimeVersion === null) {
+      results.push({ target, state: "unresolved", reason: "the deployed record carries no fingerprint/runtime for this target, so compatibility cannot be evaluated." });
+      continue;
+    }
+    const lookup = run(easBinary, buildLookupArgs(target, appIdentifier, fingerprint), { cwd: appDir, json: true, env });
+    if (!lookup.ok) {
+      results.push({ target, state: "failed", reason: `build lookup: ${lookup.problem}` });
+      continue;
+    }
+    const compatibility = resolveCompatibility({ target, appIdentifier, runtimeVersion, fingerprint }, toNativeBuilds(lookup.value));
+    results.push(
+      compatibility.state === "reusable"
+        ? { target, state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl, note: compatibility.note }
+        : compatibility.state === "building"
+          ? { target, state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl }
+          : { target, state: compatibility.state, reason: compatibility.reason },
+    );
+  }
+
+  console.log(
+    JSON.stringify(
+      {
+        pr: Number(pr),
+        stage,
+        stageUrl,
+        deployed: {
+          stage: deployed.value.stage,
+          environment: deployed.value.environment,
+          revision: typeof record?.testedCommit === "string" ? record.testedCommit : null,
+          deploymentId: typeof record?.deploymentId === "string" ? record.deploymentId : null,
+        },
+        checkout,
+        targets: results,
+      },
+      null,
+      2,
+    ),
+  );
   process.exit(results.some((result) => result.state === "failed") ? 1 : 0);
 };
 
@@ -277,9 +368,11 @@ switch (command) {
     doctor();
     break;
   case "status":
-    status();
+    await status();
     break;
   default:
-    console.error("Usage: bun run mobile:doctor [--target <id>] [--json]\n       bun run mobile:preview:status --pr <number> [--target <id>] [--json]");
+    console.error(
+      "Usage: bun run mobile:doctor [--target <id>] [--json]\n       bun run mobile:preview:status --pr <number> [--stage-url https://…] [--target <id>] [--json]",
+    );
     process.exit(2);
 }

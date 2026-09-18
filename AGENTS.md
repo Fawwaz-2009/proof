@@ -326,10 +326,19 @@ live beside it. Two read-only commands read that config and the environment:
   setup item missing before a preview can build or publish (identity, project
   id, Expo authentication, build profile, local toolchain). It exits non-zero
   while anything is missing.
-- `bun run mobile:preview:status --pr <n> [--json]` computes the target's
-  fingerprint and resolves it against existing EAS builds with the same
-  resolver CI uses (`scripts/mobile-preview-resolver.ts`): reusable, building,
-  or explicitly `native-build-required` with the failing check named.
+- `bun run mobile:preview:status --pr <n> [--stage-url https://…] [--json]`
+  reads the _deployed_ stage's record (`GET /api/preview/mobile`) and resolves
+  each target against existing EAS builds with the same resolver CI uses
+  (`scripts/mobile-preview-resolver.ts`): reusable, building, or explicitly
+  `native-build-required` with the failing check named. Until a deployment has
+  published a record it reports `no-record`, never a guess, and the local
+  checkout's facts are reported separately under `checkout`.
+
+Both commands are read-only in the strong sense: they never call
+`eas fingerprint:generate` (the pinned CLI uploads fingerprint metadata to the
+account), never start a build, and never publish. Compatibility is keyed on the
+fingerprint recorded by the artifact that was actually built, not on one this
+machine re-derives from a configuration that may differ.
 
 The stage itself answers `GET /api/preview/mobile`
 (`apps/backend/src/contracts/preview.ts`): its own stage and environment, plus
