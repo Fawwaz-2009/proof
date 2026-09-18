@@ -38,6 +38,23 @@ export const envValue = (env: Env, key: string): string | undefined => {
   return value ? value : undefined;
 };
 
+/** The unquoted subset every supported parser reads back unchanged. */
+const unquotedSafe = /^[A-Za-z0-9._@/:+-]+$/;
+
+/**
+ * Serialize a value for a .env line so reading the file back yields that same
+ * string. A name like `Proof #2` written bare reads back as `Proof`, because
+ * `#` starts a comment: identity then differs between the sync, the build, and
+ * the deploy, which is precisely the drift the sync exists to prevent.
+ *
+ * Quoting follows what the supported parser does with double-quoted values:
+ * only `\n` and `\r` are expanded; inner quotes and backslashes are literal, so
+ * escaping quotes would corrupt the value instead of protecting it. One
+ * accepted limitation: a literal backslash-n in a value is indistinguishable
+ * from an escaped newline, which no identity string hits.
+ */
+export const serializeEnvValue = (value: string): string => (unquotedSafe.test(value) ? value : `"${value.replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`);
+
 /** Identity every surface derives from: the stack, the app, and the build services. */
 export type Identity = {
   readonly appName: string;

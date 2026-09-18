@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { bundleIdentifierFor, envValue, readEnvFile, resolveEnv, resolveIdentity } from "./env.ts";
+import { bundleIdentifierFor, envValue, readEnvFile, resolveEnv, resolveIdentity, serializeEnvValue } from "./env.ts";
 
 const envFile = (contents: string): string => {
   const path = join(mkdtempSync(join(tmpdir(), "proof-env-")), ".env");
@@ -47,6 +47,27 @@ describe("readEnvFile", () => {
     const parsed = readEnvFile(file);
     expect(envValue(parsed, "APP_SLUG")).toBeUndefined();
     expect(envValue(parsed, "ROOT_DOMAIN")).toBeUndefined();
+  });
+});
+
+describe("serializeEnvValue", () => {
+  const roundTrip = (value: string): string | undefined => envValue(readEnvFile(envFile(`APP_NAME=${serializeEnvValue(value)}\n`)), "APP_NAME");
+
+  test("a value a parser would truncate survives the write", () => {
+    expect(roundTrip("Proof #2")).toBe("Proof #2");
+    expect(roundTrip("Proof #2")).not.toBe("Proof");
+  });
+
+  test("quotes, whitespace, and newlines survive", () => {
+    expect(roundTrip('Proof "quoted"')).toBe('Proof "quoted"');
+    expect(roundTrip("  padded  ")).toBe("padded");
+    expect(roundTrip("two\nlines")).toBe("two\nlines");
+  });
+
+  test("ordinary values stay bare so the file does not churn", () => {
+    expect(serializeEnvValue("proof")).toBe("proof");
+    expect(serializeEnvValue("dev.fawwaz.dev")).toBe("dev.fawwaz.dev");
+    expect(serializeEnvValue("https://proof-pr-21.fawwaz.dev")).toBe("https://proof-pr-21.fawwaz.dev");
   });
 });
 

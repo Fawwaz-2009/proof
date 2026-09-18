@@ -6,7 +6,9 @@
 // exactly one source, the repository .env, and this mirrors it into the app's
 // env where Expo reads it.
 //
-// Blank identity is omitted rather than written empty: an `APP_SLUG=` line
+// Values are serialized so the file reads back byte-for-byte (a bare `Proof #2`
+// would return as `Proof`), and blank identity is omitted rather than written
+// empty: an `APP_SLUG=` line
 // would defeat the defaults downstream (nullish coalescing does not catch empty
 // strings), which is how an app once ended up with an empty scheme and a
 // `dev.proof.` bundle identifier. Values the script does not own are preserved.
@@ -15,7 +17,7 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { envValue, readEnvFile, resolveEnv } from "./env.ts";
+import { envValue, readEnvFile, resolveEnv, serializeEnvValue } from "./env.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const mobileEnvPath = join(root, "apps/mobile/.env");
@@ -39,10 +41,10 @@ writeFileSync(
     "# Blank values are omitted on purpose: absence means the app falls back",
     "# to its documented local defaults, while an empty value would break the",
     "# derived name, scheme, and bundle identifier.",
-    ...Object.entries(identity).map(([key, value]) => `${key}=${value}`),
+    ...Object.entries(identity).map(([key, value]) => `${key}=${serializeEnvValue(value)}`),
     "",
     "# Local values, preserved across syncs:",
-    ...owned.map((key) => `${key}=${envValue(existing, key) ?? ""}`),
+    ...owned.map((key) => `${key}=${serializeEnvValue(envValue(existing, key) ?? "")}`),
     "",
   ].join("\n"),
 );
