@@ -9,7 +9,9 @@ new ones. Concept questions (what a proof is, why hashed ports, the view
 concept) live in `docs/faq.md`. The proposed mobile preview workflow, compatibility
 checks, isolation limits, and build-spending policy live in
 `docs/mobile-previews.md`; read it before implementing mobile previews.
-It distinguishes the intended workflow from what is implemented.
+It distinguishes the intended workflow from what is implemented. The detailed
+execution plan is `docs/mobile-preview-implementation-plan.md`; it includes
+local builds, artifact upload, CI coordination, and required acceptance evidence.
 
 ## The loop: every issue ends in a PR
 

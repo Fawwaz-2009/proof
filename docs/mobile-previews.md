@@ -4,7 +4,9 @@ Status: proposed workflow, documented before implementation. The current
 PR preview workflow deploys the website and backend. This guide does not
 claim that mobile publishing, build reuse, or preview switching is already
 wired into CI. The mobile client is being introduced in
-[PR #4](https://github.com/Fawwaz-2009/proof/pull/4).
+[PR #4](https://github.com/Fawwaz-2009/proof/pull/4). The detailed
+[implementation plan](./mobile-preview-implementation-plan.md) specifies the
+work order, local build/upload path, configuration, and acceptance tests.
 
 The intended experience is the same proof loop: open a PR, test its complete
 frontend and backend, request changes, and return to the updated preview.
@@ -45,8 +47,8 @@ The proposed pipeline keeps the existing handoff:
 
 1. The agent works in an isolated worktree, runs `bun run check`, and opens
    a PR with the proof brief.
-2. CI deploys the PR's website and backend stage, then prepares an iOS
-   update from the same source revision with that stage's API URL.
+2. CI deploys the PR's website and backend stage, then prepares updates
+   for enabled mobile targets from the same source revision with that stage's API URL.
 3. CI checks native compatibility and availability of a usable build. It
    publishes the update when there is a compatible build. Otherwise it
    reports that a native build is required and applies the repository's
@@ -100,7 +102,9 @@ Calculate the iOS fingerprint for this PR and preview configuration
 ```
 
 Look up builds within the adopter's Expo project using the fingerprint,
-preview app identity/profile, platform, and device versus simulator target.
+preview app identity, platform, and device versus simulator target. Check the
+profile where available, but do not exclude uploaded local builds solely because
+they lack a cloud build-profile field.
 Also check successful completion, artifact availability, and signing/device
 eligibility. A server having a compatible build does not mean the reviewer
 has installed it. Show its installation link in either case.
@@ -113,6 +117,30 @@ requests for the same build. Expo's documented build lookup supports
 fingerprint, profile, target, and waiting for an in-progress match; the same
 decision can be orchestrated from our GitHub Actions pipeline.
 [Expo: get-build job](https://docs.expo.dev/eas/workflows/pre-packaged-jobs/#get-build).
+
+**Where should native builds run?**
+
+The recommended order is reuse, local compilation, then an explicitly selected
+cloud option. Configure this per target: an adopter can build Android locally
+and use EAS cloud builds for iOS. A missing local toolchain must explain the
+required setup instead of silently submitting a cloud build.
+
+The local agent can compile an internal development app with `eas build --local`
+and use `eas upload` to obtain an Expo shareable build link. The implementation
+must verify the uploaded artifact's runtime, identity, target, signing, and
+installation, and include local uploads in compatibility lookup. Building a file
+on a laptop alone does not finish the review handoff. The exact real-device
+build/upload/install integration remains an implementation acceptance test.
+[Expo: local builds](https://docs.expo.dev/build-reference/local-builds/),
+[Expo: upload a local build](https://docs.expo.dev/eas/cli/#eas-upload).
+
+Local compilation avoids Expo's cloud compilation queue and build allowance,
+but speed depends on the machine and toolchain. EAS local builds do not support
+EAS build caching. The required machine must be available when a new native
+build is needed; compatible OTA publications can still run in GitHub Actions
+while it is offline. A self-hosted runner is optional, not required by the
+recommended local-agent workflow. Hosted updates and uploaded artifact storage
+or distribution can have separate limits; do not describe them as unlimited.
 
 **How do worktrees fit?**
 
@@ -200,13 +228,15 @@ while downloads still use bandwidth.
 
 - Reuse builds by compatibility across PRs and worktrees; wait for a matching
   build in progress instead of submitting another one.
-- Recommended default: publish compatible updates automatically and require
-  an explicit action for new cloud native builds. Teams can opt into
-  automatic builds with an enforced budget. Exhausting the Free allowance
-  should produce a clear status, not an implicit paid upgrade.
+- Publish compatible updates automatically. For a missing native build,
+  prefer a configured local builder and offer an explicit cloud-build action
+  per target. A local failure does not silently fall back to cloud. Exhausting
+  the Free allowance produces a clear status, not an implicit paid upgrade.
+  Automatic cloud fallback and enforced monthly budgets are future opt-ins,
+  not required for the first implementation.
 - Batch native dependency/configuration changes when practical. During
-  active development, use Metro and local builds on a Mac. Local iOS
-  compilation avoids cloud-build usage but still needs the toolchain and
+  active development, use Metro and local compilation. Reuse the resulting
+  compatible artifacts across PRs; iOS still needs the Mac toolchain and
   applicable signing. [Expo: local builds](https://docs.expo.dev/build-reference/local-builds/).
 - Build only required targets. Do not create a cloud simulator artifact on
   every PR if reviewers only need the phone build.
