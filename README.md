@@ -127,6 +127,9 @@ anything billable, and show real errors instead of papering over them.
 Everything below documents the template itself; it applies to your app
 as-is. Concept questions (what is a proof, why hashed ports, the view
 concept) are answered in [docs/faq.md](docs/faq.md).
+The proposed mobile review workflow, native-build limits, and cost model
+are documented in [docs/mobile-previews.md](docs/mobile-previews.md); mobile
+preview automation is not implemented yet.
 
 ## What is in the box
 
