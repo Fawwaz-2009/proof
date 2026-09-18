@@ -6,7 +6,10 @@ website that proxies
 `/api/*` to the backend over a service binding. The backend is the reference
 implementation of the app's architecture; copy its patterns, don't invent
 new ones. Concept questions (what a proof is, why hashed ports, the view
-concept) live in `docs/faq.md`.
+concept) live in `docs/faq.md`. The proposed mobile preview workflow, compatibility
+checks, isolation limits, and build-spending policy live in
+`docs/mobile-previews.md`; read it before implementing mobile previews.
+It distinguishes the intended workflow from what is implemented.
 
 ## The loop: every issue ends in a PR
 

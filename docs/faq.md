@@ -43,6 +43,14 @@ its own stage. Dev ports are hashed from project and stage
 (`config/domain.ts`), so two projects, two agents, one machine: no
 clashes, no port registry.
 
+**How will the proof loop work on a phone?**
+The proposed workflow opens each PR's frontend update in the project's own
+compatible development app, connected to that PR's isolated backend.
+GitHub remains the entry point; a custom in-app version picker is optional.
+See [Mobile PR previews](mobile-previews.md) for the reviewer flow, build
+compatibility, worktrees, isolation limits, pricing, and official references.
+This describes the intended workflow, not completed mobile automation.
+
 **Do I need a domain to start?**
 No. Cloudflare gives every account `<name>.<account>.workers.dev`, free,
 name yours to choose. Day zero runs there. A custom domain is an upgrade:
