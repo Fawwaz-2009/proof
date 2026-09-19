@@ -362,6 +362,19 @@ assumed:
 - The Worker resource exposes `versionId` and `deploymentId` outputs, so the
   deploy run can learn the same id and stamp the preview record with it.
 
+Concretely, in this worker's two-phase shape (init gen, then fetch gen):
+
+    // init gen: attaches the binding and returns a deferred accessor
+    const versionMetadata = yield* Cloudflare.Workers.VersionMetadata();
+    // fetch gen, per request
+    const { id } = yield* versionMetadata;
+
+with `Effect.provide(Cloudflare.Workers.VersionMetadataBinding)` on the Worker, or
+by declaring `env: { CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata() }`
+in the props (which flows through `InferEnv` as `WorkerVersionMetadata`). The
+deploy run reads the same id from the Worker resource's `versionId` output, so
+both sides learn it from the platform rather than from each other.
+
 The rule that follows: serve a record only when the worker's own version id
 matches the id recorded with it. An older deployment then cannot serve a newer
 record and a newer deployment cannot serve an older one. Nothing in the worker's
