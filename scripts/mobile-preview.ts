@@ -32,6 +32,7 @@ import { buildLookupArgs, stageUrlFor, toNativeBuilds } from "./eas-builds.ts";
 import { bundleIdentifierFor, type Env, envValue, resolveEnv, resolveIdentity } from "./env.ts";
 import { resolveCompatibility } from "./mobile-preview-resolver.ts";
 import { exitCodeFor } from "./preview-report.ts";
+import { MARKER, commentBodyFor, deepLinkFor, installHintFor } from "./mobile-preview-comment.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = join(root, "apps/mobile");
@@ -446,12 +447,127 @@ const status = async (): Promise<void> => {
   );
 };
 
+/**
+ * Publish this PR's update and put the link on the PR.
+ *
+ * The order is deliberate: the update is exported first, so the runtime version
+ * in the reported result is the one the tested revision actually produces under
+ * the effective configuration, rather than one this machine guesses. The link is
+ * built from the returned update *group*, so it keeps pointing at this revision
+ * even after the branch moves on.
+ *
+ * A clone with mobile previews disabled is not a failure: it is a web-only clone,
+ * and this exits zero with a note so the workflow stays green.
+ */
+const publish = async (): Promise<void> => {
+  const pr = flag("--pr");
+  if (pr === undefined || !/^\d+$/.test(pr)) {
+    console.error("Usage: bun run mobile:preview --pr <number> [--stage-url https://…] [--target ios-device] [--post]");
+    process.exit(2);
+  }
+  const problems = validateMobilePreviewConfig(config);
+  if (problems.length > 0) {
+    console.error(problems.join("\n"));
+    process.exit(1);
+  }
+  if (!config.enabled) {
+    console.log("mobile-preview: disabled for this clone (mobile-preview.config.ts); nothing published, web previews unaffected.");
+    process.exit(0);
+  }
+
+  // Narrowed once here: the guards below live inside a nested function, where
+  // TypeScript cannot carry the narrowing of the outer optional.
+  const prNumber: string = pr;
+  const target = targetArg() ?? enabledTargets(config)[0] ?? "ios-device";
+  const env = appEnv();
+  const identity = resolveIdentity(env);
+  const projectId = envValue(env, "EAS_PROJECT_ID") ?? envValue(env, "EAS_BUILD_PROJECT_ID");
+  const stage = `pr-${pr}`;
+  const explicitSlug = envValue(env, "APP_SLUG");
+  const stageUrl = flag("--stage-url") ?? stageUrlFor(stage, explicitSlug, identity.rootDomain);
+  const revision = process.env.GITHUB_SHA?.trim() || null;
+  const workflowRunUrl =
+    process.env.GITHUB_SERVER_URL !== undefined && process.env.GITHUB_REPOSITORY !== undefined && process.env.GITHUB_RUN_ID !== undefined
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : null;
+
+  function fail(reason: string): never {
+    const body = commentBodyFor({
+      link: null,
+      state: "failed",
+      reason,
+      stageUrl: stageUrl ?? "unknown",
+      revision,
+      runtimeVersion: null,
+      workflowRunUrl,
+      installHint: "",
+    });
+    if (has("--post")) postComment(prNumber, body);
+    console.log(JSON.stringify({ state: "failed", reason }, null, 2));
+    process.exit(1);
+  }
+
+  if (stageUrl === null) fail("the stage URL could not be derived: set ROOT_DOMAIN and APP_SLUG, or pass --stage-url.");
+  if (projectId === undefined) fail("EAS_PROJECT_ID is unset, so the update cannot be linked to a project.");
+
+  const result = run(
+    easBinary,
+    [
+      "update",
+      "--branch",
+      stage,
+      "--platform",
+      target === "android" ? "android" : "ios",
+      "--environment",
+      config.environment,
+      "--message",
+      `${stage} preview against ${stageUrl}${revision === null ? "" : ` (${revision.slice(0, 7)})`}`,
+      "--non-interactive",
+      "--json",
+    ],
+    { cwd: appDir, json: true, env: { ...env, APP_VARIANT: "preview", EXPO_PUBLIC_API_URL: stageUrl as string } },
+  );
+  if (!result.ok) fail(`the update could not be published: ${result.problem}`);
+
+  const published = Array.isArray(result.value) ? (result.value[0] as { group?: unknown; runtimeVersion?: unknown }) : undefined;
+  const groupId = typeof published?.group === "string" ? published.group : null;
+  const runtimeVersion = typeof published?.runtimeVersion === "string" ? published.runtimeVersion : null;
+  if (groupId === null) fail("the publish succeeded but returned no update group, so no link can be built.");
+
+  const link = deepLinkFor({ scheme: `${explicitSlug ?? identity.appSlug}-preview`, projectId, groupId });
+  const body = commentBodyFor({ link, state: "ready", stageUrl, revision, runtimeVersion, workflowRunUrl, installHint: installHintFor(runtimeVersion) });
+  if (has("--post")) postComment(pr, body);
+  console.log(JSON.stringify({ state: "ready", link, groupId, runtimeVersion, stageUrl, revision, branch: stage }, null, 2));
+  process.exit(0);
+};
+
+/** One comment per PR, found by its hidden marker so re-runs update it instead of piling up. */
+const postComment = (pr: string, body: string): void => {
+  const repository = process.env.GITHUB_REPOSITORY;
+  if (repository === undefined) {
+    console.error("mobile-preview: --post needs GITHUB_REPOSITORY (CI); printing instead\n" + body);
+    return;
+  }
+  const listed = run("gh", ["api", `repos/${repository}/issues/${pr}/comments`, "--paginate"], { json: true });
+  const comments: Array<{ id?: unknown; body?: unknown }> = listed.ok && Array.isArray(listed.value) ? (listed.value as Array<{ id?: unknown; body?: unknown }>) : [];
+  const existing = comments.find((comment) => typeof comment.body === "string" && comment.body.includes(MARKER));
+  const id = typeof existing?.id === "number" || typeof existing?.id === "string" ? String(existing.id) : null;
+  const written =
+    id === null
+      ? run("gh", ["api", "-X", "POST", `repos/${repository}/issues/${pr}/comments`, "-f", `body=${body}`])
+      : run("gh", ["api", "-X", "PATCH", `repos/${repository}/issues/comments/${id}`, "-f", `body=${body}`]);
+  if (!written.ok) console.error(`mobile-preview: could not update the PR comment (${written.problem})`);
+};
+
 switch (command) {
   case "doctor":
     doctor();
     break;
   case "status":
     await status();
+    break;
+  case "preview":
+    await publish();
     break;
   default:
     console.error(
