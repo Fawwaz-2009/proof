@@ -525,7 +525,17 @@ const publish = async (): Promise<void> => {
       "--non-interactive",
       "--json",
     ],
-    { cwd: appDir, json: true, env: { ...env, APP_VARIANT: "preview", EXPO_PUBLIC_API_URL: stageUrl as string } },
+    {
+      cwd: appDir,
+      json: true,
+      env: {
+        ...env,
+        APP_VARIANT: "preview",
+        EXPO_PUBLIC_API_URL: stageUrl as string,
+        EXPO_PUBLIC_PREVIEW_PR: prNumber,
+        ...(revision === null ? {} : { EXPO_PUBLIC_PREVIEW_REVISION: revision }),
+      },
+    },
   );
   if (!result.ok) fail(`the update could not be published: ${result.problem}`);
 
