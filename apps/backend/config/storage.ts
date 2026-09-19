@@ -5,7 +5,13 @@ import * as Config from "effect/Config";
 import { Context, Effect, Layer, Redacted } from "effect";
 
 /** Attachment objects for the notes demo. Private: every read is authorized by the note's owner. */
-export const FilesBucket = Cloudflare.R2.Bucket("Files");
+// forceDestroy: destroying a stage must not depend on whether anyone uploaded a
+// file during the PR. R2 refuses to delete a non-empty bucket, and alchemy does
+// not bypass that refusal unless asked (Beta 79 documents it on this prop), so a
+// stage whose app stored one image could never be torn down and leaked its
+// storage. The flag is recorded with the deployed state, which is why an
+// already-deployed stage needs one redeploy before its destroy succeeds.
+export const FilesBucket = Cloudflare.R2.Bucket("Files", { forceDestroy: true });
 
 export class Files extends Context.Service<Files>()("Files", {
   make: Effect.gen(function* () {
