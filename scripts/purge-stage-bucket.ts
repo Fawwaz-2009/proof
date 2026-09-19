@@ -29,11 +29,18 @@
 //     "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/<bucketName>/objects/repro%2Fone.txt"
 //   bunx alchemy destroy --stage "$STAGE" --yes
 //
-// Bumping alchemy to check whether it is fixed: 2.0.0-beta.79 does not start at
-// all on the Effect version this repository pins (it calls `Config.String`,
-// which does not exist in effect@4.0.0-rc.110), so the bump is a two-package
-// migration, and the released CLI is broken against its own peer. Stay on
-// 2.0.0-beta.77 + effect 4.0.0-rc.110 until that is resolved upstream.
+// Bumping alchemy to check whether it is fixed, measured rather than guessed:
+//
+//   - alchemy 2.0.0-beta.79 declares peerDependencies.effect >= 4.0.0-rc.115
+//     (beta.77 declared >= 4.0.0-rc.112); this repo pins effect 4.0.0-rc.110, so
+//     the new CLI starts and immediately dies with
+//     `TypeError: Config.String is not a function` (src/Auth/Profile.ts:38).
+//   - Not a packaging bug and not an architecture change: Effect renamed its
+//     config constructors in that window. rc.110 has `Config.string`; rc.116 has
+//     `Config.String` and the lowercase functions are gone, not deprecated.
+//   - The migration is therefore: bump effect to the current RC, rename the
+//     Config.* call sites (four files under apps/backend/config/), adapt
+//     website.ts to the new InputProps typing, then let the gate find the rest.
 //
 // If a future alchemy empties the bucket on delete, this script becomes dead
 // weight and should be removed along with the workflow step that calls it.
