@@ -83,14 +83,23 @@ if (!listed.ok) {
   console.error(`Could not list buckets: ${JSON.stringify(listed.body).slice(0, 400)}`);
   process.exit(1);
 }
-// The buckets endpoint answers with plain names, not objects; accepting both
-// shapes costs one line and cannot silently match nothing when it changes.
-const rawBuckets = (listed.body as { result?: unknown }).result;
-const buckets = Array.isArray(rawBuckets) ? rawBuckets : [];
-const targets = buckets.flatMap((bucket) => {
-  const name = typeof bucket === "string" ? bucket : typeof (bucket as { name?: unknown })?.name === "string" ? (bucket as { name: string }).name : "";
-  return matchesStage(name, stage) ? [name] : [];
+// The buckets endpoint answers `{ result: { buckets: [ { name, ... } ] } }`,
+// which is a different shape from the objects endpoint's `result: [ {...} ]`.
+// Both are handled, and the count is printed, because the failure mode here is
+// silent: a matcher that receives nothing reports "no buckets" and the workflow
+// happily destroys a stage that still holds uploads.
+const result = (listed.body as { result?: unknown }).result;
+const entries = Array.isArray(result)
+  ? result
+  : Array.isArray((result as { buckets?: unknown })?.buckets)
+    ? ((result as { buckets: unknown[] }).buckets as unknown[])
+    : [];
+const names = entries.flatMap((entry) => {
+  const name = typeof entry === "string" ? entry : typeof (entry as { name?: unknown })?.name === "string" ? (entry as { name: string }).name : "";
+  return name === "" ? [] : [name];
 });
+const targets = names.filter((name) => matchesStage(name, stage));
+console.log(`purge: ${names.length} bucket(s) visible to this token; ${targets.length} match ${stage}.`);
 
 if (targets.length === 0) {
   console.log(`purge: no buckets match stage ${stage}; nothing to empty (a stage with no uploads destroys cleanly).`);
