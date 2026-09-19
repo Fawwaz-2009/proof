@@ -24,7 +24,7 @@ describe("comment", () => {
     const body = commentBodyFor({ ...base, link: "proof-preview://x", state: "ready" });
     expect(body.startsWith(MARKER)).toBe(true);
     expect(body).toContain("proof-preview://x");
-    expect(body).toContain("cannot tell what is installed on your phone");
+    expect(body).toContain("cannot see what is installed on your phone");
     expect(body).toContain("aed30bb");
   });
 
@@ -33,6 +33,12 @@ describe("comment", () => {
     expect(body).toContain("Not usable yet");
     expect(body).toContain("network");
     expect(body).not.toContain("Open on your phone");
+  });
+
+  test("the hint names the rebuild command for the target", () => {
+    expect(installHintFor("1dd3bdcfd2940b1b64be000df08817566c71a9fc")).toContain("bunx expo run:ios --device");
+    expect(installHintFor("1dd3bdcfd2940b1b64be000df08817566c71a9fc", "android")).toContain("bunx expo run:android --device");
+    expect(installHintFor(null)).toContain("the runtime this revision needs");
   });
 
   test("unknown revision and runtime are labelled, not guessed", () => {

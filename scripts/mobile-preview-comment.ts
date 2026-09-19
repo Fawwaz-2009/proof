@@ -67,8 +67,23 @@ export const commentBodyFor = (options: {
   return lines.join("\n");
 };
 
-/** The first-run hint: what to do when the link does nothing. */
-export const installHintFor = (runtimeVersion: string | null): string =>
-  runtimeVersion === null
-    ? "This command cannot tell what is installed on your phone. If the link does nothing, install a development build for this revision."
-    : `This command cannot tell what is installed on your phone. If the link does nothing, your installed app was built from a different native runtime; rebuild and reinstall it (\`bun run mobile:doctor\` reports the toolchain, and the native-build path is the next milestone).`;
+/**
+ * What to do when the link does nothing.
+ *
+ * Two facts shape this text. The publish step cannot see the phone, so it must
+ * never claim the installed app matches. And "something went wrong" is useless
+ * to a reviewer, so it names the one command that fixes it, per target, and says
+ * what that command is for. Recording the capability evidence and resuming
+ * publication automatically is the next milestone; until it lands, this is the
+ * honest path and it is written down rather than implied.
+ */
+export const installHintFor = (runtimeVersion: string | null, target: "ios-device" | "ios-simulator" | "android" = "ios-device"): string => {
+  const runtime = runtimeVersion === null ? "the runtime this revision needs" : `runtime \`${runtimeVersion.slice(0, 12)}\``;
+  const command = target === "android" ? "`bunx expo run:android --device`" : target === "ios-simulator" ? "`bun run ios`" : "`bunx expo run:ios --device`";
+  return [
+    "This command cannot see what is installed on your phone, so it cannot promise the link will open.",
+    `If it does not, your installed app was built from a different native runtime than ${runtime}.`,
+    `Rebuild and reinstall with ${command}, then open the link again.`,
+    "Recording that evidence and resuming publication automatically is the next milestone; until then the rebuild is a deliberate step.",
+  ].join(" ");
+};
