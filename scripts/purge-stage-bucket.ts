@@ -15,6 +15,23 @@
 //   bun scripts/purge-stage-bucket.ts --stage pr-12            # empty it
 //   bun scripts/purge-stage-bucket.ts --stage pr-12 --dry-run  # report only
 //
+// Minimal reproduction, run end to end against alchemy 2.0.0-beta.77 (the object
+// must exist for the failure; an empty bucket destroys cleanly):
+//
+//   STAGE=pr-95
+//   bunx alchemy deploy --stage "$STAGE" --yes        # note the printed bucketName
+//   printf 'reproduction\n' > /tmp/obj.txt
+//   bunx wrangler r2 object put "<bucketName>/repro/one.txt" --file /tmp/obj.txt --remote
+//   bunx alchemy destroy --stage "$STAGE" --yes       # ✗ BucketNotEmpty, every time
+//
+//   # cleanup: delete the object (REST has list/delete, no PUT), then destroy again
+//   curl -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+//     "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/<bucketName>/objects/repro%2Fone.txt"
+//   bunx alchemy destroy --stage "$STAGE" --yes
+//
+// If a future alchemy empties the bucket on delete, this script becomes dead
+// weight and should be removed along with the workflow step that calls it.
+//
 // Only `pr-*` stages are accepted, mirroring the workflow's own destroy guard:
 // this deletes user data and must never be pointed at production by accident.
 
