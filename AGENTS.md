@@ -350,6 +350,57 @@ always answers `record: null`. Every consumer must treat a missing, malformed,
 or foreign-stage record as "no record" rather than as a live status;
 `apps/backend/test/preview-status.test.ts` pins those rules.
 
+### Preview routes: what actually works, and what it costs
+
+Ordered by what a reviewer experiences. Costs are from Expo's pricing page, dated
+19 September 2026.
+
+**iPhone: one installed app, a link per PR.** The app on the phone is built once
+with the preview identity (`dev.fawwaz.proof.preview`, scheme `proof-preview`) and
+stays installed; each PR then delivers its own version as an EAS Update:
+
+    bunx expo run:ios --device <udid>          # first install, and after native changes
+    bun run mobile:preview --pr <n> --post     # publish the update, comment the link
+
+The link is `<scheme>://expo-development-client/?url=https://u.expo.dev/<projectId>/group/<groupId>`,
+the format Expo documents for development builds: tapping it on a phone that
+already has the app opens that PR's version against that PR's backend, with no
+laptop, no Metro, and no shared network. `mobile:preview --post` keeps exactly one
+comment per PR, found by a hidden marker; CI runs the same command after the stage
+deploys, which is what makes "open a PR, get a link" true.
+
+A defect worth remembering, found by doing it: the first install goes through
+Xcode (`expo run:ios --device`), not `eas build --local`. The EAS path wants
+Apple-account access to mint a provisioning profile for the new preview bundle id,
+while a registered device plus a development certificate in the keychain are enough
+for the Xcode route with no Apple login at all.
+
+**Simulator.** The ordinary development loop: `bun run dev --stage dev-<name>`,
+`bun run mobile:env`, `bunx expo start --dev-client`, `bun run ios`. The local dev
+stacks bind localhost, so a physical phone cannot reach them: a phone needs a
+deployed stage, which is why the update path above points at one.
+
+**Cloud instead of a local build.** `eas build --profile development --platform
+ios` spends one of the plan's 15 free iOS cloud builds per month, then $2 each, and
+needs Apple-account access the same way. Local builds and Xcode installs are free.
+Updates are the opposite: unlimited by count on the free plan (1,000 monthly active
+users, 100 GiB bandwidth), so per-PR links cost nothing and only a native change
+ever costs a build.
+
+**Android.** The same shape with its own toolchain (`mobile:doctor --target
+android` reports what is missing) and the internal APK from the `development`
+profile. This repository has never run it: configured, unverified, until someone
+completes that install and reports the result.
+
+**Web-only clone.** `enabled: false` in `mobile-preview.config.ts` keeps every
+mobile command a no-op with a note, so a clone that only wants web previews needs
+no Expo setup, no secrets, and no device.
+
+**Deliberately impossible, so nobody promises it:** a link cannot install an app
+(Apple only runs signed builds whose profile includes the device), and CI cannot
+know what is installed on a particular phone. The comment says both, and the first
+install stays a deliberate human step.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module
