@@ -42,18 +42,26 @@ export const envValue = (env: Env, key: string): string | undefined => {
 const unquotedSafe = /^[A-Za-z0-9._@/:+-]+$/;
 
 /**
- * Serialize a value for a .env line so reading the file back yields that same
- * string. A name like `Proof #2` written bare reads back as `Proof`, because
- * `#` starts a comment: identity then differs between the sync, the build, and
- * the deploy, which is precisely the drift the sync exists to prevent.
+ * Serialize a value for a .env line so that reading the file back yields the
+ * same string. A name like `Proof #2` written bare reads back as `Proof`,
+ * because `#` starts a comment: identity then differs between the sync, the
+ * build, and the deploy, which is the drift this sync exists to prevent.
  *
- * Quoting follows what the supported parser does with double-quoted values:
- * only `\n` and `\r` are expanded; inner quotes and backslashes are literal, so
- * escaping quotes would corrupt the value instead of protecting it. One
- * accepted limitation: a literal backslash-n in a value is indistinguishable
- * from an escaped newline, which no identity string hits.
+ * The parser's own rules decide the representation: double quotes protect `#`
+ * and spaces and expand `\n`/`\r`, but an embedded double quote ends the quoted
+ * region early (`Proof "#2"` came back as `Proof `, with the `#` turning into a
+ * comment). Single quotes are fully literal, so a value containing a double
+ * quote uses them instead. A value containing both quote kinds has no
+ * round-tripping form; it is refused rather than written lossily.
  */
-export const serializeEnvValue = (value: string): string => (unquotedSafe.test(value) ? value : `"${value.replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`);
+export const serializeEnvValue = (value: string): string => {
+  if (unquotedSafe.test(value)) return value;
+  if (!value.includes('"')) return `"${value.replace(/\n/g, "\\n").replace(/\r/g, "\\r")}"`;
+  if (!value.includes("'") && !/[\n\r]/.test(value)) return `'${value}'`;
+  throw new Error(
+    `Cannot write ${JSON.stringify(value)} as a .env value: it contains both quote kinds, which the supported parser cannot round-trip. Rename the value or set it in the environment directly.`,
+  );
+};
 
 /** Identity every surface derives from: the stack, the app, and the build services. */
 export type Identity = {

@@ -58,10 +58,19 @@ describe("serializeEnvValue", () => {
     expect(roundTrip("Proof #2")).not.toBe("Proof");
   });
 
-  test("quotes, whitespace, and newlines survive", () => {
+  test("quotes and a comment marker together survive", () => {
+    expect(roundTrip('Proof "#2"')).toBe('Proof "#2"');
+    expect(roundTrip('Proof "quoted" #2')).toBe('Proof "quoted" #2');
     expect(roundTrip('Proof "quoted"')).toBe('Proof "quoted"');
+  });
+
+  test("whitespace and newlines survive", () => {
     expect(roundTrip("  padded  ")).toBe("padded");
     expect(roundTrip("two\nlines")).toBe("two\nlines");
+  });
+
+  test("a value with both quote kinds is refused, not written lossily", () => {
+    expect(() => serializeEnvValue(`Proof 'and' "quoted"`)).toThrow(/both quote kinds/);
   });
 
   test("ordinary values stay bare so the file does not churn", () => {
