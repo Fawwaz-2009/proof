@@ -14,9 +14,11 @@
 // Both commands share the resolver (scripts/mobile-preview-resolver.ts) and the
 // provider seam (scripts/eas-builds.ts) with the CI publication path.
 import { spawnSync } from "node:child_process";
+import * as Schema from "effect/Schema";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MobilePreviewStatus } from "../apps/backend/src/contracts/preview.ts";
 import { distributableIdentityProblems } from "../apps/mobile/app.config.ts";
 import {
   type MobileTargetId,
@@ -207,10 +209,15 @@ const doctor = (): void => {
   process.exit(ok ? 0 : 1);
 };
 
-/** The deployed record, or why it could not be read. Never inferred from the local checkout. */
-const fetchDeployedStatus = async (
-  stageUrl: string,
-): Promise<{ ok: true; value: { stage?: unknown; environment?: unknown; record?: unknown } } | { ok: false; problem: string }> => {
+/**
+ * Fetch a stage's status and decode it with the contract the backend serves.
+ *
+ * Asserting a TypeScript shape here would let a wrong stage, an empty object, or
+ * a future schema produce a confident answer; decoding is the check that the
+ * response is actually the thing this command claims to report.
+ */
+const fetchDeployedStatus = async (stageUrl: string): Promise<{ ok: true; value: MobilePreviewStatus } | { ok: false; problem: string }> => {
+  let payload: unknown;
   try {
     const response = await fetch(new URL("/api/preview/mobile", stageUrl), {
       headers: { accept: "application/json" },
@@ -218,16 +225,59 @@ const fetchDeployedStatus = async (
       signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) return { ok: false, problem: `${stageUrl}/api/preview/mobile answered ${response.status}` };
-    return { ok: true, value: (await response.json()) as { stage?: unknown; environment?: unknown; record?: unknown } };
+    payload = await response.json();
   } catch (error) {
     return { ok: false, problem: `${stageUrl} is unreachable (${error instanceof Error ? error.message : String(error)})` };
   }
+  try {
+    return { ok: true, value: Schema.decodeUnknownSync(MobilePreviewStatus)(payload) };
+  } catch (error) {
+    return {
+      ok: false,
+      problem: `${stageUrl}/api/preview/mobile did not answer the preview contract (${error instanceof Error ? error.message.split("\n")[0] : String(error)})`,
+    };
+  }
 };
 
+/** Local facts about this checkout. They never decide compatibility and never claim to be PR state. */
+const checkoutFacts = (env: Env, previewBundleIdentifier: string, identity: ReturnType<typeof resolveIdentity>) => ({
+  previewBundleIdentifier,
+  scheme: `${identity.appSlug}-preview`,
+  identityProblems: distributableIdentityProblems(env),
+  note: "describes this checkout; it is not PR state",
+});
+
 const status = async (): Promise<void> => {
+  const inspectStage = flag("--inspect-stage");
   const pr = flag("--pr");
+  const env = appEnv();
+  const identity = resolveIdentity(env);
+  const previewBundleIdentifier = bundleIdentifierFor(identity, "preview");
+
+  // Inspection mode: report what a stage says about itself, claiming nothing
+  // about a PR. Useful for a dev stage, which is not a PR at all.
+  if (inspectStage !== undefined) {
+    const deployed = await fetchDeployedStatus(inspectStage);
+    if (!deployed.ok) {
+      console.log(
+        JSON.stringify(
+          { mode: "inspect", stageUrl: inspectStage, deployed: null, checkout: checkoutFacts(env, previewBundleIdentifier, identity), problem: deployed.problem },
+          null,
+          2,
+        ),
+      );
+      process.exit(1);
+    }
+    console.log(
+      JSON.stringify({ mode: "inspect", stageUrl: inspectStage, deployed: deployed.value, checkout: checkoutFacts(env, previewBundleIdentifier, identity) }, null, 2),
+    );
+    process.exit(0);
+  }
+
   if (pr === undefined || !/^\d+$/.test(pr)) {
-    console.error("Usage: bun run mobile:preview:status --pr <number> [--stage-url https://…] [--target ios-device] [--json]");
+    console.error(
+      "Usage: bun run mobile:preview:status --pr <number> [--stage-url https://…] [--target ios-device] [--json]\n       bun run mobile:preview:status --inspect-stage <url>   # what a stage says about itself, no PR claim",
+    );
     process.exit(2);
   }
   const problems = validateMobilePreviewConfig(config);
@@ -240,23 +290,13 @@ const status = async (): Promise<void> => {
     process.exit(1);
   }
 
-  const env = appEnv();
-  const identity = resolveIdentity(env);
-  const previewBundleIdentifier = bundleIdentifierFor(identity, "preview");
   const stage = `pr-${pr}`;
+  const explicitUrl = flag("--stage-url");
   const stageUrl =
-    flag("--stage-url") ?? stageUrlFor(stage, identity.appSlug === "app" && envValue(env, "APP_SLUG") === undefined ? undefined : identity.appSlug, identity.rootDomain);
+    explicitUrl ?? stageUrlFor(stage, identity.appSlug === "app" && envValue(env, "APP_SLUG") === undefined ? undefined : identity.appSlug, identity.rootDomain);
   const requested = targetArg();
   const targets = requested === undefined ? enabledTargets(config) : [requested];
-
-  // Local facts only. They describe this checkout, not the PR, and never decide
-  // compatibility: that comes from the deployed record below.
-  const checkout = {
-    previewBundleIdentifier,
-    scheme: `${identity.appSlug}-preview`,
-    identityProblems: distributableIdentityProblems(env),
-    note: "describes this checkout; it is not PR state",
-  };
+  const checkout = checkoutFacts(env, previewBundleIdentifier, identity);
 
   if (stageUrl === null) {
     console.log(
@@ -292,53 +332,85 @@ const status = async (): Promise<void> => {
     process.exit(1);
   }
 
-  const record =
-    typeof deployed.value.record === "object" && deployed.value.record !== null
-      ? (deployed.value.record as { testedCommit?: unknown; deploymentId?: unknown; targets?: unknown })
-      : null;
-  const recordTargets =
-    typeof record?.targets === "object" && record.targets !== null
-      ? (record.targets as Record<string, { nativeFingerprint?: unknown; runtimeVersion?: unknown; appIdentifier?: unknown }>)
-      : {};
+  // The response must be *this* PR's stage. A wrong --stage-url would otherwise
+  // report another PR's preview under this PR's number.
+  if (deployed.value.stage !== stage) {
+    console.log(
+      JSON.stringify(
+        {
+          pr: Number(pr),
+          stage,
+          stageUrl,
+          deployed: { stage: deployed.value.stage, environment: deployed.value.environment },
+          checkout,
+          targets: targets.map((target) => ({
+            target,
+            state: "stage-mismatch",
+            reason: `${stageUrl} serves ${deployed.value.stage}, not ${stage}. Use --inspect-stage to read a stage that is not this PR.`,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
 
-  // One report per target: the resolver's verdict when it could be evaluated,
-  // or an explicit "could not resolve" state when it could not. Never a reused
-  // build claimed without the deployed record behind it.
+  const record = deployed.value.record;
+  const recordTargets = record?.targets ?? {};
+  // One report per target with two independent halves: what the deployment has
+  // published, and what native build could carry it. A reusable binary does not
+  // make a failed or missing publication ready, and vice versa.
   type TargetReport = {
     readonly target: MobileTargetId;
-    readonly state: string;
-    readonly reason?: string;
-    readonly buildId?: string;
-    readonly detailsUrl?: string | null;
-    readonly note?: string;
+    readonly publication: {
+      readonly state: string;
+      readonly reasonCode: string | null;
+      readonly humanMessage: string | null;
+      readonly update: { readonly groupId: string; readonly deepLink: string; readonly publishedAt: string } | null;
+    };
+    readonly native: { readonly state: string; readonly reason?: string; readonly buildId?: string; readonly detailsUrl?: string | null; readonly note?: string };
   };
   const results: TargetReport[] = [];
   for (const target of targets) {
     const entry = recordTargets[target];
-    const fingerprint = typeof entry?.nativeFingerprint === "string" ? entry.nativeFingerprint : null;
-    const runtimeVersion = typeof entry?.runtimeVersion === "string" ? entry.runtimeVersion : null;
-    const appIdentifier = typeof entry?.appIdentifier === "string" ? entry.appIdentifier : previewBundleIdentifier;
-    if (record === null) {
-      results.push({ target, state: "no-record", reason: "this deployment has published no mobile preview yet, so there is nothing to reuse and nothing to claim." });
-      continue;
-    }
+    const publication = {
+      state: entry?.state ?? "no-record",
+      reasonCode: entry?.reasonCode ?? null,
+      humanMessage:
+        entry?.humanMessage ??
+        (entry === undefined
+          ? "this deployment has published no preview record yet; whether some already-built binary can be reused is decided by the publication path, not by this command."
+          : null),
+      update: entry?.update ?? null,
+    };
+    const fingerprint = entry?.nativeFingerprint ?? null;
+    const runtimeVersion = entry?.runtimeVersion ?? null;
+    const appIdentifier = entry?.appIdentifier ?? previewBundleIdentifier;
     if (fingerprint === null || runtimeVersion === null) {
-      results.push({ target, state: "unresolved", reason: "the deployed record carries no fingerprint/runtime for this target, so compatibility cannot be evaluated." });
+      results.push({
+        target,
+        publication,
+        native: { state: "unresolved", reason: "this deployment's record carries no fingerprint/runtime for this target, so native compatibility cannot be evaluated." },
+      });
       continue;
     }
     const lookup = run(easBinary, buildLookupArgs(target, appIdentifier, fingerprint), { cwd: appDir, json: true, env });
     if (!lookup.ok) {
-      results.push({ target, state: "failed", reason: `build lookup: ${lookup.problem}` });
+      results.push({ target, publication, native: { state: "failed", reason: `build lookup: ${lookup.problem}` } });
       continue;
     }
     const compatibility = resolveCompatibility({ target, appIdentifier, runtimeVersion, fingerprint }, toNativeBuilds(lookup.value));
-    results.push(
-      compatibility.state === "reusable"
-        ? { target, state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl, note: compatibility.note }
-        : compatibility.state === "building"
-          ? { target, state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl }
-          : { target, state: compatibility.state, reason: compatibility.reason },
-    );
+    results.push({
+      target,
+      publication,
+      native:
+        compatibility.state === "reusable"
+          ? { state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl, note: compatibility.note }
+          : compatibility.state === "building"
+            ? { state: compatibility.state, buildId: compatibility.build.id, detailsUrl: compatibility.build.detailsUrl }
+            : { state: compatibility.state, reason: compatibility.reason },
+    });
   }
 
   console.log(
@@ -350,8 +422,9 @@ const status = async (): Promise<void> => {
         deployed: {
           stage: deployed.value.stage,
           environment: deployed.value.environment,
-          revision: typeof record?.testedCommit === "string" ? record.testedCommit : null,
-          deploymentId: typeof record?.deploymentId === "string" ? record.deploymentId : null,
+          revision: record?.testedCommit ?? null,
+          deploymentId: record?.deploymentId ?? null,
+          recordUpdatedAt: record?.updatedAt ?? null,
         },
         checkout,
         targets: results,
@@ -360,7 +433,11 @@ const status = async (): Promise<void> => {
       2,
     ),
   );
-  process.exit(results.some((result) => result.state === "failed") ? 1 : 0);
+  // Exit policy: unresolved transport/contract/stage problems and a failed
+  // publication are failures; a pending publication is not an error, and a
+  // missing native build is reported, not fatal (the publication path decides).
+  const failed = results.some((result) => result.native.state === "failed" || result.publication.state === "failed" || result.native.state === "unresolved");
+  process.exit(failed ? 1 : 0);
 };
 
 switch (command) {

@@ -14,10 +14,20 @@ import type { MobileTargetId } from "../mobile-preview.config.ts";
 export type NativeBuild = {
   readonly id: string;
   readonly platform: "ios" | "android";
-  /** True for simulator artifacts, which can never install on a device. */
-  readonly simulator: boolean;
+  /**
+   * Simulator artifacts can never install on a device. `null` means the provider
+   * listing did not record the target kind: unknown is not a device artifact, it
+   * is an artifact nobody has proven to be one.
+   */
+  readonly simulator: boolean | null;
   readonly appIdentifier: string;
-  readonly developmentClient: boolean;
+  /**
+   * Development-launcher capability, which the build listing does not report:
+   * `true` only when authoritative evidence (artifact metadata or inspection)
+   * says so, `false` when it says otherwise, `null` when nothing does. Internal
+   * distribution is a different setting and never stands in for this.
+   */
+  readonly developmentClient: boolean | null;
   /** EAS distribution kind (`INTERNAL` for development builds). */
   readonly distribution: string | null;
   /** Unknown values are `null`, and unknown is never a match. */
@@ -62,8 +72,10 @@ const isRunning = (status: string): boolean => status === "IN_QUEUE" || status =
  */
 export const rejectionFor = (input: CompatibilityInput, build: NativeBuild): string | null => {
   if (build.platform !== platformFor(input.target)) return `platform ${build.platform}`;
+  if (build.simulator === null) return "artifact target kind not recorded (device or simulator)";
   if (build.simulator !== wantsSimulator(input.target)) return build.simulator ? "simulator artifact" : "device artifact";
   if (build.appIdentifier !== input.appIdentifier) return `app identity ${build.appIdentifier}`;
+  if (build.developmentClient === null) return "development-client capability not verified";
   if (!build.developmentClient) return "not a development client build";
   if (build.distribution !== "INTERNAL") return `distribution ${build.distribution ?? "unknown"}`;
   if (build.runtimeVersion === null) return "runtime version not recorded";
@@ -101,11 +113,14 @@ export const resolveCompatibility = (input: CompatibilityInput, candidates: read
   if (running !== undefined) return { state: "building", build: running };
 
   // Report the most useful rejection available: a build that is the right
-  // identity and target but wrong (or unrecorded) runtime facts explains more
-  // than "nothing found", while a wrong-identity build would mislead.
+  // identity and target but whose own recorded facts are missing or wrong
+  // explains far more than "nothing found", while a wrong-identity build would
+  // mislead. Anything that is not an identity or platform mismatch is a near
+  // miss worth naming (unverified launcher capability, unrecorded target kind,
+  // runtime/fingerprint disagreement, an artifact that vanished).
   const nearestMiss = newestFirst(candidates).find((build) => {
     const rejection = rejectionFor(input, build);
-    return rejection !== null && (rejection.startsWith("runtime version") || rejection.startsWith("fingerprint") || rejection === "artifact missing");
+    return rejection !== null && !rejection.startsWith("platform ") && !rejection.startsWith("app identity ");
   });
   if (nearestMiss !== undefined) return { state: "native-build-required", reason: `no compatible build: ${rejectionFor(input, nearestMiss)}` };
   return {

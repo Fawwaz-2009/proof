@@ -43,20 +43,12 @@ const realBuild = {
 };
 
 describe("build records", () => {
-  test("a real finished iPhone build resolves as reusable for the device target", () => {
-    const [build] = toNativeBuilds([realBuild]);
-    expect(build).toBeDefined();
-    const compatibility = resolveCompatibility(
-      {
-        target: "ios-device",
-        appIdentifier: "dev.fawwaz.proof.preview",
-        runtimeVersion: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
-        fingerprint: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
-      },
-      [build!],
-    );
-    expect(compatibility.state).toBe("reusable");
-  });
+  const wanted = {
+    target: "ios-device" as const,
+    appIdentifier: "dev.fawwaz.proof.preview",
+    runtimeVersion: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
+    fingerprint: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
+  };
 
   test("the nested runtime and fingerprint are what carry compatibility", () => {
     const [build] = toNativeBuilds([realBuild]);
@@ -65,20 +57,39 @@ describe("build records", () => {
     expect(build?.appIdentifier).toBe("dev.fawwaz.proof.preview");
     expect(build?.profile).toBe("development");
     expect(build?.artifactUrl).toBe("https://expo.dev/artifacts/b-1");
+    expect(build?.simulator).toBe(false);
+  });
+
+  test("an internal release build is not reusable: capability is unverified, not assumed", () => {
+    const [build] = toNativeBuilds([realBuild]);
+    expect(build?.developmentClient).toBeNull();
+    const compatibility = resolveCompatibility(wanted, [build!]);
+    expect(compatibility.state).toBe("native-build-required");
+    if (compatibility.state === "native-build-required") expect(compatibility.reason).toContain("development-client capability not verified");
+  });
+
+  test("a verified development client is reusable, a verified non-developer build is not", () => {
+    const [build] = toNativeBuilds([realBuild]);
+    const verified = resolveCompatibility(wanted, [{ ...build!, developmentClient: true }]);
+    expect(verified.state).toBe("reusable");
+    const rejected = resolveCompatibility(wanted, [{ ...build!, developmentClient: false }]);
+    expect(rejected.state).toBe("native-build-required");
+    if (rejected.state === "native-build-required") expect(rejected.reason).toContain("not a development client build");
+  });
+
+  test("a record that does not say whether it is a device or simulator artifact is not a device match", () => {
+    const { isForIosSimulator: _dropped, ...withoutTarget } = realBuild;
+    const [build] = toNativeBuilds([withoutTarget]);
+    expect(build?.simulator).toBeNull();
+    const compatibility = resolveCompatibility(wanted, [{ ...build!, developmentClient: true }]);
+    expect(compatibility.state).toBe("native-build-required");
+    if (compatibility.state === "native-build-required") expect(compatibility.reason).toContain("target kind not recorded");
   });
 
   test("a simulator artifact is a different target, not a match", () => {
     const [simulator] = toNativeBuilds([{ ...realBuild, isForIosSimulator: true }]);
     expect(simulator?.simulator).toBe(true);
-    const compatibility = resolveCompatibility(
-      {
-        target: "ios-device",
-        appIdentifier: "dev.fawwaz.proof.preview",
-        runtimeVersion: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
-        fingerprint: "1dd3bdcfd2940b1b64be000df08817566c71a9fc",
-      },
-      [simulator!],
-    );
+    const compatibility = resolveCompatibility(wanted, [{ ...simulator!, developmentClient: true }]);
     expect(compatibility.state).toBe("native-build-required");
   });
 
@@ -87,9 +98,7 @@ describe("build records", () => {
     const [build] = toNativeBuilds([withoutFacts]);
     expect(build?.runtimeVersion).toBeNull();
     expect(build?.fingerprint).toBeNull();
-    expect(resolveCompatibility({ target: "ios-device", appIdentifier: "dev.fawwaz.proof.preview", runtimeVersion: "x", fingerprint: "y" }, [build!]).state).toBe(
-      "native-build-required",
-    );
+    expect(resolveCompatibility(wanted, [{ ...build!, developmentClient: true }]).state).toBe("native-build-required");
   });
 
   test("non-records contribute nothing", () => {

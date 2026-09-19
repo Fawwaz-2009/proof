@@ -22,10 +22,11 @@ const asText = (source: Json, key: string): string | null => (typeof source[key]
  * Map the CLI's build records onto the resolver's shape.
  *
  * Both a cloud build and an artifact uploaded with `eas upload` produce a
- * record; neither reports development-client capability, so that field is
- * carried as "asserted by the query" (see buildLookupArgs) rather than invented
- * per record. Missing fields stay null, and the resolver treats null as
- * unusable.
+ * record, and the listing reports neither development-launcher capability nor,
+ * on older records, the artifact's target kind. Those stay `null`: the resolver
+ * treats unknown as ineligible, so nothing is reused on an assumption. Capability
+ * evidence has to come from the artifact (see scripts/eas-receipts.ts) or the
+ * record is not a candidate at all.
  */
 export const toNativeBuilds = (records: unknown): NativeBuild[] => {
   if (!Array.isArray(records)) return [];
@@ -41,9 +42,9 @@ export const toNativeBuilds = (records: unknown): NativeBuild[] => {
       {
         id: id ?? "unknown",
         platform,
-        simulator: value.isForIosSimulator === true,
+        simulator: typeof value.isForIosSimulator === "boolean" ? value.isForIosSimulator : null,
         appIdentifier: asText(value, "appIdentifier") ?? "",
-        developmentClient: true,
+        developmentClient: null,
         distribution: asText(value, "distribution"),
         runtimeVersion: asText(runtime, "version"),
         fingerprint: asText(fingerprint, "hash"),
@@ -66,6 +67,9 @@ export const toNativeBuilds = (records: unknown): NativeBuild[] => {
  * longer push a compatible one out of the window. `--fingerprint-hash` also
  * makes the fingerprint the discriminator, which is what reuse is keyed on.
  */
+/** The candidate ids whose development-launcher capability must be verified before reuse. */
+export const candidateIds = (builds: readonly NativeBuild[]): string[] => builds.map((build) => build.id);
+
 export const buildLookupArgs = (target: MobileTargetId, appIdentifier: string, fingerprint: string | null): string[] => {
   const args = [
     "build:list",
