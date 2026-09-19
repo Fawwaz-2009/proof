@@ -29,6 +29,12 @@
 //     "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/<bucketName>/objects/repro%2Fone.txt"
 //   bunx alchemy destroy --stage "$STAGE" --yes
 //
+// Bumping alchemy to check whether it is fixed: 2.0.0-beta.79 does not start at
+// all on the Effect version this repository pins (it calls `Config.String`,
+// which does not exist in effect@4.0.0-rc.110), so the bump is a two-package
+// migration, and the released CLI is broken against its own peer. Stay on
+// 2.0.0-beta.77 + effect 4.0.0-rc.110 until that is resolved upstream.
+//
 // If a future alchemy empties the bucket on delete, this script becomes dead
 // weight and should be removed along with the workflow step that calls it.
 //
