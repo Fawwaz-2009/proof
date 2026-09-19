@@ -51,6 +51,12 @@ if (stage === undefined || !/^pr-\d+$/.test(stage)) {
   process.exit(2);
 }
 
+const appSlug = process.env.APP_SLUG?.trim();
+if (appSlug === undefined || appSlug === "") {
+  console.error("APP_SLUG is required: it is what keeps a purge inside this app's buckets. CI provides it.");
+  process.exit(1);
+}
+
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
 const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
 if (accountId === undefined || accountId === "" || token === undefined || token === "") {
@@ -58,8 +64,15 @@ if (accountId === undefined || accountId === "" || token === undefined || token 
   process.exit(1);
 }
 
-/** Buckets the stack created for this stage: `<slug>-files-<stage>-<hash>`. */
-export const matchesStage = (name: string, stageName: string): boolean => name.includes(`-files-${stageName}-`);
+/**
+ * Buckets this app created for this stage: `<slug>-files-<stage>-<hash>`.
+ *
+ * The slug is part of the match on purpose. Matching `-files-pr-5-` alone also
+ * matches *other projects'* buckets (this account holds `newsufra-files-pr-5-…`
+ * alongside `proof-files-pr-5-…`), and this script deletes user data: a loose
+ * pattern here would purge somebody else's uploads.
+ */
+export const matchesStage = (name: string, appSlug: string, stageName: string): boolean => name.startsWith(`${appSlug}-files-${stageName}-`);
 
 /** A key goes into a URL path, so its slashes must not become path separators. */
 export const encodeKey = (key: string): string => key.split("/").map(encodeURIComponent).join("%2F");
@@ -98,8 +111,8 @@ const names = entries.flatMap((entry) => {
   const name = typeof entry === "string" ? entry : typeof (entry as { name?: unknown })?.name === "string" ? (entry as { name: string }).name : "";
   return name === "" ? [] : [name];
 });
-const targets = names.filter((name) => matchesStage(name, stage));
-console.log(`purge: ${names.length} bucket(s) visible to this token; ${targets.length} match ${stage}.`);
+const targets = names.filter((name) => matchesStage(name, appSlug, stage));
+console.log(`purge: ${names.length} bucket(s) visible to this token; ${targets.length} match ${appSlug}-files-${stage}-.`);
 
 if (targets.length === 0) {
   console.log(`purge: no buckets match stage ${stage}; nothing to empty (a stage with no uploads destroys cleanly).`);
@@ -130,6 +143,10 @@ for (const bucket of targets) {
       deleted += 1;
     }
   }
-  console.log(`purge: emptied ${bucket}`);
+  console.log(dryRun ? `purge: would empty ${bucket}` : `purge: emptied ${bucket}`);
 }
-console.log(`purge: deleted ${deleted} object(s) across ${targets.length} bucket(s) for ${stage}; destroy can proceed.`);
+console.log(
+  dryRun
+    ? `purge: dry run only; ${targets.length} bucket(s) for ${stage} would be emptied.`
+    : `purge: deleted ${deleted} object(s) across ${targets.length} bucket(s) for ${stage}; destroy can proceed.`,
+);
