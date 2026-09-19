@@ -24,9 +24,13 @@ const asText = (source: Json, key: string): string | null => (typeof source[key]
  * Both a cloud build and an artifact uploaded with `eas upload` produce a
  * record, and the listing reports neither development-launcher capability nor,
  * on older records, the artifact's target kind. Those stay `null`: the resolver
- * treats unknown as ineligible, so nothing is reused on an assumption. Capability
- * evidence has to come from the artifact (see scripts/eas-receipts.ts) or the
- * record is not a candidate at all.
+ * treats unknown as ineligible, so nothing is reused on an assumption.
+ *
+ * Consequence, stated plainly because it is easy to forget: with no evidence
+ * source wired, every provider candidate is ineligible and reuse is disabled.
+ * Turning it on requires reading the capability from the artifact or from its
+ * build metadata (the same check `eas upload` performs on a local artifact
+ * before it submits one), not from a profile name or from distribution.
  */
 export const toNativeBuilds = (records: unknown): NativeBuild[] => {
   if (!Array.isArray(records)) return [];

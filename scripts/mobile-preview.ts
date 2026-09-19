@@ -31,6 +31,7 @@ import {
 import { buildLookupArgs, stageUrlFor, toNativeBuilds } from "./eas-builds.ts";
 import { bundleIdentifierFor, type Env, envValue, resolveEnv, resolveIdentity } from "./env.ts";
 import { resolveCompatibility } from "./mobile-preview-resolver.ts";
+import { exitCodeFor } from "./preview-report.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = join(root, "apps/mobile");
@@ -433,11 +434,16 @@ const status = async (): Promise<void> => {
       2,
     ),
   );
-  // Exit policy: unresolved transport/contract/stage problems and a failed
-  // publication are failures; a pending publication is not an error, and a
-  // missing native build is reported, not fatal (the publication path decides).
-  const failed = results.some((result) => result.native.state === "failed" || result.publication.state === "failed" || result.native.state === "unresolved");
-  process.exit(failed ? 1 : 0);
+  // Exit policy (scripts/preview-report.ts): a deployment that says "nothing
+  // published yet", "still preparing", or "no native facts recorded yet" is a
+  // valid answer, not an error; only an unreadable deployment (already exited
+  // above), a failed provider call, or a failed publication is non-zero.
+  process.exit(
+    exitCodeFor(
+      "ok",
+      results.map((result) => ({ publication: result.publication.state, native: result.native.state })),
+    ),
+  );
 };
 
 switch (command) {
