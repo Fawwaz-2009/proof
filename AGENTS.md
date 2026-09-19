@@ -258,6 +258,55 @@ difference is the client a mutation calls: the contract-derived client
 for `/api/*` (see `apps/web/src/http-client.ts`), better-auth's client
 for `/api/auth/*` (see `apps/web/src/routes/login`).
 
+## Mobile (apps/mobile)
+
+The Expo app is a second client of the same contract, nothing more: screens
+call `apps/mobile/src/lib/api-client.ts` (the contract-derived client, the
+same shape as the web's), auth calls better-auth's Expo client, and the
+screens render the view shapes the backend already returns. Identity comes
+from the same env (`APP_NAME`, `APP_SLUG`, `ROOT_DOMAIN`); the one app-only
+value is `EXPO_PUBLIC_API_URL`, the stage the build talks to, baked at
+build/update time.
+
+Three rules earned in the first build:
+
+- File parts must be expo-file-system `File`s. Expo's fetch (the SDK's
+  default global) encodes multipart bodies itself and rejects React Native's
+  legacy `{ uri, name, type }` parts. Ask the picker for the `Compatible`
+  representation too: iPhones hand back HEIC otherwise, and the contract
+  only whitelists types a browser can render.
+- That encoder buffers the whole body in JS before native sees it, so the
+  picker path suits images, not media: for large files use expo-file-system's
+  upload task (`File.createUploadTask`), which streams from disk and
+  bypasses the typed client's transport. Do not set
+  `EXPO_PUBLIC_USE_RN_FETCH=1`: React Native's fetch would accept the old
+  `{ uri }` parts but not `File` parts, so uploads would break the other way.
+- View URLs may be origin-relative (the dev gateway hands out paths). Resolve
+  them against the baked stage with `resolveApiUrl`; native has no
+  same-origin to lean on.
+- The post-sign-in gate reads a fetched session (`getSession()` through
+  TanStack Query), not the `useSession()` hook: its cache is hydrated by its
+  own fetches only, so right after sign-in it can report stale-empty and
+  bounce a signed-in user. The entry gate (`index.tsx`) may use the hook:
+  on a cold start its cache is hydrated from SecureStore, which is the case
+  it exists for.
+
+Local run: `bun run dev` at the root, then `bun run mobile:env` (mirrors the
+repository `.env` identity into `apps/mobile/.env`; the app config takes part
+in the runtime fingerprint, so a build made with a different identity can
+never load an update published with another), then `cd apps/mobile && bunx
+expo start` with `EXPO_PUBLIC_API_URL` set to the site URL the root command
+prints.
+
+Local EAS commands go through `bun run eas ...` (`build.list`, `credentials`,
+`device:create`): the wrapper loads `apps/mobile/.env` into the child process,
+which the CLI itself does not do, and the app config resolves the project link
+from there. `APP_SLUG` must equal the Expo project's slug: EAS refuses a
+project whose slug differs from the app's.
+
+The icon and splash under `assets/images` are unbranded placeholders:
+replace them when you brand the app, and nothing else changes.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

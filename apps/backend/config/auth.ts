@@ -1,5 +1,6 @@
 import { BetterAuth } from "@alchemy.run/better-auth";
 import { CloudflareD1 } from "@alchemy.run/better-auth/CloudflareD1";
+import { expo } from "@better-auth/expo";
 import { emailOTP } from "better-auth/plugins";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -7,6 +8,7 @@ import * as Layer from "effect/Layer";
 import { Context } from "effect";
 import { Email } from "./email.ts";
 import { d1Database } from "./database/index.ts";
+import { environment } from "./environment.ts";
 
 /** Hosts the backend accepts auth traffic from. Always bound via props env:
  * derived from the stage's website domain (see worker.ts + config/domain.ts). */
@@ -15,7 +17,7 @@ import { d1Database } from "./database/index.ts";
  * synthesis, outside any binding context. Deployed stages get the derived
  * hosts via the AUTH_ALLOWED_HOSTS binding (see worker.ts).
  */
-export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
+export const allowedHostsConfig = Config.String("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
 
 /**
  * The dev sign-in trick: on capture stages an address whose local part is
@@ -34,7 +36,12 @@ export const otpFromAddress = (email: string): string | null => {
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
-    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    // The native app's deep-link scheme. app.config.ts derives it from the
+    // same env (APP_SLUG), and native auth traffic arrives declaring
+    // `<scheme>://` as its origin, so the backend trusts exactly that.
+    const appSlug = yield* Config.String("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
+    const stage = yield* environment;
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
       .split(",")
@@ -44,7 +51,19 @@ export class Auth extends Context.Service<Auth>()("Auth", {
     return yield* BetterAuth({
       basePath: "/api/auth",
       baseURL: { allowedHosts, protocol: "auto" },
-      trustedOrigins: [...allowedHosts.map((host) => `https://${host}`), "http://localhost:*", "http://127.0.0.1:*"],
+      // Custom schemes are trusted whole: a host-less entry matches every host
+      // and path of that scheme. Capture stages accept the preview app's scheme
+      // plus the production one (a production build pointed at a preview
+      // backend); production accepts only the production scheme. No wildcards.
+      // A template that later enables magic links or email verification should
+      // remember that better-auth hands the session cookie to the deep link's
+      // `?cookie=` on those flows, and any app claiming the scheme can read it.
+      trustedOrigins: [
+        ...allowedHosts.map((host) => `https://${host}`),
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        ...(stage === "prod" ? [`${appSlug}://`] : [`${appSlug}-preview://`, `${appSlug}://`]),
+      ],
       advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] } },
       rateLimit: {
         enabled: true,
@@ -57,6 +76,10 @@ export class Auth extends Context.Service<Auth>()("Auth", {
         },
       },
       plugins: [
+        // Native clients (the Expo app) declare the app scheme as their
+        // origin; the expo plugin teaches better-auth to accept those
+        // requests and answer deep links.
+        expo(),
         emailOTP({
           allowedAttempts: 5,
           expiresIn: 15 * 60,
