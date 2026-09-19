@@ -19,6 +19,9 @@
     "deploy": "alchemy deploy",
     "wt": "bun scripts/wt.ts",
     "mobile:env": "bun scripts/mobile-env.ts",
+    "mobile:doctor": "bun scripts/mobile-preview.ts doctor",
+    "mobile:preview": "bun scripts/mobile-preview.ts preview",
+    "mobile:preview:status": "bun scripts/mobile-preview.ts status",
     "update-stack-secrets": "GITHUB_TOKEN=$(gh auth token) bunx alchemy deploy stacks/github.ts --profile admin --stage bootstrap --yes && echo \"\" && echo \"NOTE: this rotated the CI token and the R2 key pair.\" && echo \"Any already-deployed stage still runs with the previous keys (image signing and the sender are baked at deploy).\" && echo \"Redeploy every stage that matters: bunx alchemy deploy --stage prod --yes\"",
     "eas": "bun scripts/eas.ts",
     "test": "bun test scripts"

@@ -24,6 +24,32 @@ const read = (key: string): string | undefined => {
   return value ? value : undefined;
 };
 
+/**
+ * What a *distributed* build requires of this clone's identity, as sentences
+ * `bun run mobile:doctor` prints verbatim. Empty means usable.
+ *
+ * This function is the single authority: the app config throws on a non-empty
+ * list during an EAS build, and the doctor reports the same list without
+ * building. A drifted second copy is how a doctor once declared a machine ready
+ * while the build it promised would have failed.
+ */
+export const distributableIdentityProblems = (env: Record<string, string | undefined>): string[] => {
+  const value = (key: string): string | undefined => {
+    const raw = env[key]?.trim();
+    return raw ? raw : undefined;
+  };
+  const problems: string[] = [];
+  if (value("APP_SLUG") === undefined)
+    problems.push(
+      "APP_SLUG is unset: the `app` fallback collides across clones, and the bundle identifier, scheme, and Expo project slug all derive from it. Set it in the repository .env and run `bun run mobile:env`.",
+    );
+  if (value("EAS_PROJECT_ID") === undefined && value("EAS_BUILD_PROJECT_ID") === undefined)
+    problems.push(
+      "EAS_PROJECT_ID is unset: nothing can be built, looked up, or published for this app. Create or reuse the project (`bunx eas init` in apps/mobile) and put its id in apps/mobile/.env.",
+    );
+  return problems;
+};
+
 const variant = read("APP_VARIANT") === "production" ? ("production" as const) : ("preview" as const);
 const explicitSlug = read("APP_SLUG");
 const appSlug = explicitSlug ?? "app";
@@ -36,9 +62,11 @@ const projectId = read("EAS_PROJECT_ID") ?? read("EAS_BUILD_PROJECT_ID");
 
 // A distributable artifact must carry a real identity: the fallback slug would
 // make identifiers collide across clones, and unlike a local run it outlives
-// the machine that produced it.
-if (read("EAS_BUILD") === "true" && explicitSlug === undefined) {
-  throw new Error("APP_SLUG is required for EAS builds: set it in the repository .env (`bun run mobile:env`) or in the build environment.");
+// the machine that produced it. The doctor checks the same rule, so a machine
+// it calls ready cannot fail here.
+if (read("EAS_BUILD") === "true") {
+  const problems = distributableIdentityProblems(process.env);
+  if (problems.length > 0) throw new Error(`Cannot build a distributable app:\n- ${problems.join("\n- ")}`);
 }
 
 const baseIdentifier = rootDomain ? [...rootDomain.split(".").reverse(), appSlug].join(".") : `dev.proof.${appSlug}`;
