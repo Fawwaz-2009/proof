@@ -103,6 +103,15 @@ jobs:
             pr-*) echo "Destroying $STAGE" ;;
             *) echo "Refusing to destroy non-preview stage '$STAGE'"; exit 1 ;;
           esac
+      - name: Empty the stage's file bucket
+        # R2 refuses to delete a bucket that still holds objects, and the stack's
+        # Files bucket refuses in exactly that way: a PR whose app ever stored an
+        # upload cannot be torn down until its objects are gone. Verified: the
+        # first stage teardown here failed on a single 2.5MB note image, and the
+        # same destroy succeeded once that object was removed. The credentials
+        # this job already has can list and delete R2 objects through the REST
+        # API, so no new secret or dependency is involved.
+        run: bun scripts/purge-stage-bucket.ts --stage "$STAGE"
       - name: Destroy preview stage (retries — custom-domain deletes transiently fail)
         run: |
           for i in 1 2 3 4; do
