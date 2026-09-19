@@ -15,10 +15,10 @@
     "@alchemy.run/better-auth": "2.0.0-beta.76",
     "@better-auth/expo": "1.7.1",
     "aws4fetch": "^1.0.20",
-    "alchemy": "2.0.0-beta.77",
+    "alchemy": "2.0.0-beta.79",
     "better-auth": "1.7.1",
     "drizzle-orm": "1.0.0-rc.5-ab785fc",
-    "effect": "4.0.0-rc.110"
+    "effect": "4.0.0-rc.116"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260819.1",

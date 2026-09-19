@@ -17,7 +17,7 @@ import { environment } from "./environment.ts";
  * synthesis, outside any binding context. Deployed stages get the derived
  * hosts via the AUTH_ALLOWED_HOSTS binding (see worker.ts).
  */
-export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
+export const allowedHostsConfig = Config.String("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
 
 /**
  * The dev sign-in trick: on capture stages an address whose local part is
@@ -36,11 +36,11 @@ export const otpFromAddress = (email: string): string | null => {
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
-    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
     // The native app's deep-link scheme. app.config.ts derives it from the
     // same env (APP_SLUG), and native auth traffic arrives declaring
     // `<scheme>://` as its origin, so the backend trusts exactly that.
-    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
+    const appSlug = yield* Config.String("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
     const stage = yield* environment;
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))

@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.100.14",
     "better-auth": "1.7.1",
-    "effect": "4.0.0-rc.110",
+    "effect": "4.0.0-rc.116",
     "expo": "~57.0.23",
     "expo-build-properties": "~57.0.18",
     "expo-constants": "~57.0.18",
