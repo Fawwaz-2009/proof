@@ -37,7 +37,7 @@ export type MobilePreviewConfig = {
 };
 
 export const mobilePreviewConfig: MobilePreviewConfig = {
-  enabled: false,
+  enabled: true,
   environment: "development",
   targets: {
     "ios-device": { enabled: true, profile: "development", nativeBuild: "local" },
