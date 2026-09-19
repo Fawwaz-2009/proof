@@ -1,21 +1,20 @@
 // Empty a PR stage's file bucket so `alchemy destroy` can delete it.
 //
-// Why this exists: `Cloudflare.R2.Bucket` deletion calls the R2 API directly,
-// and R2 refuses to delete a non-empty bucket. A PR stage whose app ever stored
-// an uploaded image therefore leaked its storage forever: the cleanup job's
-// destroy always failed with `BucketNotEmpty`, and every retry failed the same
-// way. Found by doing it: the first stage teardown here failed on exactly one
-// 2.5MB note image.
+// Resolved at the source, so read this first: the supported fix is
+// `forceDestroy: true` on the bucket (set in apps/backend/config/storage.ts).
+// Alchemy deliberately does not empty a bucket unless asked, R2 then refuses to
+// delete a non-empty bucket, and the flag is recorded with the *deployed* state,
+// so a stage already deployed without it must be redeployed once before its
+// destroy succeeds. Verified: with the flag deployed, destroy removed the whole
+// stack including a bucket that still held an object.
 //
-// The cleanup credential can fix it: `CLOUDFLARE_API_TOKEN` lists and deletes R2
-// objects through Cloudflare's REST API (both calls verified against a real
-// bucket). No new dependency, no new secret, and the R2 keys the app uses stay
-// read-only as designed.
+// This script therefore exists only for stages deployed *before* that flag: the
+// existing PR and prod stages in this account, and any adopter's stages created
+// earlier. It empties their objects through Cloudflare's REST API using the
+// credentials the cleanup job already has, so `alchemy destroy` can finish.
+// Delete it, and the workflow step that calls it, once no such stage remains.
 //
-//   bun scripts/purge-stage-bucket.ts --stage pr-12            # empty it
-//   bun scripts/purge-stage-bucket.ts --stage pr-12 --dry-run  # report only
-//
-// Minimal reproduction, run end to end against alchemy 2.0.0-beta.77 (the object
+// Why this exists:// Minimal reproduction, run end to end against alchemy 2.0.0-beta.77 (the object
 // must exist for the failure; an empty bucket destroys cleanly):
 //
 //   STAGE=pr-95
