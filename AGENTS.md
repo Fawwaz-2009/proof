@@ -350,6 +350,24 @@ always answers `record: null`. Every consumer must treat a missing, malformed,
 or foreign-stage record as "no record" rather than as a live status;
 `apps/backend/test/preview-status.test.ts` pins those rules.
 
+### How the server can prove which deployment it is (verified mechanism, not built yet)
+
+The stale-preview defect needs the running worker to know its own identity.
+Alchemy supplies exactly that, verified in the installed package rather than
+assumed:
+
+- `Cloudflare.Workers.VersionMetadata()` is a binding (default name
+  `CF_VERSION_METADATA`) that yields `{ id, tag, timestamp }` from _inside_ the
+  running worker.
+- The Worker resource exposes `versionId` and `deploymentId` outputs, so the
+  deploy run can learn the same id and stamp the preview record with it.
+
+The rule that follows: serve a record only when the worker's own version id
+matches the id recorded with it. An older deployment then cannot serve a newer
+record and a newer deployment cannot serve an older one. Nothing in the worker's
+props changes, so `alchemy destroy` keeps working (a deploy-varying prop is what
+the cleanup job's byte-identical-env warning is about).
+
 ### Preview routes: what actually works, and what it costs
 
 Ordered by what a reviewer experiences. Costs are from Expo's pricing page, dated
