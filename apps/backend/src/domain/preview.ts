@@ -17,27 +17,50 @@ import { MobilePreviewRecord, MobilePreviewStatus } from "../contracts/preview.t
 export const MobilePreviewRecordKey = "_proof/mobile/current.json";
 
 /**
- * Decode a record body, or decide it is not one.
+ * The identity of the deployment that is answering.
  *
- * Unknown and malformed both mean absent: a half-written record, an older
- * schema, or a hand-edited object must not be served as a live status, because
- * every consumer treats `record !== null` as "this deployment published a
- * mobile preview". Production never serves one, whatever the bucket contains.
+ * `null` means this worker cannot establish what it is running, which is the
+ * current state: the stamp source (a value bound to the executing worker
+ * version) is the next change. A worker that cannot prove which deployment it
+ * is must not vouch for a record written by a *previous* deployment of the same
+ * PR stage, which is exactly the stale-preview defect: a PR's bucket persists
+ * between pushes, so a record from an earlier deploy would otherwise be served
+ * as if it described the code now answering.
+ */
+export type DeploymentStamp = {
+  readonly stage: string;
+  readonly revision: string | null;
+  readonly deploymentId: string | null;
+};
+
+/**
+ * Decide what this deployment may say about itself.
+ *
+ * The rule is deliberately strict: a record is served only when a stamp exists,
+ * names this stage, and matches the record's own deployment id. Anything else,
+ * including a malformed body, an older schema, or a record that was copied from
+ * another stage, collapses to `record: null` — "no preview published for this
+ * deployment" — which every consumer already treats as unknown rather than as
+ * up to date. Production never serves one at all, whatever the bucket holds.
  *
  * Pure so the staleness rules are testable without a bucket, a network, or a
  * deploy.
  */
-export const toPreviewStatus = (stage: string, stageEnvironment: Environment, body: string | null): MobilePreviewStatus => {
+export const toPreviewStatus = (stage: string, stageEnvironment: Environment, body: string | null, stamp: DeploymentStamp | null = null): MobilePreviewStatus => {
   // The wire class is constructed here, not in the controller: a Schema.Class
   // instance is what the encoder accepts, and the domain is where the record was
   // decoded into one.
   const shell = () => new MobilePreviewStatus({ stage, environment: stageEnvironment, record: null });
   if (body === null || stageEnvironment === "prod") return shell();
+  // No stamp means no way to prove this record belongs to the code answering:
+  // unknown is not fresh.
+  if (stamp === null) return shell();
   try {
     const decoded = Schema.decodeUnknownSync(MobilePreviewRecord)(JSON.parse(body) as unknown);
-    // The record names the stage it was written for; a mismatch means it was
-    // copied from another stage and describes a backend that is not this one.
-    return decoded.stage === stage ? new MobilePreviewStatus({ stage, environment: stageEnvironment, record: decoded }) : shell();
+    if (decoded.stage !== stage) return shell();
+    if (stamp.deploymentId !== null && decoded.deploymentId !== stamp.deploymentId) return shell();
+    if (stamp.revision !== null && decoded.testedCommit !== stamp.revision) return shell();
+    return new MobilePreviewStatus({ stage, environment: stageEnvironment, record: decoded });
   } catch {
     return shell();
   }
@@ -64,7 +87,10 @@ export class PreviewStatus extends Context.Service<
             .get(MobilePreviewRecordKey)
             .pipe(Effect.flatMap((object) => (object === null ? Effect.succeed(null) : object.text())))
             .pipe(Effect.catchCause(() => Effect.succeed(null)));
-          return toPreviewStatus(stage, stageEnvironment, body);
+          // No stamp source yet: bind the deployment identity to the executing worker
+          // version before serving records. Until then this deliberately answers `record: null`
+          // rather than vouching for a record this deployment cannot prove it wrote.
+          return toPreviewStatus(stage, stageEnvironment, body, null);
         }),
     };
   }),
