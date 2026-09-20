@@ -11,15 +11,15 @@ and PR automation are downstream of a passing gate.
 
 ## What Phase 0 has to answer
 
-| Gate                  | Pass condition                                                                                                                                        | Status       |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Hardware acceleration | Instance reports usable KVM and the emulator boots with acceleration actually in use. Software CPU emulation is a fail, not a slow pass.              | not measured |
-| Hosted transport      | Video and input reach a browser over the public route with a maintained bridge, on desktop Chrome and phone Safari.                                   | not measured |
-| Native app behaviour  | A self-contained APK of the current app, OTA disabled, installs and runs with no Metro server, against its own PR backend.                            | not measured |
-| Concurrent isolation  | Two hosts serve two sessions with independent storage, auth, and controls.                                                                            | not measured |
-| Performance           | Stopped host to interactive app within 180 s; reconnect to a running session within 10 s; p95 visible response within 500 ms over at least 20 inputs. | not measured |
-| Cleanup               | Instance reaches `stopped`; probe resources delete; nothing billable is stranded.                                                                     | not measured |
-| Cost                  | Measured running cost per review-hour from actual usage, including egress.                                                                            | not measured |
+| Gate                  | Pass condition                                                                                                                                        | Status                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Hardware acceleration | Instance reports usable KVM and the emulator boots with acceleration actually in use. Software CPU emulation is a fail, not a slow pass.              | **partial pass**: `/dev/kvm` and `vmx` verified on the host; `emulator -accel-check` still to run |
+| Hosted transport      | Video and input reach a browser over the public route with a maintained bridge, on desktop Chrome and phone Safari.                                   | not measured                                                                                      |
+| Native app behaviour  | A self-contained APK of the current app, OTA disabled, installs and runs with no Metro server, against its own PR backend.                            | not measured                                                                                      |
+| Concurrent isolation  | Two hosts serve two sessions with independent storage, auth, and controls.                                                                            | not measured                                                                                      |
+| Performance           | Stopped host to interactive app within 180 s; reconnect to a running session within 10 s; p95 visible response within 500 ms over at least 20 inputs. | not measured                                                                                      |
+| Cleanup               | Instance reaches `stopped`; probe resources delete; nothing billable is stranded.                                                                     | **pass, first run**: stack, instance, and volume all gone; verified through the AWS API           |
+| Cost                  | Measured running cost per review-hour from actual usage, including egress.                                                                            | not measured                                                                                      |
 
 A gate that misses keeps its measurements and gets a proposed adjustment. It
 does not get reworded.
@@ -114,3 +114,39 @@ not evidence.
   hypervisor and no additional charge, but the same page recommends evaluating
   bare metal for latency-sensitive workloads. Acceleration availability is
   therefore not the risk; streaming performance under nesting is.
+
+## First Singapore run, 2026-09-20
+
+Region `ap-southeast-1`, `m7i.xlarge`, AMI `ami-095f155a67469a548` (AL2023,
+kernel 6.18, x86_64), 50 GiB encrypted gp3. Deployed through alchemy to stage
+`probe`, measured over SSM, destroyed in the same session.
+
+| Measurement                 | Command                                                              | Result                                                                |
+| --------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Device node                 | `ls -l /dev/kvm`                                                     | `crw-rw-rw- 1 root kvm 10, 232`                                       |
+| CPU virtualization flags    | `grep -m1 -oE 'vmx\|svm' /proc/cpuinfo`                              | `vmx`                                                                 |
+| Hypervisor flag             | `grep -m1 -oE hypervisor /proc/cpuinfo`                              | present, expected inside a VM                                         |
+| Size                        | `nproc`, `free -m`                                                   | 4 vCPU, 15705 MiB                                                     |
+| Kernel                      | `uname -r`                                                           | 6.18.48-109.150.amzn2023.x86_64                                       |
+| Instance CPU options        | `aws ec2 describe-instances ... --query '...CpuOptions'`             | `{CoreCount: 2, ThreadsPerCore: 2}`, no `NestedVirtualization` field  |
+| Launch template CPU options | `aws ec2 describe-launch-template-versions --versions '$Latest' ...` | empty, although the template declares `NestedVirtualization: enabled` |
+| Stack create                | alchemy deploy                                                       | 176 s                                                                 |
+| Teardown                    | alchemy destroy, then API checks                                     | stack gone, instance `terminated`, no volumes left                    |
+
+**The trap worth keeping:** the control plane disagreed with the guest. Both
+`describe-launch-template-versions` (empty `CpuOptions`) and `describe-instances`
+(no `NestedVirtualization` key) said the setting had not applied, while the host
+had a working `/dev/kvm`, `vmx`, and 4 vCPUs. Anyone reading only the API would
+have concluded the opposite of the truth here, and the same API-only check would
+also fail to catch a host that genuinely lacks KVM. The acceptance signal is the
+guest.
+
+**Also learned the hard way:** a launch template without `SubnetId` places the
+instance in the account's default VPC, and the launch fails with "security group
+and subnet belong to different networks". The first Singapore deploy rolled back
+on exactly that. The interface block is now asserted by a test.
+
+Not measured in this run, and required before the acceleration gate is called
+passed: the emulator itself (`emulator -accel-check`, boot to home screen). A
+KVM device node is necessary and not sufficient, which this document said before
+the run and still says after it.

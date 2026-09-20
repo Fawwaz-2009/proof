@@ -218,7 +218,19 @@ export const buildProbeTemplate = (options: ProbeTemplateOptions): CloudFormatio
         InstanceType: instanceType,
         // The whole reason this template exists.
         CpuOptions: { NestedVirtualization: "enabled" },
-        SecurityGroupIds: [{ Ref: "SecurityGroup" }],
+        // The subnet and the security group have to be declared together here.
+        // A launch template without a subnet places the instance in the
+        // account's default VPC, and the launch then fails with "security group
+        // and subnet belong to different networks", which is exactly what the
+        // first Singapore run did.
+        NetworkInterfaces: [
+          {
+            DeviceIndex: 0,
+            SubnetId: { Ref: "Subnet" },
+            Groups: [{ Ref: "SecurityGroup" }],
+            AssociatePublicIpAddress: true,
+          },
+        ],
         MetadataOptions: { HttpTokens: "required", HttpEndpoint: "enabled", HttpPutResponseHopLimit: 1 },
         BlockDeviceMappings: [
           {

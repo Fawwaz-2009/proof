@@ -30,7 +30,7 @@ import { PROBE_BRIDGE_PORT, buildProbeTemplate } from "../scripts/android-previe
 interface ProbeInputs {
   readonly region: string;
   readonly amiId: string;
-  readonly hostname: string;
+  readonly hostname: string | undefined;
   readonly instanceType: string | undefined;
 }
 
@@ -63,17 +63,21 @@ const resolveInputs = (env: Record<string, string | undefined>): ProbeInputs => 
   }
   const amiId = nonEmpty(env.ANDROID_PREVIEW_AMI_ID);
   if (amiId === undefined) throw new Error(AMI_ERROR);
-  const hostname = nonEmpty(env.ANDROID_PREVIEW_PROBE_HOSTNAME);
-  if (hostname === undefined) {
-    throw new Error(
-      "ANDROID_PREVIEW_PROBE_HOSTNAME is required, for example android-probe.example.com: the tunnel " +
-        "routes this hostname to the host's loopback bridge, and it must be in a zone on this account.",
-    );
-  }
-  return { region, amiId, hostname, instanceType: nonEmpty(env.ANDROID_PREVIEW_INSTANCE_TYPE) };
+  // Optional on purpose: the acceleration gate needs only the host, and the
+  // tunnel needs Cloudflare permission the CI token does not carry. Setting the
+  // hostname adds the tunnel; leaving it unset keeps this run to AWS alone.
+  return { region, amiId, hostname: nonEmpty(env.ANDROID_PREVIEW_PROBE_HOSTNAME), instanceType: nonEmpty(env.ANDROID_PREVIEW_INSTANCE_TYPE) };
 };
 
 const inputs = resolveInputs(process.env);
+
+// The AWS provider follows AWS_REGION (Region.fromEnvironment), while the
+// template above is built from the resolved input. Pinning the environment to
+// the resolved value is what keeps them from disagreeing, which matters because
+// a CLI default in another region would otherwise place the stack somewhere its
+// tags and its region-specific AMI both describe incorrectly.
+process.env.AWS_REGION = inputs.region;
+
 const template = buildProbeTemplate({
   amiId: inputs.amiId,
   region: inputs.region,
@@ -97,21 +101,27 @@ export default Alchemy.Stack(
       tags: { "proof:component": "android-preview-probe" },
     });
 
-    const tunnel = yield* Cloudflare.Tunnel.Tunnel("probe-tunnel", {
-      name: `${STACK}-android-preview-probe`,
-      configSrc: "cloudflare",
-      ingress: [{ hostname: inputs.hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}` }, { service: "http_status:404" }],
-    });
+    // The tunnel arrives with the streaming slice: it needs Cloudflare
+    // permission the CI token does not carry, and the acceleration gate does
+    // not. Set ANDROID_PREVIEW_PROBE_HOSTNAME to add it.
+    const tunnel =
+      inputs.hostname === undefined
+        ? undefined
+        : yield* Cloudflare.Tunnel.Tunnel("probe-tunnel", {
+            name: `${STACK}-android-preview-probe`,
+            configSrc: "cloudflare",
+            ingress: [{ hostname: inputs.hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}` }, { service: "http_status:404" }],
+          });
 
     return {
       region: inputs.region,
       instanceId: host.outputs.InstanceId,
       launchTemplateId: host.outputs.LaunchTemplateId,
       securityGroupId: host.outputs.SecurityGroupId,
-      tunnelId: tunnel.tunnelId,
-      tunnelName: tunnel.tunnelName,
+      tunnelId: tunnel?.tunnelId,
+      tunnelName: tunnel?.tunnelName,
       // Handed to the host bootstrap, never printed: status output redacts it.
-      tunnelToken: tunnel.token,
+      tunnelToken: tunnel?.token,
     };
   }),
 );

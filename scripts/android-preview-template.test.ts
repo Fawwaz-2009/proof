@@ -50,6 +50,18 @@ describe("host exposure", () => {
     expect(launchTemplateData(template)).not.toHaveProperty("KeyName");
   });
 
+  test("the instance lands in this stack's subnet, not the account default", () => {
+    const interfaces = launchTemplateData(spec()).NetworkInterfaces as Array<Record<string, unknown>>;
+    expect(interfaces).toHaveLength(1);
+    expect(interfaces[0]).toMatchObject({
+      SubnetId: { Ref: "Subnet" },
+      Groups: [{ Ref: "SecurityGroup" }],
+      AssociatePublicIpAddress: true,
+    });
+    // Declaring both places is rejected by EC2, so the interface is the only one.
+    expect(launchTemplateData(spec())).not.toHaveProperty("SecurityGroupIds");
+  });
+
   test("IMDSv2 is required, so guest code cannot read instance credentials over IMDSv1", () => {
     expect(launchTemplateData(spec()).MetadataOptions).toMatchObject({ HttpTokens: "required" });
   });
