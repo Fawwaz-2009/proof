@@ -103,13 +103,6 @@ jobs:
             pr-*) echo "Destroying $STAGE" ;;
             *) echo "Refusing to destroy non-preview stage '$STAGE'"; exit 1 ;;
           esac
-      - name: Empty the stage's file bucket (transitional)
-        # New stages carry forceDestroy on the bucket and need nothing here. This
-        # step covers stages deployed before that flag existed, whose bucket
-        # survives every destroy attempt: R2 refuses to delete a non-empty
-        # bucket and alchemy does not bypass it unasked. Remove this step once
-        # no such stage remains.
-        run: bun scripts/purge-stage-bucket.ts --stage "$STAGE"
       - name: Destroy preview stage (retries — custom-domain deletes transiently fail)
         run: |
           for i in 1 2 3 4; do

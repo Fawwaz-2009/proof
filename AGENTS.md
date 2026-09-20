@@ -381,6 +381,57 @@ record and a newer deployment cannot serve an older one. Nothing in the worker's
 props changes, so `alchemy destroy` keeps working (a deploy-varying prop is what
 the cleanup job's byte-identical-env warning is about).
 
+### Where the mobile preview work stands (read this before continuing)
+
+**Working and verified.** The preview app is installed on the physical iPhone
+(`dev.fawwaz.proof.preview`) through Xcode signing (`bunx expo run:ios --device`,
+never `eas build --local` for a new bundle id). JavaScript-only changes reach the
+phone as published updates. The app shows its own identity in a slim amber bar
+(`PR <n> · <revision> · <backend>`), which only ever appears in a published
+bundle. On a PR event CI deploys the stage, publishes the update, and rewrites one
+comment with the link, the tested revision and the runtime: proven end to end on
+run 35429455673. `bun run mobile:doctor`, `mobile:preview:status` and
+`--inspect-stage` are read-only; `mobile:preview --pr N --post` is the one command
+that publishes. Stages destroy cleanly again because the files bucket sets
+`forceDestroy: true` (without it, R2 refuses to delete a non-empty bucket and a
+stage that ever received an upload leaked its storage).
+
+**Deliberately not working, so nobody chases it.**
+
+- Native reuse is off: the provider's build listing does not report
+  development-launcher capability, and unverified is ineligible, so every PR may
+  imply a rebuild. That is what the artifact-inspection work fixes.
+- `GET /api/preview/mobile` always answers `record: null`, because the worker
+  cannot yet prove which deployment it is; the freshness rule refuses to serve
+  what it cannot prove. Do not loosen that rule to make the endpoint "work".
+- There is no automatic native-build path: when the runtime changes the link
+  silently fails until someone rebuilds by hand, and the comment says so.
+
+**Traps.** Never bump `alchemy` alone: 2.0.0-beta.79 needs Effect >= rc.115, and
+Effect renamed `Config.string` to `Config.String` in that window; the repo runs
+alchemy 2.0.0-beta.79 + effect 4.0.0-rc.116 with `overrides` pinning drizzle-orm
+and a matched react/react-dom, all three needed to keep the graph
+single-instanced. CI needs `EXPO_TOKEN` and `EAS_PROJECT_ID`.
+
+**Bumping these two is expected while alchemy is beta, and every bump is proven
+the same way, end to end, before it is committed:** `bun run check` green, a
+deploy of a throwaway stage, a published update against it, the link opened on
+the phone, and `alchemy destroy` of that stage. Type-checks alone have already
+missed a runtime rename once.
+
+**The order of work, kept here rather than in a session's scratch list:**
+
+1. Read a development build's artifact to confirm it can carry a preview, then
+   reuse one across PRs and worktrees (today every PR may imply a rebuild).
+2. Bind `CF_VERSION_METADATA` in the worker, stamp the preview record at deploy,
+   serve it only on a match.
+3. The explicit native-build-required state and one command that builds, records
+   the evidence and resumes publishing.
+4. The two-PR phone run: A, then B, then A, separate sessions, no rebuild between
+   them.
+5. An in-app gear opening a build-info panel (variant, PR, revision, backend,
+   runtime, update id) as a template standard.
+
 ### Preview routes: what actually works, and what it costs
 
 Ordered by what a reviewer experiences. Costs are from Expo's pricing page, dated
