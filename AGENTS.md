@@ -419,6 +419,15 @@ deploy of a throwaway stage, a published update against it, the link opened on
 the phone, and `alchemy destroy` of that stage. Type-checks alone have already
 missed a runtime rename once.
 
+**Point 1 of that list, started with evidence rather than a guess.** A build
+artifact proves its own development-launcher capability: the iOS app bundle Xcode
+built for the phone contains `EXDevLauncher.bundle` (and `EXUpdates.bundle`) at
+the bundle root, so an inspector can answer "could this binary open a preview?"
+from the artifact itself. That is the only honest source: a profile name, the
+current profile setting, and internal distribution all say nothing about what was
+actually built. Android's equivalent marker is not established yet, and until it
+is, an Android candidate stays ineligible rather than assumed.
+
 **The order of work, kept here rather than in a session's scratch list:**
 
 1. Read a development build's artifact to confirm it can carry a preview, then
