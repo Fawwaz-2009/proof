@@ -1,0 +1,106 @@
+{
+  "method": "Browser input dispatch to >1500 changed samples in native framebuffer region x40,y800,w640,h350; excludes clock/caret; public Cloudflare route",
+  "results": [
+    {
+      "event": "focus-native-field",
+      "ms": 319,
+      "changedSamples": 15734
+    },
+    {
+      "event": "android-back",
+      "ms": 70,
+      "changedSamples": 54264
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 291,
+      "changedSamples": 2291
+    },
+    {
+      "event": "android-back",
+      "ms": 70,
+      "changedSamples": 54265
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 236,
+      "changedSamples": 2286
+    },
+    {
+      "event": "android-back",
+      "ms": 179,
+      "changedSamples": 12017
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 261,
+      "changedSamples": 2288
+    },
+    {
+      "event": "android-back",
+      "ms": 203,
+      "changedSamples": 19405
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 295,
+      "changedSamples": 3366
+    },
+    {
+      "event": "android-back",
+      "ms": 78,
+      "changedSamples": 54263
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 304,
+      "changedSamples": 2288
+    },
+    {
+      "event": "android-back",
+      "ms": 74,
+      "changedSamples": 54577
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 297,
+      "changedSamples": 3381
+    },
+    {
+      "event": "android-back",
+      "ms": 69,
+      "changedSamples": 54577
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 361,
+      "changedSamples": 15734
+    },
+    {
+      "event": "android-back",
+      "ms": 184,
+      "changedSamples": 19409
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 303,
+      "changedSamples": 15765
+    },
+    {
+      "event": "android-back",
+      "ms": 77,
+      "changedSamples": 54264
+    },
+    {
+      "event": "focus-native-field",
+      "ms": 267,
+      "changedSamples": 3362
+    },
+    {
+      "event": "android-back",
+      "ms": 70,
+      "changedSamples": 54263
+    }
+  ],
+  "p95Ms": 319
+}

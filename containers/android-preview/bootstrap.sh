@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 022
 
 # Run through SSM on the disposable probe. The launch template installs an
 # independent 30-minute shutdown timer before this script begins.
@@ -47,7 +48,7 @@ Description=Isolated Android virtual display
 [Service]
 User=android
 Group=android
-ExecStart=/usr/bin/Xvnc :1 -geometry 800x1440 -depth 24 -localhost -rfbport 5901 -SecurityTypes None -AcceptCutText=0 -SendCutText=0 -AlwaysShared=0 -NeverShared=1 -DisconnectClients=0 -FrameRate=30
+ExecStart=/usr/bin/Xvnc :1 -geometry 720x1280 -depth 24 -localhost -rfbport 5901 -SecurityTypes None -AcceptCutText=0 -SendCutText=0 -AlwaysShared=0 -NeverShared=1 -DisconnectClients=0 -FrameRate=30
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict
@@ -66,7 +67,7 @@ Group=android
 Environment=ANDROID_HOME=/opt/android-sdk
 Environment=DISPLAY=:1
 Environment=QT_X11_NO_MITSHM=1
-ExecStart=/opt/android-sdk/emulator/emulator -avd preview -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics -no-skin
+ExecStart=/opt/android-sdk/emulator/emulator -avd preview -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics -no-skin -fixed-scale
 Restart=on-failure
 NoNewPrivileges=true
 ProtectSystem=strict

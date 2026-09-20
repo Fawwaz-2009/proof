@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Android preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #101615;
+        color: #e8f0eb;
+        font:
+          15px system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: auto;
+        padding: 16px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      p {
+        color: #b1c2b7;
+        margin: 4px 0 12px;
+      }
+      button {
+        color: inherit;
+        background: #263c30;
+        border: 1px solid #456650;
+        border-radius: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      #screen {
+        height: calc(100dvh - 165px);
+        min-height: 280px;
+        background: #000;
+        overflow: hidden;
+        border-radius: 12px;
+      }
+      nav {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      #status {
+        font-size: 13px;
+      }
+      #text {
+        flex: 1;
+        min-width: 0;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #456650;
+        background: #18261e;
+        color: #e8f0eb;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Android preview</h1>
+          <p>A real Android app. Tap, scroll and type inside the screen.</p>
+        </div>
+        <button id="reconnect">Reconnect</button>
+      </header>
+      <p id="status" role="status">Connecting to the emulator…</p>
+      <p id="expiry" hidden></p>
+      <div id="screen"></div>
+      <nav>
+        <button id="back" disabled>Back</button
+        ><input id="text" autocomplete="off" placeholder="Type into the selected Android field" aria-label="Text for the selected Android field" /><button
+          id="send"
+          disabled
+        >
+          Type
+        </button>
+      </nav>
+    </main>
+    <script type="module">
+      import RFB from "./core/rfb.js";
+      const screen = document.querySelector("#screen");
+      const status = document.querySelector("#status");
+      let rfb;
+      const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      function connect() {
+        rfb?.disconnect();
+        screen.replaceChildren();
+        status.textContent = "Connecting to the emulator…";
+        rfb = new RFB(screen, `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/websockify`, { shared: false });
+        const connection = rfb;
+        rfb.scaleViewport = true;
+        rfb.resizeSession = false;
+        rfb.showDotCursor = false;
+        rfb.qualityLevel = 6;
+        rfb.compressionLevel = 2;
+        rfb.addEventListener("connect", () => {
+          if (rfb !== connection) return;
+          status.textContent = "Connected · Android 14 · This review session has one controller.";
+          document.querySelectorAll("nav button").forEach((button) => (button.disabled = false));
+        });
+        rfb.addEventListener("disconnect", () => {
+          if (rfb !== connection) return;
+          status.textContent = "Disconnected. Reconnect if the review window is still open.";
+          document.querySelectorAll("nav button").forEach((button) => (button.disabled = true));
+        });
+        // Exposes no host API or credential. Useful for measuring actual RFB
+        // round trips through the same connection used by reviewers.
+        window.previewRfb = rfb;
+      }
+      document.querySelector("#reconnect").onclick = connect;
+      document.querySelector("#back").onclick = () => {
+        // The Linux emulator's Android Back shortcut is Ctrl+Backspace.
+        rfb.sendKey(0xffe3, "ControlLeft", true);
+        rfb.sendKey(0xff08, "Backspace");
+        rfb.sendKey(0xffe3, "ControlLeft", false);
+      };
+      document.querySelector("#send").onclick = async () => {
+        const input = document.querySelector("#text");
+        const button = document.querySelector("#send");
+        button.disabled = true;
+        // Browser keyboard input is paced to avoid losing characters through
+        // the emulator's virtual keyboard during React Native re-renders.
+        for (const character of input.value) {
+          const point = character.codePointAt(0);
+          rfb.sendKey(point > 255 ? 0x01000000 + point : point);
+          await pause(90);
+        }
+        input.value = "";
+        button.disabled = false;
+      };
+      connect();
+      fetch("./review-window.json", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((window) => {
+          if (!window?.expiresAt) return;
+          const expiry = document.querySelector("#expiry");
+          expiry.textContent = `Available until ${new Date(window.expiresAt).toLocaleString()}. The preview computer then stops automatically.`;
+          expiry.hidden = false;
+        })
+        .catch(() => {});
+    </script>
+  </body>
+</html>

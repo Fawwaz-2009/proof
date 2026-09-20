@@ -9,46 +9,61 @@ it says "not measured".
 Scope of this document: Phase 0 only. The platform, coordinator, reviewer page,
 and PR automation are downstream of a passing gate.
 
-## Takeover run, 2026-09-20
+## Public browser delivery, 2026-09-20
 
-The current gate is **not passed**. The following now works on the Singapore
-probe, with an actual browser connected through a private SSM port forward:
+The native Android app now runs through the **public Cloudflare route**, protected
+by Access. This is a working single-session proof. The full platform gate remains
+open for phone Safari, concurrent isolation, recovery and PR automation.
 
-- TigerVNC 1.14.1, noVNC 1.7.0 and websockify 0.13.0 serve live Android video.
-- Browser taps and keyboard input sign in to the native app and create a note
-  against the PR's deployed backend. Android's native photo picker opens.
-- The x86_64 release APK runs with no Metro and no runtime-fingerprint crash.
-  `MOBILE_DELIVERY=browser-apk` explicitly disables updates and omits EAS runtime
-  configuration, even when the environment contains an EAS project ID.
-- Cloudflare Access now provisions an owner-email policy, reuses the account's
-  existing one-time PIN provider without adopting it, and covers HTML and the
-  WebSocket path. Both paths return 302 to Access when unauthenticated.
-  The tunnel also requires the application's Access audience at the origin.
-- The emulator runs as an unprivileged Unix user. A persistent firewall denies
-  that user the EC2 metadata addresses; a live IMDSv2 token request was denied.
-- A launch-template systemd timer independently stops every probe boot after
-  30 minutes. This is the experiment watchdog, not the eventual six-hour
-  inactivity policy.
+Verified on an EC2 `m7i.xlarge` in Singapore:
 
-The public authenticated stream, phone Safari, latency, reconnect, stopped-host
-startup, simultaneous session isolation and the complete PR workflow are still
-unverified. A private SSM connection does not prove the Cloudflare transport.
-The token's current policy lacks `Access: Service Tokens Write`; its create API
-returns HTTP 403. The owner application can be deployed separately with
-`ANDROID_PREVIEW_VERIFICATION=false`, without opening anonymous access.
+- The browser displays the real Android 14 x86_64 emulator at 720 x 1280. It runs
+  the release APK, with software GPU rendering and KVM CPU acceleration.
+- The APK has OTA explicitly disabled and runs without Metro or an Expo account.
+  Its preview label identifies PR 6, revision `08c05ed`, and that PR's backend.
+- Public-route browser taps, paced typing and Android Back sign in and create
+  `Public Android preview works`. A mouse drag scrolls the native notes screen. Android's photo picker selects a synthetic PNG, uploads it, and the resulting signed
+  image renders in the notes list.
+- Across 20 alternating native text-field focus and Android Back actions,
+  p95 time from browser input dispatch to changed framebuffer pixels is **319 ms**.
+  The sample excludes the clock and caret. Raw samples and the detection method
+  are in `evidence/android-public-input-2026-09-20.json`. This is one measured
+  network path, not a guarantee for all reviewer locations or app operations.
+- Reconnect to the running native app took **486 ms**, measured from clicking
+  Reconnect to restored framebuffer pixels. The initial attempt using animation
+  frame polling timed out; a repeat with a foreground page and explicit 25 ms
+  sampling passed. Wider repeatability is not yet established.
+- After correcting a display-readiness race, a stopped host reopened the signed-in
+  app automatically. The public framebuffer was observed at 72 seconds after the
+  EC2 start request; a browser tap opened the native photo picker by 143 seconds.
+  These are observed upper bounds including operator/tool delay, not precise
+  minimum boot times. The first restart failed app auto-launch and is retained
+  as the reason for the display readiness prerequisite.
+- Anonymous requests to both `/` and `/websockify` redirect to Access. Authenticated
+  HTTP and WebSocket traffic cross the real public hostname. Automated testing
+  uses a bounded, loopback-only proxy that attaches a service token upstream;
+  it does not forward through SSM or give credentials to browser JavaScript.
+- The origin checks the Access audience. VNC and websockify listen on loopback,
+  the EC2 security group allows no inbound connections, and the unprivileged
+  emulator user is blocked from instance metadata by a persistent firewall.
+- The updated account permission allowed Access to create its verification token.
+  Owner access uses the configured reviewer email and the existing account PIN
+  provider, which the stack reuses without owning or deleting.
 
-The scripts under `containers/android-preview/` are an executable probe recipe,
-not yet an immutable host image. The Android SDK packages still need exact
-version locking. The Alchemy patch treats a deleted tunnel as absent during
-reconciliation; controlled failure-recovery acceptance remains pending.
+`set-review-window.sh` replaces the 30-minute experiment watchdog with an
+explicit, absolute review deadline. It defaults to six hours, validates a maximum
+of 24 hours, arms its successor before removing the experiment timer, and survives
+host restarts. A boot guard stops a host restarted after the deadline. The viewer displays the deadline. This is a bounded handoff,
+not the future platform's activity-based lease. Stopping compute retains the
+managed encrypted disk; final stack destruction removes it.
 
-The browser-build fix does not imply that local Expo builds cannot generate
-fingerprints. The installed Expo updates Gradle integration contains that step.
-For this browser path, OTA is intentionally disabled because each APK belongs to
-one tested revision and backend.
+The scripts are an executable probe recipe, not yet an immutable host image.
+Exact Android SDK locking, phone Safari, multi-session
+isolation, controlled failure recovery and the complete PR workflow remain open.
+The Alchemy patch handles deleted tunnel observations, but is not evidence that
+all interrupted deploy/destroy sequences recover.
 
-Verification of this slice: 78 script tests, 11 backend tests and `bun run check`
-pass. The private browser test created the note `Browser preview works`.
+Verification: 78 script tests, 11 backend tests and `bun run check` pass.
 
 ### Probe commands
 
@@ -59,10 +74,25 @@ the worktree with the probe environment set. The Access owner email is
 
 Run host scripts with `bun scripts/android-preview-ssm.ts <instance-id> <script>`.
 The runner bounds each command, uses private temporary files and removes them.
-Apply `bootstrap.sh`, then `harden.sh`, install the APK, then `connect.sh`.
+Apply `bootstrap.sh` through SSM first. Deploy the temporary artifact stack,
+then run `bun scripts/android-preview-install.ts <browser-apk-path>`. That command
+transfers the recipe and APK, verifies its SHA-256, hardens the host, installs
+the APK and reviewer page, registers automatic app startup, and connects the
+tunnel. Re-running installation restarts the app launcher.
 The connector requires its tunnel-only token at
 `/etc/proof-preview/tunnel-token`, readable only by root. Never copy an account
 token, AWS key or repository `.env` onto the host.
+
+`bun scripts/android-preview-verify-proxy.ts` opens a 30-minute verification
+client on `127.0.0.1:18081`. Its HTTP and WebSocket connections traverse the public
+Cloudflare hostname. Close the browser connection after testing because each
+session has one controller. Owner reviewers use the public URL and Access login.
+
+After verifying public access, run `set-review-window.sh` through SSM to leave a
+bounded review window. Set `ANDROID_PREVIEW_REVIEW_HOURS` in the **remote script
+environment** when overriding six hours. The deadline is published in
+`/review-window.json`. It stops the host, rather than destroying its stack.
+After review, destroy the probe using its original worktree and Alchemy state.
 
 The temporary `android-preview-artifacts.ts` stack owns a private encrypted S3
 bucket for this probe's APK transfer. Empty that bucket and destroy it through
