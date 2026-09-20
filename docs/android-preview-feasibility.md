@@ -150,3 +150,48 @@ Not measured in this run, and required before the acceleration gate is called
 passed: the emulator itself (`emulator -accel-check`, boot to home screen). A
 KVM device node is necessary and not sufficient, which this document said before
 the run and still says after it.
+
+## Emulator run, 2026-09-20 (second run)
+
+Same host shape as the first run, this time through to a running emulator and a
+real release APK.
+
+| Measurement                  | Command                                                           | Result                                                         |
+| ---------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| Emulator acceleration        | `emulator -accel-check`                                           | `KVM (version 12) is installed and usable.`                    |
+| Boot to `sys.boot_completed` | emulator launch timestamp vs `getprop`                            | **41 seconds** (Android 14, x86_64, headless, swiftshader GPU) |
+| Release APK                  | `expo prebuild --platform android` then `gradlew assembleRelease` | built, 121194158 bytes, package `dev.fawwaz.proof.preview`     |
+| Install                      | `adb install -r`                                                  | `Success`                                                      |
+| Metro dependency             | `ss -ltnp` on the host                                            | `NO_METRO_PORT`, and the app still launched                    |
+| App stays running            | `adb shell pidof`                                                 | **no: crash on launch**                                        |
+
+### The APK crashes without a fingerprint, and that is a required build step
+
+```
+java.io.FileNotFoundException: fingerprint
+  at android.content.res.AssetManager.nativeOpenAsset
+  at expo.modules.updates.UpdatesConfiguration$Companion.getRuntimeVersion
+  at expo.modules.updates.UpdatesController.initialize
+```
+
+The app declares `runtimeVersion: { policy: "fingerprint" }`, so `expo-updates`
+reads a `fingerprint` asset at startup. EAS Build generates that asset; a plain
+`expo prebuild` plus `gradlew assembleRelease` does not, and the resulting APK
+installs cleanly and then dies on first launch. The plan's "self-contained
+preview APK" recipe must therefore include the fingerprint step explicitly (or
+build with updates genuinely disabled), and pin it. This is a build-recipe gap,
+not a host limitation: the emulator, the install, and the launch path all work.
+
+### Two traps that cost time here
+
+- **The emulator needs X11 libraries even with `-no-window`.** On a minimal
+  Amazon Linux 2023 image it exited with
+  `Could not open libX11-xcb.so.1, give up`. `-no-window` removes the window, not
+  the Qt/X11 dependency. Installing `libX11`, `libX11-xcb`, `libxcb`,
+  `libXcomposite`, `libXcursor`, `libXdamage`, `libXext`, `libXfixes`, `libXi`,
+  `libXrender`, `libXtst`, `libXrandr`, `mesa-libGL`, `libglvnd`, and
+  `pulseaudio-libs` fixed it.
+- **`adb wait-for-device` never returns when the emulator has died**, so the
+  command that was supposed to measure a boot hung until it was cancelled.
+  Every wait in the probe is now bounded and checks that the emulator process
+  still exists.
