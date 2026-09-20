@@ -249,3 +249,32 @@ carry the **union** of everything any minted child will ever receive:
 `DNS Write` is zone-scoped. A zone permission with no zone selected grants
 nothing, and `Account DNS Settings Read` is a different group that does not
 create records.
+
+### Which policy section each group belongs to
+
+Read from `GET /accounts/{account_id}/tokens/permission_groups`, which returns
+every group with its scope. The dashboard offers different groups depending on
+whether the policy is "Entire Account" or a specific zone, and searching the
+account section for a zone-scoped group returns nothing at all.
+
+Account-scoped (`com.cloudflare.api.account`), for the "Entire Account" policy:
+
+- `Cloudflare Tunnel Read` / `Write`
+- `Workers Scripts Write`, `Workers KV Storage Write`, `Workers R2 Storage Write`,
+  `Workers Tail Read`, `Workers Observability Write`
+- `D1 Write`, `Email Sending Write`, `Secrets Store Write`, `Account Settings Read`
+- `Account API Tokens Read` / `Write`
+- `Access: Apps and Policies Write`
+- `Account DNS Settings Read` / `Write` (account DNS settings, not records)
+
+Zone-scoped (`com.cloudflare.api.account.zone`), so they must be granted in a
+**zone policy for the zone**, and they will never appear in an account search:
+
+- `DNS Read` / `DNS Write`
+- `Workers Routes Read` / `Write`
+- `Access: Apps and Policies Read` / `Write` / `Revoke`
+
+So the parent token needs two policies: one for the account, and one for the
+zone that hosts the preview hostname (`DNS Write`, and `Workers Routes Write`
+because `stacks/github.ts` mints it into the CI token for custom-domain
+deploys).
