@@ -229,3 +229,23 @@ Two consequences for the template:
   `Authentication error`. A setup check that only reads will look healthy and
   fail at the first write, so the verification step has to attempt the write
   path (create and delete a throwaway tunnel) rather than a read.
+
+### The parent token rule
+
+The dashboard-born parent token is the one credential code cannot mint, because
+API-minted tokens can never hold token-creation rights. Cloudflare will not let
+a credential grant a permission it does not itself hold, so the parent must
+carry the **union** of everything any minted child will ever receive:
+
+- The groups `stacks/github.ts` already mints into the CI token: Workers
+  Scripts, Workers KV, Workers R2, Workers Routes, Workers Tail, Workers
+  Observability, D1, Email Sending, Secrets Store, Account Settings Read.
+- Plus `Account API Tokens Write` and `Read`, without which it cannot mint at
+  all.
+- Plus, for this feature: `Cloudflare Tunnel Write` (account) and `DNS Write`
+  (zone-scoped, the zone that hosts the preview hostname), which the probe and
+  the later platform need to create a tunnel and its public hostname.
+
+`DNS Write` is zone-scoped. A zone permission with no zone selected grants
+nothing, and `Account DNS Settings Read` is a different group that does not
+create records.
