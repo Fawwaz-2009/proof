@@ -26,16 +26,21 @@ does not get reworded.
 
 ## Reproducible probe, as built
 
-| Element               | Value                                                                       | Where                                 |
-| --------------------- | --------------------------------------------------------------------------- | ------------------------------------- |
-| Region                | `ap-southeast-1` by default, `ANDROID_PREVIEW_REGION` to change             | `scripts/android-preview-template.ts` |
-| Instance type         | `m7i.xlarge`                                                                | `PROBE_INSTANCE_TYPE`                 |
-| Nested virtualization | `CpuOptions.NestedVirtualization: enabled` in the launch template           | `scripts/android-preview-template.ts` |
-| AMI                   | pinned per region by `ANDROID_PREVIEW_AMI_ID`; never resolved to "latest"   | required input                        |
-| Root volume           | 50 GiB gp3, encrypted, deleted with the instance                            | `PROBE_ROOT_VOLUME_GB`                |
-| Bridge port           | 8080, loopback only, forwarded by the tunnel                                | `PROBE_BRIDGE_PORT`                   |
-| Host access           | SSM only. No inbound security group rules, no SSH key.                      | template                              |
-| Tunnel                | one Cloudflare Tunnel per probe, ingress to the local bridge, catch-all 404 | `stacks/android-preview-probe.ts`     |
+| Element               | Value                                                                                                                                                     | Where                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Region                | `ANDROID_PREVIEW_REGION`, falling back to the AWS CLI's `AWS_REGION` / `AWS_DEFAULT_REGION`. No code default: it decides cost, latency, and availability. | `.env.example`                        |
+| Instance type         | `m7i.xlarge` as a documented starting point, `ANDROID_PREVIEW_INSTANCE_TYPE` to change                                                                    | `PROBE_DEFAULT_INSTANCE_TYPE`         |
+| Nested virtualization | `CpuOptions.NestedVirtualization: enabled` in the launch template                                                                                         | `scripts/android-preview-template.ts` |
+| AMI                   | pinned per region by `ANDROID_PREVIEW_AMI_ID`; never resolved to "latest"                                                                                 | required input                        |
+| Root volume           | 50 GiB gp3, encrypted, deleted with the instance                                                                                                          | `PROBE_ROOT_VOLUME_GB`                |
+| Bridge port           | 8080, loopback only, forwarded by the tunnel                                                                                                              | `PROBE_BRIDGE_PORT`                   |
+| Host access           | SSM only. No inbound security group rules, no SSH key.                                                                                                    | template                              |
+| Tunnel                | one Cloudflare Tunnel per probe, ingress to the local bridge, catch-all 404                                                                               | `stacks/android-preview-probe.ts`     |
+
+Everything a clone must supply lives in `.env`, not in committed code: the
+committed files say what a clone _may_ do, and never who or where it is. A
+missing region, AMI, or hostname fails by name at synthesis, before any resource
+is created.
 
 Android SDK, emulator, system image, and bridge versions are **not pinned yet**,
 because they are chosen in step 3 and 5 of the plan and must be recorded with
@@ -57,13 +62,18 @@ the template is the supported escape hatch rather than an invented property.
 
 ## How to run it
 
-Prerequisites: AWS credentials available to alchemy for the target account, an
-AMI id for the region, and a hostname whose DNS zone is in the same Cloudflare
-account as the stack.
+Prerequisites: AWS credentials available to alchemy for the target account (the
+standard chain, so `aws configure` or `aws sso login` is enough), the region and
+AMI for that region, and a hostname whose DNS zone is in the same Cloudflare
+account as the stack. All of them go in `.env`; see `.env.example` for the
+section and the exact command that resolves the AMI.
 
 ```bash
-export ANDROID_PREVIEW_AMI_ID=ami-...        # pinned, per region
-export ANDROID_PREVIEW_PROBE_HOSTNAME=android-probe.example.com
+# .env
+ANDROID_PREVIEW_REGION=eu-central-1
+ANDROID_PREVIEW_AMI_ID=ami-...
+ANDROID_PREVIEW_PROBE_HOSTNAME=android-probe.example.com
+
 bunx alchemy deploy stacks/android-preview-probe.ts --stage probe --yes
 ```
 

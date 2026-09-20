@@ -11,20 +11,26 @@
 // testable without AWS credentials, and the same builder can be handed to
 // CloudFormation validation before anything is launched.
 
-/** Region the probe runs in. The plan's default; a different region is a config change, not a code change. */
-export const PROBE_DEFAULT_REGION = "ap-southeast-1";
+/**
+ * Documented starting point for the probe host, overridable with
+ * ANDROID_PREVIEW_INSTANCE_TYPE.
+ *
+ * There is deliberately no default region here. Region decides cost, client
+ * latency against the 500 ms budget, and whether the instance family is offered
+ * at all, so it is an environment value like every other "where this clone is"
+ * setting. See .env.example.
+ */
+export const PROBE_DEFAULT_INSTANCE_TYPE = "m7i.xlarge";
 
 /**
- * Instance type verified to support nested virtualization.
+ * Families AWS documents as supporting nested virtualization, as of 2026-09-20.
  *
- * AWS documents the general purpose list as M7i, M7i-flex, M8i, M8id, M8i-flex,
- * with KVM and Hyper-V as the supported L1 hypervisors and no additional cost.
- * The family is checked before launch so a typo cannot silently produce a host
- * without /dev/kvm, which would read as a failed gate for the wrong reason.
+ * Verified against AWS's nested virtualization page: general purpose is M7i,
+ * M7i-flex, M8i, M8id, M8i-flex, with KVM and Hyper-V as the supported L1
+ * hypervisors and no additional cost. The family is checked before launch so a
+ * typo cannot silently produce a host without /dev/kvm, which would read as a
+ * failed gate for the wrong reason.
  */
-export const PROBE_INSTANCE_TYPE = "m7i.xlarge";
-
-/** Families AWS documents as supporting nested virtualization, as of 2026-09-20. */
 export const NESTED_VIRTUALIZATION_FAMILIES = [
   "m7i",
   "m7i-flex",
@@ -55,10 +61,10 @@ export const PROBE_BRIDGE_PORT = 8080;
 export interface ProbeTemplateOptions {
   /** Pinned AMI for the target region. Never resolved to "latest": the probe records what it ran. */
   readonly amiId: string;
+  /** Region the host runs in, from the environment. Recorded in tags so an orphan is attributable. */
+  readonly region: string;
   /** Instance type; must belong to a documented nested virtualization family. */
   readonly instanceType?: string;
-  /** Availability region, recorded in the template's tags for the evidence file. */
-  readonly region?: string;
   /** Root volume size in GiB. */
   readonly rootVolumeGb?: number;
   /** Whether the host may be reached over SSM for measurement. Defaults to true. */
@@ -88,7 +94,7 @@ const instanceFamily = (instanceType: string): string => instanceType.split(".")
  * so the probe can inspect a stopped host before deletion.
  */
 export const buildProbeTemplate = (options: ProbeTemplateOptions): CloudFormationTemplate => {
-  const instanceType = options.instanceType ?? PROBE_INSTANCE_TYPE;
+  const instanceType = options.instanceType ?? PROBE_DEFAULT_INSTANCE_TYPE;
   const family = instanceFamily(instanceType);
   if (!(NESTED_VIRTUALIZATION_FAMILIES as readonly string[]).includes(family)) {
     throw new ProbeTemplateError(
@@ -110,7 +116,7 @@ export const buildProbeTemplate = (options: ProbeTemplateOptions): CloudFormatio
   const tags = {
     "proof:component": "android-preview-probe",
     "proof:disposable": "true",
-    ...(options.region ? { "proof:region": options.region } : {}),
+    "proof:region": options.region,
     ...options.tags,
   };
   const tagList = Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));

@@ -4,11 +4,13 @@
 // a paid run.
 import { describe, expect, test } from "bun:test";
 import type { CloudFormationTemplate, ProbeTemplateOptions } from "./android-preview-template.ts";
-import { PROBE_INSTANCE_TYPE, ProbeTemplateError, buildProbeTemplate } from "./android-preview-template.ts";
+import { PROBE_DEFAULT_INSTANCE_TYPE, ProbeTemplateError, buildProbeTemplate } from "./android-preview-template.ts";
 
 const AMI = "ami-0abcdef1234567890";
+// A fixture, not a default: the template intentionally has no region default.
+const REGION = "eu-central-1";
 
-const spec = (overrides: Partial<ProbeTemplateOptions> = {}): CloudFormationTemplate => buildProbeTemplate({ amiId: AMI, ...overrides });
+const spec = (overrides: Partial<ProbeTemplateOptions> = {}): CloudFormationTemplate => buildProbeTemplate({ amiId: AMI, region: REGION, ...overrides });
 
 const propertiesOf = (template: CloudFormationTemplate, logicalId: string): Record<string, unknown> => {
   const resource = template.Resources[logicalId];
@@ -31,7 +33,7 @@ describe("nested virtualization", () => {
   });
 
   test("the default instance type is from a documented family", () => {
-    expect(PROBE_INSTANCE_TYPE.split(".")[0]).toBe("m7i");
+    expect(PROBE_DEFAULT_INSTANCE_TYPE.split(".")[0]).toBe("m7i");
   });
 });
 
@@ -78,12 +80,18 @@ describe("cost and teardown behaviour", () => {
 
 describe("reproducibility", () => {
   test("a mutable or missing AMI reference is refused", () => {
-    expect(() => buildProbeTemplate({ amiId: "" })).toThrow(ProbeTemplateError);
-    expect(() => buildProbeTemplate({ amiId: "latest" })).toThrow(ProbeTemplateError);
+    expect(() => buildProbeTemplate({ amiId: "", region: REGION })).toThrow(ProbeTemplateError);
+    expect(() => buildProbeTemplate({ amiId: "latest", region: REGION })).toThrow(ProbeTemplateError);
   });
 
   test("the pinned AMI reaches the launch template unchanged", () => {
     expect(launchTemplateData(spec()).ImageId).toBe(AMI);
+  });
+
+  test("the region is recorded and comes from the caller, not from the module", () => {
+    const tagsFor = (region: string) => instanceProperties(spec({ region })).Tags as Array<{ Key: string; Value: string }>;
+    expect(tagsFor("ap-southeast-1")).toEqual(expect.arrayContaining([{ Key: "proof:region", Value: "ap-southeast-1" }]));
+    expect(tagsFor(REGION)).toEqual(expect.arrayContaining([{ Key: "proof:region", Value: REGION }]));
   });
 
   test("the ids the runner needs are exported", () => {

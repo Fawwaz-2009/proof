@@ -4,7 +4,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { STACK } from "../identity.ts";
-import { PROBE_BRIDGE_PORT, PROBE_DEFAULT_REGION, buildProbeTemplate } from "../scripts/android-preview-template.ts";
+import { PROBE_BRIDGE_PORT, buildProbeTemplate } from "../scripts/android-preview-template.ts";
 
 // The Phase 0 feasibility probe, owned separately from the application stack and
 // from the later platform stack, so it can be destroyed without touching either.
@@ -22,36 +22,62 @@ import { PROBE_BRIDGE_PORT, PROBE_DEFAULT_REGION, buildProbeTemplate } from "../
 // route for the tunnel, and the measurement runner. See
 // docs/android-preview-feasibility.md for what is measured and what is not.
 //
-// Inputs are validated here, at synthesis, so a missing AMI fails before any
-// resource is created.
+// Nothing here is a "who" or a "where": region, AMI, hostname, and instance type
+// come from the environment, because this file is committed and a clone must not
+// inherit the author's account choices. Inputs are validated at synthesis, so a
+// missing value fails before any resource is created.
 
 interface ProbeInputs {
   readonly region: string;
   readonly amiId: string;
   readonly hostname: string;
+  readonly instanceType: string | undefined;
 }
 
+const AMI_ERROR =
+  "ANDROID_PREVIEW_AMI_ID is required: the AMI is per-region, so it must be pinned for the region " +
+  "you deploy into. Resolve the Amazon Linux 2023 x86_64 image there and set it in .env " +
+  '(see .env.example). The probe records the image it actually ran, so "latest" is not acceptable.';
+
+/**
+ * There is no default region, on purpose. It decides cost, client latency against
+ * the 500 ms budget, and whether the instance family is offered at all, so a
+ * silent default would be a wrong answer that looks like a working one. The AWS
+ * CLI's own variables are accepted so a configured machine needs no second
+ * source of truth.
+ */
+const REGION_KEYS = ["ANDROID_PREVIEW_REGION", "AWS_REGION", "AWS_DEFAULT_REGION"] as const;
+
+const nonEmpty = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
+};
+
 const resolveInputs = (env: Record<string, string | undefined>): ProbeInputs => {
-  const region = env.ANDROID_PREVIEW_REGION ?? PROBE_DEFAULT_REGION;
-  const amiId = env.ANDROID_PREVIEW_AMI_ID;
-  const hostname = env.ANDROID_PREVIEW_PROBE_HOSTNAME;
-  if (!amiId) {
+  const region = REGION_KEYS.map((key) => nonEmpty(env[key])).find((value) => value !== undefined);
+  if (region === undefined) {
     throw new Error(
-      `ANDROID_PREVIEW_AMI_ID is required. Resolve the Amazon Linux 2023 x86_64 AMI for ${region} ` + "and pin it; the probe must record the image it actually ran.",
+      `No region is set. Set ANDROID_PREVIEW_REGION in .env (see .env.example), or let the AWS CLI ` +
+        `provide AWS_REGION / AWS_DEFAULT_REGION. Checked: ${REGION_KEYS.join(", ")}.`,
     );
   }
-  if (!hostname) {
+  const amiId = nonEmpty(env.ANDROID_PREVIEW_AMI_ID);
+  if (amiId === undefined) throw new Error(AMI_ERROR);
+  const hostname = nonEmpty(env.ANDROID_PREVIEW_PROBE_HOSTNAME);
+  if (hostname === undefined) {
     throw new Error(
-      "ANDROID_PREVIEW_PROBE_HOSTNAME is required, for example android-probe.example.com. " + "The tunnel routes this hostname to the host's loopback bridge.",
+      "ANDROID_PREVIEW_PROBE_HOSTNAME is required, for example android-probe.example.com: the tunnel " +
+        "routes this hostname to the host's loopback bridge, and it must be in a zone on this account.",
     );
   }
-  return { region, amiId, hostname };
+  return { region, amiId, hostname, instanceType: nonEmpty(env.ANDROID_PREVIEW_INSTANCE_TYPE) };
 };
 
 const inputs = resolveInputs(process.env);
 const template = buildProbeTemplate({
   amiId: inputs.amiId,
   region: inputs.region,
+  instanceType: inputs.instanceType,
   tags: { "proof:stack": `${STACK}AndroidPreviewProbe` },
 });
 
