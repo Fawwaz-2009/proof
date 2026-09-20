@@ -3,6 +3,7 @@ import * as AWS from "alchemy/AWS";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Output from "alchemy/Output";
 import { STACK } from "../identity.ts";
 import { PROBE_BRIDGE_PORT, buildProbeTemplate } from "../scripts/android-preview-template.ts";
 
@@ -51,6 +52,27 @@ const REGION_KEYS = ["ANDROID_PREVIEW_REGION", "AWS_REGION", "AWS_DEFAULT_REGION
 const nonEmpty = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
   return trimmed !== undefined && trimmed.length > 0 ? trimmed : undefined;
+};
+
+/**
+ * The tunnel's public hostname needs a proxied CNAME to the tunnel, and the DNS
+ * record is created in code for the same reason the tunnel is: a record clicked
+ * into a dashboard proves nothing about a template. The zone is discovered from
+ * the hostname instead of being configured, so an adopter sets one value.
+ */
+const resolveZoneId = async (hostname: string, token: string | undefined): Promise<string> => {
+  if (token === undefined) {
+    throw new Error("CLOUDFLARE_API_TOKEN is required to resolve the zone that hosts ANDROID_PREVIEW_PROBE_HOSTNAME.");
+  }
+  const labels = hostname.split(".");
+  for (let index = 0; index < labels.length - 1; index += 1) {
+    const candidate = labels.slice(index).join(".");
+    const response = await fetch(`https://api.cloudflare.com/client/v4/zones?name=${encodeURIComponent(candidate)}`, { headers: { Authorization: `Bearer ${token}` } });
+    const body = (await response.json()) as { success?: boolean; result?: Array<{ id: string }> };
+    const zone = body.success === true ? body.result?.[0] : undefined;
+    if (zone !== undefined) return zone.id;
+  }
+  throw new Error(`No Cloudflare zone in this account matches any suffix of ${hostname}.`);
 };
 
 const resolveInputs = (env: Record<string, string | undefined>): ProbeInputs => {
@@ -103,14 +125,30 @@ export default Alchemy.Stack(
 
     // The tunnel arrives with the streaming slice: it needs Cloudflare
     // permission the CI token does not carry, and the acceleration gate does
-    // not. Set ANDROID_PREVIEW_PROBE_HOSTNAME to add it.
+    // not. Set ANDROID_PREVIEW_PROBE_HOSTNAME to add it, plus the proxied CNAME
+    // that actually publishes it.
+    const hostname = inputs.hostname;
     const tunnel =
-      inputs.hostname === undefined
+      hostname === undefined
         ? undefined
         : yield* Cloudflare.Tunnel.Tunnel("probe-tunnel", {
             name: `${STACK}-android-preview-probe`,
             configSrc: "cloudflare",
-            ingress: [{ hostname: inputs.hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}` }, { service: "http_status:404" }],
+            ingress: [{ hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}` }, { service: "http_status:404" }],
+          });
+
+    const route =
+      hostname === undefined || tunnel === undefined
+        ? undefined
+        : yield* Cloudflare.DNS.Record("probe-hostname", {
+            zoneId: yield* Effect.promise(() => resolveZoneId(hostname, process.env.CLOUDFLARE_API_TOKEN)),
+            name: hostname,
+            type: "CNAME",
+            // tunnelId is only known at deploy time, so it composes as an Output.
+            content: Output.interpolate`${tunnel.tunnelId}.cfargotunnel.com`,
+            proxied: true,
+            ttl: 1,
+            comment: "Android browser preview probe public hostname",
           });
 
     return {
@@ -120,6 +158,8 @@ export default Alchemy.Stack(
       securityGroupId: host.outputs.SecurityGroupId,
       tunnelId: tunnel?.tunnelId,
       tunnelName: tunnel?.tunnelName,
+      hostname,
+      recordId: route?.recordId,
       // Handed to the host bootstrap, never printed: status output redacts it.
       tunnelToken: tunnel?.token,
     };
