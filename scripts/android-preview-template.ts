@@ -214,6 +214,11 @@ export const buildProbeTemplate = (options: ProbeTemplateOptions): CloudFormatio
     Properties: {
       LaunchTemplateName: "android-preview-probe-host",
       LaunchTemplateData: {
+        // Independent of the caller and SSM: every probe boot is bounded.
+        UserData: {
+          "Fn::Base64":
+            "#!/bin/bash\nset -eu\ncat > /etc/systemd/system/proof-probe-expiry.service <<'UNIT'\n[Unit]\nDescription=Stop bounded Android probe\n[Service]\nType=oneshot\nExecStart=/usr/sbin/shutdown -h now\nUNIT\ncat > /etc/systemd/system/proof-probe-expiry.timer <<'UNIT'\n[Unit]\nDescription=Bound Android probe running time\n[Timer]\nOnBootSec=30min\nUnit=proof-probe-expiry.service\n[Install]\nWantedBy=timers.target\nUNIT\nsystemctl daemon-reload\nsystemctl enable --now proof-probe-expiry.timer\n",
+        },
         ImageId: options.amiId,
         InstanceType: instanceType,
         // The whole reason this template exists.

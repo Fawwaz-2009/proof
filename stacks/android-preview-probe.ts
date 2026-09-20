@@ -4,6 +4,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Output from "alchemy/Output";
+import * as Schema from "effect/Schema";
 import { STACK } from "../identity.ts";
 import { PROBE_BRIDGE_PORT, buildProbeTemplate } from "../scripts/android-preview-template.ts";
 
@@ -92,6 +93,31 @@ const resolveInputs = (env: Record<string, string | undefined>): ProbeInputs => 
 };
 
 const inputs = resolveInputs(process.env);
+const reviewerEmail = nonEmpty(process.env.ANDROID_PREVIEW_REVIEWER_EMAIL);
+if (inputs.hostname && !reviewerEmail) throw new Error("ANDROID_PREVIEW_REVIEWER_EMAIL is required for the protected browser preview.");
+
+// One-time PIN is account-wide. Reuse an existing provider without adopting it:
+// destroying this disposable probe must not remove somebody else's login method.
+const existingEmailLogin = inputs.hostname
+  ? await (async () => {
+      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/access/identity_providers`, {
+        headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+      });
+      if (!response.ok) throw new Error(`Cannot inspect Access login methods: HTTP ${response.status}`);
+      const body = Schema.decodeUnknownSync(Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String, type: Schema.String })) }))(await response.json());
+      return body.result.find((provider) => provider.type === "onetimepin")?.id;
+    })()
+  : undefined;
+const accessTeam = inputs.hostname
+  ? await (async () => {
+      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/access/organizations`, {
+        headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+      });
+      if (!response.ok) throw new Error(`Cannot inspect Access organization: HTTP ${response.status}`);
+      const body = Schema.decodeUnknownSync(Schema.Struct({ result: Schema.Struct({ auth_domain: Schema.String }) }))(await response.json());
+      return body.result.auth_domain.replace(/\.cloudflareaccess\.com$/, "");
+    })()
+  : undefined;
 
 // The AWS provider follows AWS_REGION (Region.fromEnvironment), while the
 // template above is built from the resolved input. Pinning the environment to
@@ -114,6 +140,29 @@ export default Alchemy.Stack(
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
+    const login =
+      inputs.hostname && !existingEmailLogin
+        ? yield* Cloudflare.Access.IdentityProvider("probe-login", { name: `${STACK} preview email login`, type: "onetimepin", config: {} })
+        : undefined;
+    const testToken =
+      inputs.hostname && process.env.ANDROID_PREVIEW_VERIFICATION !== "false"
+        ? yield* Cloudflare.Access.ServiceToken("probe-verification", { name: `${STACK} preview verification`, duration: "24h" })
+        : undefined;
+    const loginId = existingEmailLogin ?? login?.identityProviderId;
+    const access =
+      inputs.hostname && reviewerEmail && loginId
+        ? yield* Cloudflare.Access.Application("probe-access", {
+            name: `${STACK} Android preview`,
+            type: "self_hosted",
+            domain: inputs.hostname,
+            sessionDuration: "6h",
+            allowedIdps: [loginId],
+            policies: [
+              { name: "Owner", decision: "allow", include: [{ email: reviewerEmail }] },
+              ...(testToken ? [{ name: "Bounded verification", decision: "non_identity" as const, include: [{ serviceToken: testToken.serviceTokenId }] }] : []),
+            ],
+          })
+        : undefined;
     // Outputs are read back by the measurement runner; the instance id is the
     // handle every later step (SSM commands, stop, delete) needs.
     const host = yield* AWS.CloudFormation.Stack("probe-host", {
@@ -128,13 +177,22 @@ export default Alchemy.Stack(
     // not. Set ANDROID_PREVIEW_PROBE_HOSTNAME to add it, plus the proxied CNAME
     // that actually publishes it.
     const hostname = inputs.hostname;
+    // beta.79's narrow origin type omits Access, but forwards the full object
+    // to Cloudflare's typed API. Keep this as data without a type assertion.
+    const originRequest =
+      access && accessTeam
+        ? {
+            connectTimeout: 30,
+            access: { required: true, teamName: accessTeam, audTag: [access.aud] },
+          }
+        : undefined;
     const tunnel =
       hostname === undefined
         ? undefined
         : yield* Cloudflare.Tunnel.Tunnel("probe-tunnel", {
             name: `${STACK}-android-preview-probe`,
             configSrc: "cloudflare",
-            ingress: [{ hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}` }, { service: "http_status:404" }],
+            ingress: [{ hostname, service: `http://localhost:${PROBE_BRIDGE_PORT}`, originRequest }, { service: "http_status:404" }],
           });
 
     const route =
@@ -162,6 +220,9 @@ export default Alchemy.Stack(
       recordId: route?.recordId,
       // Handed to the host bootstrap, never printed: status output redacts it.
       tunnelToken: tunnel?.token,
+      accessAudience: access?.aud,
+      verificationClientId: testToken?.clientId,
+      verificationClientSecret: testToken?.clientSecret,
     };
   }),
 );

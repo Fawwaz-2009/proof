@@ -3,6 +3,7 @@
 .output/
 dist/
 node_modules/
+.repos/
 apps/web/src/routeTree.gen.ts
 bun.lock
 packages/create-proof/template/

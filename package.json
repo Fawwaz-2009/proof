@@ -8,6 +8,7 @@
     "apps/*"
   ],
   "scripts": {
+    "prepare": "./scripts/prepare-effect.sh",
     "dev": "alchemy dev",
     "destroy": "alchemy destroy",
     "build": "cd apps/web && bun run build",
@@ -41,7 +42,8 @@
   },
   "patchedDependencies": {
     "better-auth@1.7.1": "patches/better-auth@1.7.1.patch",
-    "kysely@0.29.5": "patches/kysely@0.29.5.patch"
+    "kysely@0.29.5": "patches/kysely@0.29.5.patch",
+    "alchemy@2.0.0-beta.79": "patches/alchemy@2.0.0-beta.79.patch"
   },
   "overrides": {
     "drizzle-orm": "1.0.0-rc.5-ab785fc",

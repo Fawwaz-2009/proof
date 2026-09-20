@@ -24,6 +24,10 @@ const read = (key: string): string | undefined => {
   return value ? value : undefined;
 };
 
+// Browser previews are self-contained APKs. An ambient EAS project must never
+// opt this delivery mode into OTA or a fingerprint-dependent launcher.
+const browserApk = read("MOBILE_DELIVERY") === "browser-apk";
+
 /**
  * What a *distributed* build requires of this clone's identity, as sentences
  * `bun run mobile:doctor` prints verbatim. Empty means usable.
@@ -64,7 +68,10 @@ const projectId = read("EAS_PROJECT_ID") ?? read("EAS_BUILD_PROJECT_ID");
 // make identifiers collide across clones, and unlike a local run it outlives
 // the machine that produced it. The doctor checks the same rule, so a machine
 // it calls ready cannot fail here.
-if (read("EAS_BUILD") === "true") {
+if (browserApk && (explicitSlug === undefined || variant !== "preview")) {
+  throw new Error("A browser APK requires APP_SLUG and APP_VARIANT=preview.");
+}
+if (!browserApk && read("EAS_BUILD") === "true") {
   const problems = distributableIdentityProblems(process.env);
   if (problems.length > 0) throw new Error(`Cannot build a distributable app:\n- ${problems.join("\n- ")}`);
 }
@@ -127,16 +134,18 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
-  ...(projectId
-    ? {
-        // EAS CLI resolves the project from here. Without it, every
-        // EXPO_TOKEN-driven command in CI fails with "EAS project not
-        // configured", even when updates.url is set.
-        extra: { eas: { projectId } },
-        updates: { url: `https://u.expo.dev/${projectId}` },
-        runtimeVersion: { policy: "fingerprint" as const },
-      }
-    : {}),
+  ...(browserApk
+    ? { updates: { enabled: false } }
+    : projectId
+      ? {
+          // EAS CLI resolves the project from here. Without it, every
+          // EXPO_TOKEN-driven command in CI fails with "EAS project not
+          // configured", even when updates.url is set.
+          extra: { eas: { projectId } },
+          updates: { url: `https://u.expo.dev/${projectId}` },
+          runtimeVersion: { policy: "fingerprint" as const },
+        }
+      : {}),
 };
 
 export default config;

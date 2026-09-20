@@ -9,6 +9,68 @@ it says "not measured".
 Scope of this document: Phase 0 only. The platform, coordinator, reviewer page,
 and PR automation are downstream of a passing gate.
 
+## Takeover run, 2026-09-20
+
+The current gate is **not passed**. The following now works on the Singapore
+probe, with an actual browser connected through a private SSM port forward:
+
+- TigerVNC 1.14.1, noVNC 1.7.0 and websockify 0.13.0 serve live Android video.
+- Browser taps and keyboard input sign in to the native app and create a note
+  against the PR's deployed backend. Android's native photo picker opens.
+- The x86_64 release APK runs with no Metro and no runtime-fingerprint crash.
+  `MOBILE_DELIVERY=browser-apk` explicitly disables updates and omits EAS runtime
+  configuration, even when the environment contains an EAS project ID.
+- Cloudflare Access now provisions an owner-email policy, reuses the account's
+  existing one-time PIN provider without adopting it, and covers HTML and the
+  WebSocket path. Both paths return 302 to Access when unauthenticated.
+  The tunnel also requires the application's Access audience at the origin.
+- The emulator runs as an unprivileged Unix user. A persistent firewall denies
+  that user the EC2 metadata addresses; a live IMDSv2 token request was denied.
+- A launch-template systemd timer independently stops every probe boot after
+  30 minutes. This is the experiment watchdog, not the eventual six-hour
+  inactivity policy.
+
+The public authenticated stream, phone Safari, latency, reconnect, stopped-host
+startup, simultaneous session isolation and the complete PR workflow are still
+unverified. A private SSM connection does not prove the Cloudflare transport.
+The token's current policy lacks `Access: Service Tokens Write`; its create API
+returns HTTP 403. The owner application can be deployed separately with
+`ANDROID_PREVIEW_VERIFICATION=false`, without opening anonymous access.
+
+The scripts under `containers/android-preview/` are an executable probe recipe,
+not yet an immutable host image. The Android SDK packages still need exact
+version locking. The Alchemy patch treats a deleted tunnel as absent during
+reconciliation; controlled failure-recovery acceptance remains pending.
+
+The browser-build fix does not imply that local Expo builds cannot generate
+fingerprints. The installed Expo updates Gradle integration contains that step.
+For this browser path, OTA is intentionally disabled because each APK belongs to
+one tested revision and backend.
+
+Verification of this slice: 78 script tests, 11 backend tests and `bun run check`
+pass. The private browser test created the note `Browser preview works`.
+
+### Probe commands
+
+`bun scripts/android-preview-infra.ts deploy|destroy` bridges the configured AWS
+CLI credentials into Alchemy without printing or persisting them. Run it from
+the worktree with the probe environment set. The Access owner email is
+`ANDROID_PREVIEW_REVIEWER_EMAIL`; no adopter should inherit a committed address.
+
+Run host scripts with `bun scripts/android-preview-ssm.ts <instance-id> <script>`.
+The runner bounds each command, uses private temporary files and removes them.
+Apply `bootstrap.sh`, then `harden.sh`, install the APK, then `connect.sh`.
+The connector requires its tunnel-only token at
+`/etc/proof-preview/tunnel-token`, readable only by root. Never copy an account
+token, AWS key or repository `.env` onto the host.
+
+The temporary `android-preview-artifacts.ts` stack owns a private encrypted S3
+bucket for this probe's APK transfer. Empty that bucket and destroy it through
+`bun scripts/android-preview-infra.ts destroy artifacts` after use. The planned
+platform still stores published artifacts in R2.
+
+The earlier sections below record previous runs, not the current verdict.
+
 ## What Phase 0 has to answer
 
 | Gate                  | Pass condition                                                                                                                                        | Status                                                                                            |
