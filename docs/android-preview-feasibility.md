@@ -304,3 +304,19 @@ accepts the account resource for a zone-scoped group, and the app's custom
 domains deploy with it, but whether a create outside the intended zone would
 also succeed is unverified. The probe verifies it the only way that counts, by
 attempting a create and a delete with the real token.
+
+### The parent token checklist, taken from what the ceremony actually mints
+
+The union rule has a concrete consequence that is easy to miss: the ceremony
+mints two child credentials, and the parent must hold every group either child
+receives. From `stacks/github.ts`:
+
+- CI token: Workers Scripts Write, Workers KV Storage Write, Workers R2 Storage
+  Write, Workers Routes Write, Workers Tail Read, Workers Observability Write,
+  D1 Write, Email Sending Write, Secrets Store Write, Account Settings Read.
+- R2 presign token: **Workers R2 Storage Read** and Workers R2 Storage Write.
+
+So the parent needs `Workers R2 Storage Read` as well as the Write it obviously
+needs, or the presign mint is refused for granting a permission the parent does
+not hold. A parent configured with only the Write half looks complete and fails
+at the R2 step of the ceremony.
