@@ -278,3 +278,29 @@ So the parent token needs two policies: one for the account, and one for the
 zone that hosts the preview hostname (`DNS Write`, and `Workers Routes Write`
 because `stacks/github.ts` mints it into the CI token for custom-domain
 deploys).
+
+### Correction: one account-scoped policy, not a per-zone one
+
+An earlier version of this document said the zone-scoped groups had to be
+granted in a zone policy for a specific zone. That is wrong for this template,
+and the account's own tokens disprove it. Reading every token minted by
+`stacks/github.ts` (`GET /accounts/{account_id}/tokens`) shows the zone-scoped
+`Workers Routes Write` attached to the account resource:
+
+```json
+{ "com.cloudflare.api.account.<account_id>": "*" }
+```
+
+Eight projects, eight different domains, all minted that way, all working. The
+useful rule is therefore: grant everything, including the zone-scoped groups
+(`DNS Write`, `Workers Routes Read`/`Write`), against the account resource, so
+one token works for any domain the account owns and an adopter never has to
+edit permissions when their domain changes. That is the "All zones from an
+account" selection in the dashboard, and it is what the committed permission
+list in `stacks/github.ts` already relies on.
+
+The open question this leaves is enforcement rather than acceptance: Cloudflare
+accepts the account resource for a zone-scoped group, and the app's custom
+domains deploy with it, but whether a create outside the intended zone would
+also succeed is unverified. The probe verifies it the only way that counts, by
+attempting a create and a delete with the real token.
