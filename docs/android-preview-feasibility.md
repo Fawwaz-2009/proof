@@ -195,3 +195,37 @@ not a host limitation: the emulator, the install, and the launch path all work.
   command that was supposed to measure a boot hung until it was cancelled.
   Every wait in the probe is now bounded and checks that the emulator process
   still exists.
+
+## Credentials the probe needs, and why they are a template concern
+
+The probe creates its tunnel in code (`stacks/android-preview-probe.ts`), the
+same way the application stack creates its D1 database and bucket. Nothing here
+is meant to be built by hand in a dashboard: a tunnel a human clicked into
+existence proves nothing about a template that an adopter has to deploy.
+
+What the adopter's account must therefore allow, with the group names taken from
+Cloudflare's own permission-groups API (`GET
+/accounts/{account_id}/tokens/permission_groups`) rather than from the
+dashboard's labels:
+
+| Capability                         | Permission group                  | Scope           |
+| ---------------------------------- | --------------------------------- | --------------- |
+| Create and configure the tunnel    | `Cloudflare Tunnel Write`         | account         |
+| Create the public hostname record  | `DNS Write`                       | zone            |
+| Reviewer gate (Access application) | `Access: Apps and Policies Write` | account or zone |
+
+The dashboard shows an older label, "Argo Tunnel (Legacy)", which refers to the
+same underlying resource. The live group name is `Cloudflare Tunnel Write`, and
+that is the string a setup flow has to request.
+
+Two consequences for the template:
+
+- These three groups belong in the same committed permission list that
+  `stacks/github.ts` already uses when it mints the CI token: the ceremony
+  documents what the hand-made parent token needs, and the minted child carries
+  what each stack actually uses.
+- Read access is not evidence of write access. The stored admin credential could
+  read `/cfd_tunnel` (HTTP 200) and was still refused on create with
+  `Authentication error`. A setup check that only reads will look healthy and
+  fail at the first write, so the verification step has to attempt the write
+  path (create and delete a throwaway tunnel) rather than a read.
