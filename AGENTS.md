@@ -258,6 +258,305 @@ difference is the client a mutation calls: the contract-derived client
 for `/api/*` (see `apps/web/src/http-client.ts`), better-auth's client
 for `/api/auth/*` (see `apps/web/src/routes/login`).
 
+## Mobile (apps/mobile)
+
+The Expo app is a second client of the same contract, nothing more: screens
+call `apps/mobile/src/lib/api-client.ts` (the contract-derived client, the
+same shape as the web's), auth calls better-auth's Expo client, and the
+screens render the view shapes the backend already returns. Identity comes
+from the same env (`APP_NAME`, `APP_SLUG`, `ROOT_DOMAIN`); the one app-only
+value is `EXPO_PUBLIC_API_URL`, the stage the build talks to, baked at
+build/update time.
+
+Three rules earned in the first build:
+
+- File parts must be expo-file-system `File`s. Expo's fetch (the SDK's
+  default global) encodes multipart bodies itself and rejects React Native's
+  legacy `{ uri, name, type }` parts. Ask the picker for the `Compatible`
+  representation too: iPhones hand back HEIC otherwise, and the contract
+  only whitelists types a browser can render.
+- That encoder buffers the whole body in JS before native sees it, so the
+  picker path suits images, not media: for large files use expo-file-system's
+  upload task (`File.createUploadTask`), which streams from disk and
+  bypasses the typed client's transport. Do not set
+  `EXPO_PUBLIC_USE_RN_FETCH=1`: React Native's fetch would accept the old
+  `{ uri }` parts but not `File` parts, so uploads would break the other way.
+- View URLs may be origin-relative (the dev gateway hands out paths). Resolve
+  them against the baked stage with `resolveApiUrl`; native has no
+  same-origin to lean on.
+- The post-sign-in gate reads a fetched session (`getSession()` through
+  TanStack Query), not the `useSession()` hook: its cache is hydrated by its
+  own fetches only, so right after sign-in it can report stale-empty and
+  bounce a signed-in user. The entry gate (`index.tsx`) may use the hook:
+  on a cold start its cache is hydrated from SecureStore, which is the case
+  it exists for.
+
+Local run: `bun run dev` at the root, then `bun run mobile:env` (mirrors the
+repository `.env` identity into `apps/mobile/.env`; the app config takes part
+in the runtime fingerprint, so a build made with a different identity can
+never load an update published with another), then `cd apps/mobile && bunx
+expo start` with `EXPO_PUBLIC_API_URL` set to the site URL the root command
+prints.
+
+Local EAS commands go through `bun run eas ...` (`build.list`, `credentials`,
+`device:create`): the wrapper loads `apps/mobile/.env` into the child process,
+which the CLI itself does not do, and the app config resolves the project link
+from there. `APP_SLUG` must equal the Expo project's slug: EAS refuses a
+project whose slug differs from the app's.
+
+The icon and splash under `assets/images` are unbranded placeholders:
+replace them when you brand the app, and nothing else changes.
+
+### Preview identity and diagnostics
+
+A PR preview must not collide with the app people actually use, so `APP_VARIANT`
+builds two identities from the same env: `production` keeps `<base>` and
+`<slug>://`, `preview` gets `<base>.preview`, `<slug>-preview://`, and
+`<APP_NAME> Preview` (per build profile in `apps/mobile/eas.json`; an incomplete
+identity fails the build rather than shipping `dev.proof.`). The installed
+preview app is a single app shared by every PR: the stage it talks to is baked
+into each update, and its stored auth state is namespaced by the backend origin
+(`src/lib/session.ts`), so opening PR B never replays PR A's session.
+
+`mobile-preview.config.ts` says what a clone may publish: `enabled: false` keeps
+a web-only clone free of Expo setup, and per-target profiles and build modes
+live beside it. Two read-only commands read that config and the environment:
+
+- `bun run mobile:doctor [--target ios-device] [--json]` reports the exact
+  setup item missing before a preview can build or publish (identity, project
+  id, Expo authentication, build profile, local toolchain). It exits non-zero
+  while anything is missing.
+- `bun run mobile:preview:status --pr <n> [--stage-url https://…] [--json]`
+  reads the _deployed_ stage's record (`GET /api/preview/mobile`) and resolves
+  each target against existing EAS builds with the same resolver CI uses
+  (`scripts/mobile-preview-resolver.ts`): reusable, building, or explicitly
+  `native-build-required` with the failing check named. Until a deployment has
+  published a record it reports `no-record`, never a guess, and the local
+  checkout's facts are reported separately under `checkout`.
+
+Both commands are read-only in the strong sense: they never call
+`eas fingerprint:generate` (the pinned CLI uploads fingerprint metadata to the
+account), never start a build, and never publish. Compatibility is keyed on the
+fingerprint recorded by the artifact that was actually built, not on one this
+machine re-derives from a configuration that may differ.
+
+The stage itself answers `GET /api/preview/mobile`
+(`apps/backend/src/contracts/preview.ts`): its own stage and environment, plus
+the mobile preview record trusted CI wrote for this deployment, or
+`record: null` when there is none. The record lives in the stage's own bucket
+under `_proof/mobile/` and is read through the bucket binding: never a
+caller-supplied key, never a list, never a second stage's object. Production
+always answers `record: null`. Every consumer must treat a missing, malformed,
+or foreign-stage record as "no record" rather than as a live status;
+`apps/backend/test/preview-status.test.ts` pins those rules.
+
+### How the server can prove which deployment it is (verified mechanism, not built yet)
+
+The stale-preview defect needs the running worker to know its own identity.
+Alchemy supplies exactly that, verified in the installed package rather than
+assumed:
+
+- `Cloudflare.Workers.VersionMetadata()` is a binding (default name
+  `CF_VERSION_METADATA`) that yields `{ id, tag, timestamp }` from _inside_ the
+  running worker.
+- The Worker resource exposes `versionId` and `deploymentId` outputs, so the
+  deploy run can learn the same id and stamp the preview record with it.
+
+Concretely, in this worker's two-phase shape (init gen, then fetch gen):
+
+    // init gen: attaches the binding and returns a deferred accessor
+    const versionMetadata = yield* Cloudflare.Workers.VersionMetadata();
+    // fetch gen, per request
+    const { id } = yield* versionMetadata;
+
+with `Effect.provide(Cloudflare.Workers.VersionMetadataBinding)` on the Worker, or
+by declaring `env: { CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata() }`
+in the props (which flows through `InferEnv` as `WorkerVersionMetadata`). The
+deploy run reads the same id from the Worker resource's `versionId` output, so
+both sides learn it from the platform rather than from each other.
+
+The rule that follows: serve a record only when the worker's own version id
+matches the id recorded with it. An older deployment then cannot serve a newer
+record and a newer deployment cannot serve an older one. Nothing in the worker's
+props changes, so `alchemy destroy` keeps working (a deploy-varying prop is what
+the cleanup job's byte-identical-env warning is about).
+
+### Where the mobile preview work stands (read this before continuing)
+
+**Working and verified.** The preview app is installed on the physical iPhone
+(`dev.fawwaz.proof.preview`) through Xcode signing (`bunx expo run:ios --device`,
+never `eas build --local` for a new bundle id). JavaScript-only changes reach the
+phone as published updates. The app shows its own identity in a slim amber bar
+(`PR <n> · <revision> · <backend>`), which only ever appears in a published
+bundle. On a PR event CI deploys the stage, publishes the update, and rewrites one
+comment with the link, the tested revision and the runtime: proven end to end on
+run 35429455673. `bun run mobile:doctor`, `mobile:preview:status` and
+`--inspect-stage` are read-only; `mobile:preview --pr N --post` is the one command
+that publishes. Stages destroy cleanly again because the files bucket sets
+`forceDestroy: true` (without it, R2 refuses to delete a non-empty bucket and a
+stage that ever received an upload leaked its storage).
+
+**Deliberately not working, so nobody chases it.**
+
+- Native reuse is off: the provider's build listing does not report
+  development-launcher capability, and unverified is ineligible, so every PR may
+  imply a rebuild. That is what the artifact-inspection work fixes.
+- `GET /api/preview/mobile` always answers `record: null`, because the worker
+  cannot yet prove which deployment it is; the freshness rule refuses to serve
+  what it cannot prove. Do not loosen that rule to make the endpoint "work".
+- There is no automatic native-build path: when the runtime changes the link
+  silently fails until someone rebuilds by hand, and the comment says so.
+
+**Traps.** Never bump `alchemy` alone: 2.0.0-beta.79 needs Effect >= rc.115, and
+Effect renamed `Config.string` to `Config.String` in that window; the repo runs
+alchemy 2.0.0-beta.79 + effect 4.0.0-rc.116 with `overrides` pinning drizzle-orm
+and a matched react/react-dom, all three needed to keep the graph
+single-instanced. CI needs `EXPO_TOKEN` and `EAS_PROJECT_ID`.
+
+**Bumping these two is expected while alchemy is beta, and every bump is proven
+the same way, end to end, before it is committed:** `bun run check` green, a
+deploy of a throwaway stage, a published update against it, the link opened on
+the phone, and `alchemy destroy` of that stage. Type-checks alone have already
+missed a runtime rename once.
+
+**Point 1 of that list, started with evidence rather than a guess.** A build
+artifact proves its own development-launcher capability: the iOS app bundle Xcode
+built for the phone contains `EXDevLauncher.bundle` (and `EXUpdates.bundle`) at
+the bundle root, so an inspector can answer "could this binary open a preview?"
+from the artifact itself. That is the only honest source: a profile name, the
+current profile setting, and internal distribution all say nothing about what was
+actually built. Android's equivalent marker is not established yet, and until it
+is, an Android candidate stays ineligible rather than assumed.
+
+**The order of work, kept here rather than in a session's scratch list:**
+
+1. Read a development build's artifact to confirm it can carry a preview, then
+   reuse one across PRs and worktrees (today every PR may imply a rebuild).
+2. Bind `CF_VERSION_METADATA` in the worker, stamp the preview record at deploy,
+   serve it only on a match.
+3. The explicit native-build-required state and one command that builds, records
+   the evidence and resumes publishing.
+4. The two-PR phone run: A, then B, then A, separate sessions, no rebuild between
+   them.
+5. An in-app gear opening a build-info panel (variant, PR, revision, backend,
+   runtime, update id) as a template standard.
+
+### Preview routes: what actually works, and what it costs
+
+Ordered by what a reviewer experiences. Costs are from Expo's pricing page, dated
+19 September 2026.
+
+**iPhone: one installed app, a link per PR.** The app on the phone is built once
+with the preview identity (`dev.fawwaz.proof.preview`, scheme `proof-preview`) and
+stays installed; each PR then delivers its own version as an EAS Update:
+
+    bunx expo run:ios --device <udid>          # first install, and after native changes
+    bun run mobile:preview --pr <n> --post     # publish the update, comment the link
+
+The link is `<scheme>://expo-development-client/?url=https://u.expo.dev/<projectId>/group/<groupId>`,
+the format Expo documents for development builds: tapping it on a phone that
+already has the app opens that PR's version against that PR's backend, with no
+laptop, no Metro, and no shared network. `mobile:preview --post` keeps exactly one
+comment per PR, found by a hidden marker; CI runs the same command after the stage
+deploys, which is what makes "open a PR, get a link" true.
+
+A defect worth remembering, found by doing it: the first install goes through
+Xcode (`expo run:ios --device`), not `eas build --local`. The EAS path wants
+Apple-account access to mint a provisioning profile for the new preview bundle id,
+while a registered device plus a development certificate in the keychain are enough
+for the Xcode route with no Apple login at all.
+
+**Simulator.** The ordinary development loop: `bun run dev --stage dev-<name>`,
+`bun run mobile:env`, `bunx expo start --dev-client`, `bun run ios`. The local dev
+stacks bind localhost, so a physical phone cannot reach them: a phone needs a
+deployed stage, which is why the update path above points at one.
+
+**Cloud instead of a local build.** `eas build --profile development --platform
+ios` spends one of the plan's 15 free iOS cloud builds per month, then $2 each, and
+needs Apple-account access the same way. Local builds and Xcode installs are free.
+Updates are the opposite: unlimited by count on the free plan (1,000 monthly active
+users, 100 GiB bandwidth), so per-PR links cost nothing and only a native change
+ever costs a build.
+
+**Android.** The same shape with its own toolchain (`mobile:doctor --target
+android` reports what is missing) and the internal APK from the `development`
+profile. This repository has never run it: configured, unverified, until someone
+completes that install and reports the result.
+
+**Web-only clone.** `enabled: false` in `mobile-preview.config.ts` keeps every
+mobile command a no-op with a note, so a clone that only wants web previews needs
+no Expo setup, no secrets, and no device.
+
+**Deliberately impossible, so nobody promises it:** a link cannot install an app
+(Apple only runs signed builds whose profile includes the device), and CI cannot
+know what is installed on a particular phone. The comment says both, and the first
+install stays a deliberate human step.
+
+### Android browser previews (direction under review)
+
+The proposed direction, separate from the device path above: a reviewer opens a
+link and drives the real native app in a browser, against that PR's stage, with
+a per-PR APK built from the same revision as the deployed backend. No install,
+no cable, no Expo account for the reviewer once the owner finishes setup.
+
+The plan gates itself on one question: can a hosted machine hand the emulator
+usable hardware acceleration? The host changed on 20 Sep 2026, and this section
+records what actually happened so nobody re-derives it.
+
+**Direction: Cloudflare owns the application, backend, artifacts, reviewer
+access, and session coordination; Android compute runs on AWS EC2 with nested
+virtualization explicitly enabled.** No Cloudflare container runs an emulator.
+Do not resume the Cloudflare Containers KVM/permission investigation as a
+prerequisite for implementing the browser preview.
+
+**What the Cloudflare investigation actually established, and nothing more.**
+Every deploy of a container application stopped at `403 Forbidden` on
+`/accounts/<id>/containers/applications`, because no credential available here
+carries Containers permission: the repository CI token and the stored admin
+token both lack the scope, wrangler's existing OAuth session was created without
+it, and alchemy's default-profile OAuth grant has `containers:write` but expired
+13 Sep with a refresh that fails. No KVM measurement was ever taken. Two claims
+made here earlier were overstated and are corrected: a missing schema field is
+not a runtime measurement, and "no direct inbound UDP to a container" does not
+prove every WebRTC topology impossible. A probe is built and ready at
+`~/Documents/projects/2026/kvm-probe` (registry image plus `ctx.container.exec`,
+no local Docker needed) if the datapoint is ever wanted, but the plan
+deliberately chooses a host whose capability is documented instead.
+
+**Verified on 20 Sep 2026 for the EC2 direction:**
+
+- AWS documents nested virtualization on **M7i** (general purpose list: M7i,
+  M7i-flex, M8i, M8id, M8i-flex), supports KVM and Hyper-V as the L1 hypervisor,
+  and charges nothing extra. It is enabled with
+  `cpu-options "NestedVirtualization=enabled"`, or
+  `CpuOptions.NestedVirtualization` in a launch template. The same page
+  recommends evaluating bare metal for performance-sensitive or
+  latency-strict workloads, so the residual risk is streaming performance
+  under nesting, not availability of `/dev/kvm`.
+- Alchemy beta.79 ships `AWS/CloudFormation/Stack` with `templateBody`, and its
+  `AWS/AutoScaling/LaunchTemplate` props are exactly: `assetPrefix`,
+  `associatePublicIpAddress`, `build`, `code`, `defaultVersionNumber`, `env`,
+  `handler`, `hash`, `imageId`, `instanceProfileName`, `instanceType`, `keyName`,
+  `latestVersionNumber`, `launchTemplateArn`, `launchTemplateId`,
+  `launchTemplateName`, `main`, `managedIam`, `output`, `policyName`,
+  `policyStatements`, `port`, `roleArn`, `roleManagedPolicyArns`, `roleName`,
+  `runtimeUnitName`, `securityGroupIds`, `tags`, `userData`. There is no
+  `cpuOptions` and no `launchTemplateData`, so the raw CloudFormation template is
+  the correct escape hatch for nested virtualization, not an invented field.
+
+Constraints that outlive the host change:
+
+- Two links must read differently. The browser path uses no EAS build and no
+  Expo token, so its comment must never resemble the device link.
+- Cloudflare Access is the reviewer gate, but the comment URL bounces through a
+  login, so owner setup must exist before the first reviewer is invited.
+- The freshness work is shared, not duplicated: the plan's deployment-identity
+  stamp and the device path's point 6 are the same piece of work.
+
+The earlier note about a Containers permission group in `stacks/github.ts` is
+moot for this direction: the EC2 path needs no Containers permission. It becomes
+relevant only if container-hosted Android is revisited.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module

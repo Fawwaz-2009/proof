@@ -19,6 +19,7 @@ import { clientIp, RateLimits } from "../config/rate-limit.ts";
 import { AppApi } from "./contracts/index.ts";
 import { ApiHandlers } from "./controllers/index.ts";
 import { NotesLive } from "./domain/notes.ts";
+import { PreviewStatus } from "./domain/preview.ts";
 import { AuthenticatedLive } from "./middlewares/authentication.ts";
 import { SchemaErrorHandlerLive } from "./middlewares/schema-error.ts";
 import { Files, FilesBucket } from "../config/storage.ts";
@@ -62,7 +63,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: yield* (isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")).pipe(
+        AUTH_EMAIL_FROM: yield* (isDev ? Config.String("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>")) : Config.String("AUTH_EMAIL_FROM")).pipe(
           Effect.orDie,
         ),
         // Without ROOT_DOMAIN the site lives on the platform host, and the
@@ -74,8 +75,8 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         // Optional by design: without them the app deploys, destroys, and
         // serves; images simply render without presigned URLs. CI always
         // receives minted values from the ceremony.
-        R2_ACCESS_KEY_ID: yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""), Effect.orDie),
-        R2_SECRET_ACCESS_KEY: yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")), Effect.orDie),
+        R2_ACCESS_KEY_ID: yield* Config.String("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""), Effect.orDie),
+        R2_SECRET_ACCESS_KEY: yield* Config.Redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")), Effect.orDie),
       },
     };
   }),
@@ -113,6 +114,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       Layer.provide(AuthenticatedLive),
       Layer.provide(Auth.Live),
       Layer.provide(NotesLive),
+      Layer.provide(PreviewStatus.Live),
       Layer.provide(HttpServicesLive),
       Layer.provide(AppDatabase.Live),
       Layer.provide(Files.Live),

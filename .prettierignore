@@ -3,6 +3,14 @@
 .output/
 dist/
 node_modules/
+.repos/
 apps/web/src/routeTree.gen.ts
 bun.lock
 packages/create-proof/template/
+
+# Expo: CNG-managed native projects and generated types (never hand-edited)
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/.expo/
+apps/mobile/expo-env.d.ts
+apps/mobile/assets/expo.icon/

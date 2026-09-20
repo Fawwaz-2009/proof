@@ -27,7 +27,7 @@ const websiteDeployProps = Effect.gen(function* () {
   const host = yield* websiteDomain;
   const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   const stage = yield* Effect.serviceOption(Alchemy.Stage).pipe(Effect.map((service) => (service._tag === "Some" ? service.value : "")));
-  const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+  const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
 
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the

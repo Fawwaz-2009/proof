@@ -46,6 +46,34 @@ jobs:
       - name: Deploy preview stage
         run: bunx alchemy deploy --stage "$STAGE" --yes
 
+  mobile-preview:
+    # Ordinary PR previews, no laptop involved: publish this revision's update
+    # against this PR's stage and keep one comment carrying the link.
+    # Trusted PRs only: publishing needs an Expo token, and a fork PR must never
+    # receive one. A clone with mobile previews disabled exits green with a note,
+    # so web-only adopters keep exactly the behaviour they had.
+    needs: deploy
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CI: "true"
+      STAGE: pr-${{ github.event.number }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      APP_SLUG: ${{ secrets.APP_SLUG }}
+      ROOT_DOMAIN: ${{ secrets.ROOT_DOMAIN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Publish the mobile preview update
+        run: bun run mobile:preview --pr "${{ github.event.number }}" --post
+
   cleanup:
     if: github.event.action == 'closed'
     runs-on: ubuntu-latest

@@ -1,0 +1,28 @@
+diff --git a/lib/Cloudflare/Tunnel/Tunnel.js b/lib/Cloudflare/Tunnel/Tunnel.js
+index 54d10112af82e42fc9a8efa7401c16ac6cb0a18e..74caf2733ba7efe8293f917f0d47b32c74a738f4 100644
+--- a/lib/Cloudflare/Tunnel/Tunnel.js
++++ b/lib/Cloudflare/Tunnel/Tunnel.js
+@@ -140,7 +140,9 @@ export const TunnelProvider = () => Provider.succeed(Tunnel, {
+             })
+                 .pipe(Effect.catch(() => Effect.succeed(undefined)));
+         }
+-        if (!observed) {
++        // A deleted tunnel is a tombstone, not a usable observation.
++      if (observed?.deletedAt != null) observed = undefined;
++      if (!observed) {
+             observed = yield* findTunnelByName(name);
+         }
+         // Ensure — create if missing. Cloudflare rejects a duplicate
+diff --git a/src/Cloudflare/Tunnel/Tunnel.ts b/src/Cloudflare/Tunnel/Tunnel.ts
+index b565d50f3c89a289fe6658483e4e12e5dc21eaa6..0ac64844da89bd712cfe3dceda265f28373fb7a6 100644
+--- a/src/Cloudflare/Tunnel/Tunnel.ts
++++ b/src/Cloudflare/Tunnel/Tunnel.ts
+@@ -266,6 +266,8 @@ export const TunnelProvider = () =>
+           })
+           .pipe(Effect.catch(() => Effect.succeed(undefined)));
+       }
++      // A deleted tunnel is a tombstone, not a usable observation.
++      if (observed?.deletedAt != null) observed = undefined;
+       if (!observed) {
+         observed = yield* findTunnelByName(name);
+       }

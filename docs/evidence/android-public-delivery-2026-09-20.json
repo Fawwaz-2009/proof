@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-20",
+  "region": "ap-southeast-1",
+  "instanceType": "m7i.xlarge",
+  "android": "14 x86_64",
+  "apkRevision": "08c05ed",
+  "apkSha256": "f76c82d4ad65fa74d1c526fb528698fc5e589fccb89a81d5a338e6866eee1454",
+  "transport": "Cloudflare Access and Tunnel, noVNC RFB over secure WebSocket",
+  "reconnectMs": 486,
+  "coldStart": {
+    "requestAtUnixMs": 1789901943775,
+    "appObservedAtUnixMs": 1789902015898,
+    "nativePickerOpenedByUnixMs": 1789902086768,
+    "appObservedUpperBoundMs": 72123,
+    "inputVerifiedUpperBoundMs": 142993
+  },
+  "checks": [
+    "preview sign-in",
+    "native text input",
+    "Android Back",
+    "drag scroll",
+    "create note",
+    "native image picker",
+    "image upload and rendered signed URL",
+    "signed-in session survives host stop/start",
+    "origin Access audience required",
+    "anonymous HTML and WebSocket path redirect to Access"
+  ],
+  "limits": [
+    "One current controller, concurrent preview isolation not yet implemented",
+    "Physical iPhone Safari not tested",
+    "Absolute six-hour handoff, not inactivity-based lifecycle",
+    "Existing PR automation does not allocate Android browser sessions yet"
+  ]
+}
