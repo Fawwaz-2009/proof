@@ -1,0 +1,106 @@
+# Android browser previews: Phase 0 feasibility evidence
+
+This file is the evidence record for the browser preview's first gate. The plan
+is explicit that the hosted Android experience is not proven until a real
+machine boots a real emulator behind a real public route, so nothing here may be
+written from expectation. Every row is either a measurement with its command, or
+it says "not measured".
+
+Scope of this document: Phase 0 only. The platform, coordinator, reviewer page,
+and PR automation are downstream of a passing gate.
+
+## What Phase 0 has to answer
+
+| Gate                  | Pass condition                                                                                                                                        | Status       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Hardware acceleration | Instance reports usable KVM and the emulator boots with acceleration actually in use. Software CPU emulation is a fail, not a slow pass.              | not measured |
+| Hosted transport      | Video and input reach a browser over the public route with a maintained bridge, on desktop Chrome and phone Safari.                                   | not measured |
+| Native app behaviour  | A self-contained APK of the current app, OTA disabled, installs and runs with no Metro server, against its own PR backend.                            | not measured |
+| Concurrent isolation  | Two hosts serve two sessions with independent storage, auth, and controls.                                                                            | not measured |
+| Performance           | Stopped host to interactive app within 180 s; reconnect to a running session within 10 s; p95 visible response within 500 ms over at least 20 inputs. | not measured |
+| Cleanup               | Instance reaches `stopped`; probe resources delete; nothing billable is stranded.                                                                     | not measured |
+| Cost                  | Measured running cost per review-hour from actual usage, including egress.                                                                            | not measured |
+
+A gate that misses keeps its measurements and gets a proposed adjustment. It
+does not get reworded.
+
+## Reproducible probe, as built
+
+| Element               | Value                                                                       | Where                                 |
+| --------------------- | --------------------------------------------------------------------------- | ------------------------------------- |
+| Region                | `ap-southeast-1` by default, `ANDROID_PREVIEW_REGION` to change             | `scripts/android-preview-template.ts` |
+| Instance type         | `m7i.xlarge`                                                                | `PROBE_INSTANCE_TYPE`                 |
+| Nested virtualization | `CpuOptions.NestedVirtualization: enabled` in the launch template           | `scripts/android-preview-template.ts` |
+| AMI                   | pinned per region by `ANDROID_PREVIEW_AMI_ID`; never resolved to "latest"   | required input                        |
+| Root volume           | 50 GiB gp3, encrypted, deleted with the instance                            | `PROBE_ROOT_VOLUME_GB`                |
+| Bridge port           | 8080, loopback only, forwarded by the tunnel                                | `PROBE_BRIDGE_PORT`                   |
+| Host access           | SSM only. No inbound security group rules, no SSH key.                      | template                              |
+| Tunnel                | one Cloudflare Tunnel per probe, ingress to the local bridge, catch-all 404 | `stacks/android-preview-probe.ts`     |
+
+Android SDK, emulator, system image, and bridge versions are **not pinned yet**,
+because they are chosen in step 3 and 5 of the plan and must be recorded with
+the image digest that actually ran. Nothing in this document should be read as
+having chosen them.
+
+### Why the instance is created from a raw CloudFormation template
+
+Nested virtualization is only expressible through `CpuOptions`. In alchemy
+2.0.0-beta.79 the `AWS/AutoScaling/LaunchTemplate` props are `assetPrefix`,
+`associatePublicIpAddress`, `build`, `code`, `defaultVersionNumber`, `env`,
+`handler`, `hash`, `imageId`, `instanceProfileName`, `instanceType`, `keyName`,
+`latestVersionNumber`, `launchTemplateArn`, `launchTemplateId`,
+`launchTemplateName`, `main`, `managedIam`, `output`, `policyName`,
+`policyStatements`, `port`, `roleArn`, `roleManagedPolicyArns`, `roleName`,
+`runtimeUnitName`, `securityGroupIds`, `tags`, `userData`: no `cpuOptions` and
+no `launchTemplateData`. `AWS/CloudFormation/Stack` accepts `templateBody`, so
+the template is the supported escape hatch rather than an invented property.
+
+## How to run it
+
+Prerequisites: AWS credentials available to alchemy for the target account, an
+AMI id for the region, and a hostname whose DNS zone is in the same Cloudflare
+account as the stack.
+
+```bash
+export ANDROID_PREVIEW_AMI_ID=ami-...        # pinned, per region
+export ANDROID_PREVIEW_PROBE_HOSTNAME=android-probe.example.com
+bunx alchemy deploy stacks/android-preview-probe.ts --stage probe --yes
+```
+
+Destroy it in the same session, and confirm deletion in the AWS API rather than
+trusting the command's exit code:
+
+```bash
+bunx alchemy destroy stacks/android-preview-probe.ts --stage probe --yes
+```
+
+## Measurements
+
+Fill each row with the command and its output. Numbers without a command are
+not evidence.
+
+| Measurement                    | Command                                                                                          | Result              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------- |
+| Effective CPU options          | `aws ec2 describe-instances --instance-ids <id> --query 'Reservations[].Instances[].CpuOptions'` |                     |
+| Device node and permissions    | `ls -l /dev/kvm`                                                                                 |                     |
+| Emulator acceleration          | `emulator -accel-check`                                                                          |                     |
+| CPU virtualization flags       | `grep -m1 -oE 'vmx                                                                               | svm' /proc/cpuinfo` |     |
+| Emulator boot to home          | emulator log timestamps                                                                          |                     |
+| Input round trip, p95 of 20    | bridge/client instrumentation                                                                    |                     |
+| Reconnect to running session   | client instrumentation                                                                           |                     |
+| Screen traffic per review-hour | host interface counters                                                                          |                     |
+| Concurrent hosts               | two sessions, one control each                                                                   |                     |
+| Shutdown to `stopped`          | `aws ec2 describe-instances --query 'Reservations[].Instances[].State.Name'`                     |                     |
+| Cost per running hour          | usage to the published rate card                                                                 |                     |
+
+## Notes that outlived the host change
+
+- The Cloudflare Containers investigation stopped at a `403` on the Containers
+  API with no credential carrying Containers permission, so it never produced a
+  KVM measurement. Two earlier claims were overstated and are corrected in
+  `AGENTS.md`: a missing schema field is not a runtime measurement, and "no
+  direct inbound UDP to a container" does not rule out every WebRTC topology.
+- AWS documents M7i as supporting nested virtualization with KVM as the L1
+  hypervisor and no additional charge, but the same page recommends evaluating
+  bare metal for latency-sensitive workloads. Acceleration availability is
+  therefore not the risk; streaming performance under nesting is.

@@ -492,6 +492,71 @@ no Expo setup, no secrets, and no device.
 know what is installed on a particular phone. The comment says both, and the first
 install stays a deliberate human step.
 
+### Android browser previews (direction under review)
+
+The proposed direction, separate from the device path above: a reviewer opens a
+link and drives the real native app in a browser, against that PR's stage, with
+a per-PR APK built from the same revision as the deployed backend. No install,
+no cable, no Expo account for the reviewer once the owner finishes setup.
+
+The plan gates itself on one question: can a hosted machine hand the emulator
+usable hardware acceleration? The host changed on 20 Sep 2026, and this section
+records what actually happened so nobody re-derives it.
+
+**Direction: Cloudflare owns the application, backend, artifacts, reviewer
+access, and session coordination; Android compute runs on AWS EC2 with nested
+virtualization explicitly enabled.** No Cloudflare container runs an emulator.
+Do not resume the Cloudflare Containers KVM/permission investigation as a
+prerequisite for implementing the browser preview.
+
+**What the Cloudflare investigation actually established, and nothing more.**
+Every deploy of a container application stopped at `403 Forbidden` on
+`/accounts/<id>/containers/applications`, because no credential available here
+carries Containers permission: the repository CI token and the stored admin
+token both lack the scope, wrangler's existing OAuth session was created without
+it, and alchemy's default-profile OAuth grant has `containers:write` but expired
+13 Sep with a refresh that fails. No KVM measurement was ever taken. Two claims
+made here earlier were overstated and are corrected: a missing schema field is
+not a runtime measurement, and "no direct inbound UDP to a container" does not
+prove every WebRTC topology impossible. A probe is built and ready at
+`~/Documents/projects/2026/kvm-probe` (registry image plus `ctx.container.exec`,
+no local Docker needed) if the datapoint is ever wanted, but the plan
+deliberately chooses a host whose capability is documented instead.
+
+**Verified on 20 Sep 2026 for the EC2 direction:**
+
+- AWS documents nested virtualization on **M7i** (general purpose list: M7i,
+  M7i-flex, M8i, M8id, M8i-flex), supports KVM and Hyper-V as the L1 hypervisor,
+  and charges nothing extra. It is enabled with
+  `cpu-options "NestedVirtualization=enabled"`, or
+  `CpuOptions.NestedVirtualization` in a launch template. The same page
+  recommends evaluating bare metal for performance-sensitive or
+  latency-strict workloads, so the residual risk is streaming performance
+  under nesting, not availability of `/dev/kvm`.
+- Alchemy beta.79 ships `AWS/CloudFormation/Stack` with `templateBody`, and its
+  `AWS/AutoScaling/LaunchTemplate` props are exactly: `assetPrefix`,
+  `associatePublicIpAddress`, `build`, `code`, `defaultVersionNumber`, `env`,
+  `handler`, `hash`, `imageId`, `instanceProfileName`, `instanceType`, `keyName`,
+  `latestVersionNumber`, `launchTemplateArn`, `launchTemplateId`,
+  `launchTemplateName`, `main`, `managedIam`, `output`, `policyName`,
+  `policyStatements`, `port`, `roleArn`, `roleManagedPolicyArns`, `roleName`,
+  `runtimeUnitName`, `securityGroupIds`, `tags`, `userData`. There is no
+  `cpuOptions` and no `launchTemplateData`, so the raw CloudFormation template is
+  the correct escape hatch for nested virtualization, not an invented field.
+
+Constraints that outlive the host change:
+
+- Two links must read differently. The browser path uses no EAS build and no
+  Expo token, so its comment must never resemble the device link.
+- Cloudflare Access is the reviewer gate, but the comment URL bounces through a
+  login, so owner setup must exist before the first reviewer is invited.
+- The freshness work is shared, not duplicated: the plan's deployment-identity
+  stamp and the device path's point 6 are the same piece of work.
+
+The earlier note about a Containers permission group in `stacks/github.ts` is
+moot for this direction: the EC2 path needs no Containers permission. It becomes
+relevant only if container-hosted Android is revisited.
+
 ## Migrations
 
 `Drizzle.Schema` runs drizzle-kit generate inside the deploy: schema module
