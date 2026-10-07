@@ -1,0 +1,1867 @@
+{
+  "kind": "read-only-mobile-abandonment-audit",
+  "capturedAt": "2026-10-07T06:23:39.005815+00:00",
+  "noRemoteMutations": true,
+  "repository": {
+    "name": "proof",
+    "mainSha": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+    "remoteMainMatches": true,
+    "mainHasMobileImplementation": false,
+    "pullRequests": [
+      {
+        "number": 4,
+        "state": "CLOSED",
+        "merged": false
+      },
+      {
+        "number": 5,
+        "state": "OPEN",
+        "merged": false
+      },
+      {
+        "number": 6,
+        "state": "OPEN",
+        "merged": false,
+        "headSha": "707e3fafc3f6f95e2b784f56a75ed70d39078480"
+      }
+    ],
+    "activeActions": 0,
+    "actionsArtifacts": 0,
+    "mobileSecretNames": ["EXPO_TOKEN", "EAS_PROJECT_ID"],
+    "userOwnedUncommitted": {
+      "main": [".prettierignore"],
+      "android-preview-plan": ["plans/android-browser-previews/plan.mdx", "plans/android-browser-previews/handoff.md"]
+    },
+    "missingWorktree": "/private/tmp/proof-android-delivery",
+    "branches": {
+      "mobile": {
+        "sha": "fe2e59ce8077096c146e629f5dd9adccec2285c9",
+        "mergeBaseWithMain": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+        "delta": [
+          {
+            "status": "M",
+            "path": ".env.example"
+          },
+          {
+            "status": "M",
+            "path": ".prettierignore"
+          },
+          {
+            "status": "M",
+            "path": "AGENTS.md"
+          },
+          {
+            "status": "M",
+            "path": "README.md"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/auth.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/domain.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/email.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/storage.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/package.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/worker.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.env.example"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.gitignore"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/app.config.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/splash-icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/eas.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/package.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/_layout.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/index.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/notes.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/sign-in.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/delete-note-button.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/missing-config.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/ui.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/api-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/auth-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/session.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/theme.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/tsconfig.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/web/package.json"
+          },
+          {
+            "status": "M",
+            "path": "bun.lock"
+          },
+          {
+            "status": "M",
+            "path": "docs/faq.md"
+          },
+          {
+            "status": "M",
+            "path": "package.json"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-session.test.ts"
+          },
+          {
+            "status": "M",
+            "path": "stacks/github.ts"
+          },
+          {
+            "status": "M",
+            "path": "tsconfig.iac.json"
+          },
+          {
+            "status": "M",
+            "path": "website.ts"
+          }
+        ]
+      },
+      "mobile-preview": {
+        "sha": "c6c3f897b8f8d99a02caad3b16d999e9f2e3a92e",
+        "mergeBaseWithMain": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+        "delta": [
+          {
+            "status": "M",
+            "path": ".env.example"
+          },
+          {
+            "status": "M",
+            "path": ".github/workflows/pr-preview.yml"
+          },
+          {
+            "status": "M",
+            "path": ".prettierignore"
+          },
+          {
+            "status": "M",
+            "path": "AGENTS.md"
+          },
+          {
+            "status": "M",
+            "path": "README.md"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/auth.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/domain.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/email.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/storage.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/package.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/contracts/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/contracts/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/controllers/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/controllers/preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/domain/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/worker.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/test/preview-status.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.env.example"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.gitignore"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/app.config.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/splash-icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/eas.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/package.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/_layout.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/index.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/notes.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/sign-in.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/delete-note-button.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/missing-config.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/preview-label.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/ui.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/api-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/auth-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/session.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/theme.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/tsconfig.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/web/package.json"
+          },
+          {
+            "status": "M",
+            "path": "bun.lock"
+          },
+          {
+            "status": "A",
+            "path": "docs/android-preview-feasibility.md"
+          },
+          {
+            "status": "M",
+            "path": "docs/faq.md"
+          },
+          {
+            "status": "A",
+            "path": "mobile-preview.config.ts"
+          },
+          {
+            "status": "M",
+            "path": "package.json"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-template.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-template.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-resolver.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-session.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.ts"
+          },
+          {
+            "status": "A",
+            "path": "stacks/android-preview-probe.ts"
+          },
+          {
+            "status": "M",
+            "path": "stacks/github.ts"
+          },
+          {
+            "status": "M",
+            "path": "tsconfig.iac.json"
+          },
+          {
+            "status": "M",
+            "path": "website.ts"
+          }
+        ]
+      },
+      "codex/mobile-preview-docs": {
+        "sha": "db94243f79d16163d99736d7f42c35308fcb8233",
+        "mergeBaseWithMain": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+        "delta": [
+          {
+            "status": "M",
+            "path": "AGENTS.md"
+          },
+          {
+            "status": "M",
+            "path": "README.md"
+          },
+          {
+            "status": "M",
+            "path": "docs/faq.md"
+          },
+          {
+            "status": "A",
+            "path": "docs/mobile-preview-implementation-plan.md"
+          },
+          {
+            "status": "A",
+            "path": "docs/mobile-previews.md"
+          }
+        ]
+      },
+      "codex/android-browser-preview-plan": {
+        "sha": "105ac8994ba8aa207e0dcab683254a5c912bac87",
+        "mergeBaseWithMain": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+        "delta": [
+          {
+            "status": "M",
+            "path": ".env.example"
+          },
+          {
+            "status": "M",
+            "path": ".github/workflows/pr-preview.yml"
+          },
+          {
+            "status": "M",
+            "path": ".prettierignore"
+          },
+          {
+            "status": "M",
+            "path": "AGENTS.md"
+          },
+          {
+            "status": "M",
+            "path": "README.md"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/auth.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/domain.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/email.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/storage.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/package.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/contracts/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/contracts/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/controllers/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/controllers/preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/domain/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/worker.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/test/preview-status.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.env.example"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.gitignore"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/app.config.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/splash-icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/eas.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/package.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/_layout.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/index.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/notes.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/sign-in.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/delete-note-button.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/missing-config.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/preview-label.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/ui.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/api-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/auth-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/session.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/theme.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/tsconfig.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/web/package.json"
+          },
+          {
+            "status": "M",
+            "path": "bun.lock"
+          },
+          {
+            "status": "M",
+            "path": "docs/faq.md"
+          },
+          {
+            "status": "A",
+            "path": "mobile-preview.config.ts"
+          },
+          {
+            "status": "M",
+            "path": "package.json"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-resolver.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-session.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.ts"
+          },
+          {
+            "status": "M",
+            "path": "stacks/github.ts"
+          },
+          {
+            "status": "M",
+            "path": "tsconfig.iac.json"
+          },
+          {
+            "status": "M",
+            "path": "website.ts"
+          }
+        ]
+      },
+      "codex/android-browser-delivery": {
+        "sha": "707e3fafc3f6f95e2b784f56a75ed70d39078480",
+        "mergeBaseWithMain": "3ad872a7547d14b9cc6fd804174df11a037eec6a",
+        "delta": [
+          {
+            "status": "M",
+            "path": ".env.example"
+          },
+          {
+            "status": "M",
+            "path": ".github/workflows/pr-preview.yml"
+          },
+          {
+            "status": "M",
+            "path": ".gitignore"
+          },
+          {
+            "status": "M",
+            "path": ".prettierignore"
+          },
+          {
+            "status": "M",
+            "path": "AGENTS.md"
+          },
+          {
+            "status": "M",
+            "path": "README.md"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/auth.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/domain.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/email.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/config/storage.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/package.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/contracts/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/contracts/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/controllers/index.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/controllers/preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/src/domain/preview.ts"
+          },
+          {
+            "status": "M",
+            "path": "apps/backend/src/worker.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/backend/test/preview-status.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.env.example"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/.gitignore"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/app.config.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/assets/images/splash-icon.png"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/eas.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/package.json"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/_layout.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/index.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/notes.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/app/sign-in.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/delete-note-button.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/missing-config.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/preview-label.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/components/ui.tsx"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/api-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/auth-client.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/session.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/src/lib/theme.ts"
+          },
+          {
+            "status": "A",
+            "path": "apps/mobile/tsconfig.json"
+          },
+          {
+            "status": "M",
+            "path": "apps/web/package.json"
+          },
+          {
+            "status": "M",
+            "path": "bun.lock"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/bootstrap.sh"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/connect.sh"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/harden.sh"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/install-reviewer.sh"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/launch-app.sh"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/position-window.py"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/reviewer.html"
+          },
+          {
+            "status": "A",
+            "path": "containers/android-preview/set-review-window.sh"
+          },
+          {
+            "status": "A",
+            "path": "docs/android-preview-feasibility.md"
+          },
+          {
+            "status": "A",
+            "path": "docs/evidence/android-public-delivery-2026-09-20.json"
+          },
+          {
+            "status": "A",
+            "path": "docs/evidence/android-public-input-2026-09-20.json"
+          },
+          {
+            "status": "M",
+            "path": "docs/faq.md"
+          },
+          {
+            "status": "A",
+            "path": "mobile-preview.config.ts"
+          },
+          {
+            "status": "M",
+            "path": "package.json"
+          },
+          {
+            "status": "A",
+            "path": "patches/alchemy@2.0.0-beta.79.patch"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-browser-config.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-infra.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-install.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-outputs.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-ssm.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-template.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-template.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/android-preview-verify-proxy.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas-builds.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/eas.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-env.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-comment.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview-resolver.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-preview.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/mobile-session.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/prepare-effect.sh"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.test.ts"
+          },
+          {
+            "status": "A",
+            "path": "scripts/preview-report.ts"
+          },
+          {
+            "status": "A",
+            "path": "stacks/android-preview-artifacts.ts"
+          },
+          {
+            "status": "A",
+            "path": "stacks/android-preview-probe.ts"
+          },
+          {
+            "status": "M",
+            "path": "stacks/github.ts"
+          },
+          {
+            "status": "M",
+            "path": "tsconfig.iac.json"
+          },
+          {
+            "status": "M",
+            "path": "website.ts"
+          }
+        ]
+      }
+    }
+  },
+  "aws": {
+    "profile": "default",
+    "accountScope": "verified STS identity, account ending 9204",
+    "regions": [
+      "ap-south-1",
+      "ca-central-1",
+      "eu-central-1",
+      "us-west-1",
+      "us-west-2",
+      "eu-north-1",
+      "eu-west-3",
+      "eu-west-2",
+      "eu-west-1",
+      "ap-northeast-3",
+      "ap-northeast-2",
+      "ap-northeast-1",
+      "sa-east-1",
+      "ap-southeast-1",
+      "ap-southeast-2",
+      "ap-southeast-3",
+      "us-east-1",
+      "us-east-2"
+    ],
+    "additionalBackupCoverage": {
+      "allEnabledRegionsChecked": 18,
+      "ownedImagesFound": 1,
+      "manualRdsSnapshotsFound": 1,
+      "manualRdsClusterSnapshotsFound": 0,
+      "secretsManagerSecretsFound": 0,
+      "failedRequests": 0
+    },
+    "coverageCounts": {
+      "ap-south-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ca-central-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "eu-central-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "us-west-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "us-west-2": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "eu-north-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "eu-west-3": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "eu-west-2": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "eu-west-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-northeast-3": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-northeast-2": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-northeast-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "sa-east-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-southeast-1": {
+        "instances": 1,
+        "volumes": 1,
+        "snapshots": 2,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 1,
+        "taggedResources": 9,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-southeast-2": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "ap-southeast-3": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "us-east-1": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 1,
+        "taggedResources": 1,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      },
+      "us-east-2": {
+        "instances": 0,
+        "volumes": 0,
+        "snapshots": 0,
+        "elasticIps": 0,
+        "natGateways": 0,
+        "cloudformation": 0,
+        "taggedResources": 0,
+        "loadBalancers": 0,
+        "ecr": 0,
+        "rdsInstances": 0,
+        "rdsClusters": 0,
+        "ecs": 0,
+        "eks": 0,
+        "lambda": 0,
+        "ssm": 0,
+        "logs": 0
+      }
+    },
+    "experiment": {
+      "region": "ap-southeast-1",
+      "alchemyStack": "ProofAndroidPreviewProbe",
+      "stage": "probe",
+      "cloudformationStack": "Proof-android-preview-probe",
+      "instanceId": "i-0cbf34b60d90daa6b",
+      "instanceState": "stopped",
+      "instanceType": "m7i.xlarge",
+      "volumeId": "vol-0ce56fb9c7f7b43d2",
+      "volumeGiB": 50,
+      "volumeType": "gp3",
+      "deleteOnTermination": true,
+      "amiInput": "ami-095f155a67469a548",
+      "deletionPolicies": {
+        "Vpc": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "InternetGateway": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "GatewayAttachment": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "Subnet": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "RouteTable": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "DefaultRoute": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "SubnetRouteTableAssociation": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "SecurityGroup": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "SsmRole": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "SsmInstanceProfile": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "LaunchTemplate": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        },
+        "Instance": {
+          "deletionPolicy": "default Delete",
+          "updateReplacePolicy": "default Delete"
+        }
+      },
+      "cloudformationResources": [
+        {
+          "logicalId": "DefaultRoute",
+          "id": "rtb-0fd8690ac00a6f303|0.0.0.0/0",
+          "type": "AWS::EC2::Route",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "GatewayAttachment",
+          "id": "IGW|vpc-0ab73835a484bb431",
+          "type": "AWS::EC2::VPCGatewayAttachment",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "Instance",
+          "id": "i-0cbf34b60d90daa6b",
+          "type": "AWS::EC2::Instance",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "InternetGateway",
+          "id": "igw-09bc8ad347883e473",
+          "type": "AWS::EC2::InternetGateway",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "LaunchTemplate",
+          "id": "lt-07bf6dee2f2c9b649",
+          "type": "AWS::EC2::LaunchTemplate",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "RouteTable",
+          "id": "rtb-0fd8690ac00a6f303",
+          "type": "AWS::EC2::RouteTable",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "SecurityGroup",
+          "id": "sg-0492842db5066e72f",
+          "type": "AWS::EC2::SecurityGroup",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "SsmInstanceProfile",
+          "id": "Proof-android-preview-probe-SsmInstanceProfile-7J9GfLMNXCZo",
+          "type": "AWS::IAM::InstanceProfile",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "SsmRole",
+          "id": "Proof-android-preview-probe-SsmRole-8OuM87lHgORh",
+          "type": "AWS::IAM::Role",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "Subnet",
+          "id": "subnet-074856165d13b1ece",
+          "type": "AWS::EC2::Subnet",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "SubnetRouteTableAssociation",
+          "id": "rtbassoc-0c91c035d5245a7ec",
+          "type": "AWS::EC2::SubnetRouteTableAssociation",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "logicalId": "Vpc",
+          "id": "vpc-0ab73835a484bb431",
+          "type": "AWS::EC2::VPC",
+          "state": "CREATE_COMPLETE"
+        }
+      ],
+      "ssmParameters": 0,
+      "logGroups": 0,
+      "artifactStackCurrentlyPresent": false,
+      "artifactBucketCurrentlyPresent": false
+    },
+    "legacyUnrelated": {
+      "ami": [
+        {
+          "id": "ami-0a8b9383444a48fc4",
+          "name": "sig_game_dev_image",
+          "state": "available",
+          "created": "2025-09-16T02:05:09.000Z",
+          "tags": null,
+          "snapshots": ["snap-0cf564f7a1074c84e", "snap-0c0261bf9db1b6591"]
+        }
+      ],
+      "snapshots": [
+        {
+          "id": "snap-0c0261bf9db1b6591",
+          "sizeGiB": 250,
+          "description": "Created by CreateImage(i-09257ad7aaf274981) for ami-0a8b9383444a48fc4",
+          "tags": null
+        },
+        {
+          "id": "snap-0cf564f7a1074c84e",
+          "sizeGiB": 50,
+          "description": "Created by CreateImage(i-09257ad7aaf274981) for ami-0a8b9383444a48fc4",
+          "tags": null
+        }
+      ],
+      "rdsSnapshots": [
+        {
+          "id": "myfirstmysql-final-snapshot",
+          "sizeGiB": 20,
+          "created": "2020-04-27T15:11:18.416000+00:00",
+          "state": "available",
+          "source": "myfirstmysql"
+        }
+      ],
+      "s3Bucket": {
+        "name": "mycoool",
+        "region": "us-east-2",
+        "currentObjectMetadata": {
+          "objectCount": 0,
+          "bytes": 0
+        },
+        "versionsAndMultipartUploadsNotAudited": true
+      },
+      "cloudformationStack": "SSTConsole-a6leb8e8i0936fqn9bve1eab",
+      "legacyStackResources": [
+        {
+          "id": "none",
+          "type": "Custom::SSTConnect",
+          "state": "CREATE_COMPLETE"
+        },
+        {
+          "id": "sst-a6leb8e8i0936fqn9bve1eab",
+          "type": "AWS::IAM::Role",
+          "state": "CREATE_COMPLETE"
+        }
+      ]
+    },
+    "costByService": [
+      {
+        "period": {
+          "Start": "2026-09-01",
+          "End": "2026-10-01"
+        },
+        "estimated": false,
+        "nonzero": [
+          {
+            "service": "AWS Secrets Manager",
+            "region": "ap-southeast-2",
+            "USD": "0.000005"
+          },
+          {
+            "service": "AWS Secrets Manager",
+            "region": "us-east-1",
+            "USD": "0.000005"
+          },
+          {
+            "service": "EC2 - Other",
+            "region": "ap-southeast-1",
+            "USD": "3.2038861929"
+          },
+          {
+            "service": "Amazon Elastic Compute Cloud - Compute",
+            "region": "ap-southeast-1",
+            "USD": "1.858010364"
+          },
+          {
+            "service": "Amazon Relational Database Service",
+            "region": "us-east-2",
+            "USD": "0.103906251"
+          },
+          {
+            "service": "Amazon Simple Storage Service",
+            "region": "ap-southeast-1",
+            "USD": "0.0002996"
+          },
+          {
+            "service": "Amazon Simple Storage Service",
+            "region": "us-east-1",
+            "USD": "0.0038543489"
+          },
+          {
+            "service": "Amazon Simple Storage Service",
+            "region": "us-east-2",
+            "USD": "0.00001"
+          },
+          {
+            "service": "Amazon Virtual Private Cloud",
+            "region": "ap-southeast-1",
+            "USD": "0.03746806"
+          },
+          {
+            "service": "Tax",
+            "region": "NoRegion",
+            "USD": "1.04"
+          }
+        ]
+      },
+      {
+        "period": {
+          "Start": "2026-10-01",
+          "End": "2026-10-07"
+        },
+        "estimated": true,
+        "nonzero": [
+          {
+            "service": "EC2 - Other",
+            "region": "ap-southeast-1",
+            "USD": "1.145822832"
+          },
+          {
+            "service": "Amazon Relational Database Service",
+            "region": "us-east-2",
+            "USD": "0.0167590725"
+          },
+          {
+            "service": "Tax",
+            "region": "NoRegion",
+            "USD": "0.23"
+          }
+        ]
+      }
+    ],
+    "octoberSingaporeUsage": [
+      {
+        "type": "APS1-EBS:VolumeUsage.gp3",
+        "costUSD": "0.903225806",
+        "quantityGBMonth": "9.408602154"
+      },
+      {
+        "type": "APS1-EBS:SnapshotUsage",
+        "costUSD": "0.242597026",
+        "quantityGBMonth": "4.851940524"
+      }
+    ],
+    "diskFullMonthEstimateUSD": "4.80",
+    "estimateBasis": "Observed gp3 cost divided by billed GB-month, multiplied by 50 GiB; excludes tax, snapshots and future price changes",
+    "unverifiedProfiles": [
+      {
+        "profile": "fawwaz1427_maybe",
+        "result": "InvalidClientTokenId, account identity unavailable"
+      },
+      {
+        "profile": "supabase_migration",
+        "result": "InvalidClientTokenId, account identity unavailable"
+      },
+      {
+        "profile": "supabase_prod",
+        "result": "InvalidClientTokenId, account identity unavailable"
+      }
+    ]
+  },
+  "cloudflare": {
+    "accountScope": "verified Wrangler OAuth account, ending 6084",
+    "workersReturned": 83,
+    "r2BucketsReturned": 63,
+    "stageResources": {
+      "pr-5": {
+        "workers": ["proof-backend-pr-5-a53lnxaohwxkqlbm", "proof-website-pr-5-al5agltvdjxcd3cp"],
+        "buckets": ["proof-files-pr-5-yqt2zyklv455lttt"],
+        "databaseIds": ["7f7a6d7d-d985-4465-91c0-9b17933e3546"],
+        "workerDomainIds": ["b8e5dc2d8deb62835794f4f058e41fc72528e7db"],
+        "objectMetadata": {
+          "proof-files-pr-5-yqt2zyklv455lttt": {
+            "objectCount": 0,
+            "bytes": 0
+          }
+        }
+      },
+      "pr-6": {
+        "workers": ["proof-backend-pr-6-ipsoowkvb6pedj75", "proof-website-pr-6-4755laehfs67lctc"],
+        "buckets": ["proof-files-pr-6-ixn77rm3rvkzaitq"],
+        "databaseIds": ["54a086c6-8a5c-4bdf-97fe-d8925092a4e2"],
+        "workerDomainIds": ["557b586140e824dcbfb70f7a3dcefd77abd8991b"],
+        "objectMetadata": {
+          "proof-files-pr-6-ixn77rm3rvkzaitq": {
+            "objectCount": 3,
+            "bytes": 469401,
+            "truncated": null
+          }
+        }
+      },
+      "prod": {
+        "workers": ["proof-backend-prod-lza6dydesjheor4d", "proof-website-prod-a3piyue7cj2m7ioa"],
+        "buckets": ["proof-files-prod-bnv7q5kq33awg5zy"],
+        "databaseIds": ["e0b78dd6-4647-43ac-a0e9-a8d3ee313ec9"],
+        "workerDomainIds": ["0435a762f727d78ec1627583181e0bc6eaf658f5", "f668ae77eb3a90e7d52c2d02974a257580a81b11"],
+        "objectMetadata": {
+          "proof-files-prod-bnv7q5kq33awg5zy": {
+            "objectCount": 0,
+            "bytes": 0
+          }
+        }
+      }
+    },
+    "probe": {
+      "tunnelId": "ac37f457-8663-4e29-a6e2-0a6d0427c58e",
+      "tunnelStatus": "down",
+      "dnsRecordId": "c9154e515224c27b3278cd75763fab58",
+      "accessApplicationId": "89854cae-9729-40ff-ba65-f702e721c447",
+      "accessPolicyIds": ["7df24d31-3422-4d6e-8a12-71bba74d7f49", "eeb33ab2-109c-4c98-a0d4-d223c19c4e66"],
+      "verificationServiceTokenId": "9abeacbb-2ec8-4b24-9662-39565909581e",
+      "verificationTokenExpiredAt": "2026-09-21T10:27:47Z",
+      "stateRecords": ["output", "probe-access", "probe-host", "probe-hostname", "probe-tunnel", "probe-verification"]
+    },
+    "mobileStageStateOnly": ["Proof/dev-expo-mobile", "Proof/dev-mobile-preview", "Proof/dev-mobile"],
+    "otherStatePreserve": ["Proof/prod", "Proof/dev_fawwaz.alharbi", "Proof/temp"],
+    "artifactStatePathExists": false,
+    "containerApplications": 0,
+    "containerRegistryImages": 0,
+    "proofKvNamespaces": 0,
+    "proofDurableObjectBindings": 0,
+    "preserveShared": [
+      "alchemy-state-store",
+      "default_secrets_store",
+      "AlchemyStateStoreEncryptionKey",
+      "AlchemyStateStoreToken",
+      "existing account onetimepin identity provider",
+      "unrelated healthy tunnel"
+    ],
+    "preserveProductionTokens": ["ProofGitHub-ProofCIToken-bootstrap-v4wel2ut3wakfd4a", "ProofGitHub-ProofR2Presign-bootstrap-f3u7bgeeunj54svn"],
+    "billingSubscriptionsVerified": false,
+    "billingGap": "Subscriptions endpoint denied for available credentials; stored admin and main .env token were invalid, mobile-preview .env token permitted resource/DNS/Access/account-token inventory."
+  },
+  "expo": {
+    "projectId": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+    "projectSlug": "proof",
+    "plan": "Free",
+    "buildRecords": 0,
+    "branches": ["pr-6", "pr-99", "development"],
+    "channels": ["development"],
+    "currentEstimatedChargesCents": 0,
+    "addons": [],
+    "auditLogsAvailable": false,
+    "auditLogsGap": "Free plan does not expose account audit logs"
+  },
+  "limits": [
+    "Not a certification that every cloud account or service is empty.",
+    "Three configured AWS profiles could not authenticate.",
+    "Cloudflare billing subscriptions require billing-authorized access.",
+    "Apple Developer, Google Play and other independently purchased subscriptions were not authenticated or verified.",
+    "Project-owned resources must be absent after teardown and unrelated resources must be handled separately."
+  ],
+  "commandsExercised": [
+    "git worktree list --porcelain",
+    "git status --short --untracked-files=all in five existing worktrees",
+    "git diff --name-status main..<experiment branches>",
+    "git merge-base main <experiment branches>",
+    "gh PR/workflow/run/secret-name/artifact read APIs",
+    "aws sts get-caller-identity for four configured profiles",
+    "aws ec2/cloudformation/tagging/ELB/RDS/ECR/ECS/EKS/Lambda/SSM/logs read inventory across 18 enabled regions",
+    "aws owned AMI/manual RDS snapshot/Secrets Manager read inventory across 18 enabled regions",
+    "aws cloudformation get-template and describe-stack-resources",
+    "aws ce get-cost-and-usage (service/region and usage type)",
+    "aws S3 and R2 list-object metadata only",
+    "wrangler whoami, d1 list, r2 bucket list, tunnel list, kv namespace list, containers list/images list, remote secret store metadata",
+    "Cloudflare GET APIs for complete R2 inventory, worker bindings/domains, DNS, zone Access, service tokens, identity providers and account token metadata",
+    "alchemy state list --backend cloudflare for Proof and probe scopes",
+    "eas project:info, build:list, branch:list, channel:list, account:usage, account:audit (unavailable on Free)"
+  ]
+}

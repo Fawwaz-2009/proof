@@ -1,0 +1,169 @@
+---
+title: Mobile infrastructure retirement, executed proof
+kind: recap
+---
+
+# Outcome
+
+The Android experiment's owning Alchemy graph was destroyed at deployment revision `707e3fa`. CloudFormation removed the host stack, its instance, 50 GiB root EBS volume, network resources and IAM role/profile. The same graph removed the Cloudflare Tunnel, DNS record, zone-scoped Access application and verification service token. Provider-side absence checks corroborate Alchemy's successful exit.
+
+PRs #5 and #6 were closed without merging. Their Alchemy cleanup jobs succeeded, and the exact Workers, custom domains/DNS, D1 databases, R2 buckets and stage state were verified absent. Only then were the three orphaned mobile-development state namespaces deleted. Production, shared Alchemy infrastructure, the reused one-time-PIN provider and unrelated projects remain intact.
+
+**Incomplete owner-authenticated step:** Expo's proof project still exists because its deletion requires password confirmation in sudo mode. The dedicated proof robot's only publishing token is revoked, and `EXPO_TOKEN` / `EAS_PROJECT_ID` are absent from GitHub. The original `mobile-preview` checkout and reconstructed teardown checkout remain available for that secure owner step. Do not describe all retirement acceptance criteria as complete.
+
+# Visible behavior
+
+No application UI changed and no mobile source was merged into `main`. After teardown, the real production home and `/login` rendered correctly in Chromium with no console errors. The email textbox and Send a code button were observed without submitting the form or sending email.
+
+The two known proof app identities were uninstalled from local simulators. Each simulator was returned to its prior shutdown state, and supported app-container lookups reported not found. The physical iPhone was unavailable, so its installed preview app was not touched. Shared SDKs, simulator devices and signing certificates were preserved. Two older simulator variants without confirmed current-project linkage were not guessed into the deletion allowlist.
+
+# Contract and data boundaries
+
+Application contracts, schemas, migrations, dependency versions, lockfile and production workflows are unchanged. This work removed owned operational resources and publishing capability, not web features or production data.
+
+- Removed: `ProofAndroidPreviewProbe/probe`, `Proof/pr-5`, `Proof/pr-6`, `Proof/dev-expo-mobile`, `Proof/dev-mobile-preview` and `Proof/dev-mobile`.
+- Preserved: `Proof/prod`, `Proof/dev_fawwaz.alharbi`, `Proof/temp`, the shared state worker/Secrets Store, production CI/R2 signing tokens and the operator AWS credential.
+- The already absent temporary APK-artifacts stack and bucket were not recreated merely to delete them.
+
+# Complete file accounting
+
+The documentation PR contains only the following four added files. The canonical main worktree's obsolete six-line Expo ignore stanza was removed locally after archiving the user's patch; the committed baseline already lacked it, so it produces no PR diff.
+
+<FileTree
+  id="retirement-proof-file-ledger"
+  entries={[
+    {
+      path: "plans/mobile-abandonment/plan.mdx",
+      change: "added",
+      note: "Original authorized runbook, ownership boundaries and executed-status pointer.",
+    },
+    {
+      path: "plans/mobile-abandonment/audit.json",
+      change: "added",
+      note: "Initial read-only provider inventory and complete experiment branch path deltas.",
+    },
+    {
+      path: "plans/mobile-abandonment/cleanup.json",
+      change: "added",
+      note: "Sanitized actual operations, absence proofs, preserved-resource checks and pending prerequisites.",
+    },
+    {
+      path: "plans/mobile-retirement/plan.mdx",
+      change: "added",
+      note: "This operational recap, complete source accounting and review risks.",
+    },
+  ]}
+/>
+
+# Load-bearing execution receipts
+
+The excerpts below are actual sanitized records from `cleanup.json`, not prospective commands or inferred success.
+
+<TabsBlock
+  id="retirement-execution-walkthrough"
+  orientation="horizontal"
+  tabs={[
+    {
+      id: "owner-graph",
+      label: "Owning graph",
+      blocks: [
+        {
+          id: "owner-graph-code",
+          type: "annotated-code",
+          data: {
+            filename: "plans/mobile-abandonment/cleanup.json (destroy receipt)",
+            language: "json",
+            code: '{\n  "operation": "Alchemy destroy Android probe",\n  "startedAt": "2026-10-07T08:06:21.323188+00:00",\n  "finishedAt": "2026-10-07T08:07:09.513166+00:00",\n  "command": "bun scripts/android-preview-infra.ts destroy",\n  "revision": "707e3fafc3f6f95e2b784f56a75ed70d39078480",\n  "exitCode": 0,\n  "scope": "ProofAndroidPreviewProbe/probe"\n}',
+            annotations: [
+              {
+                lines: "5-7",
+                label: "Deployment-compatible teardown",
+                note: "The owning Alchemy graph was evaluated at the real delivery revision, not at the older local branch or web-only main.",
+              },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      id: "state-pruning",
+      label: "State after resources",
+      blocks: [
+        {
+          id: "state-pruning-code",
+          type: "annotated-code",
+          data: {
+            filename: "plans/mobile-abandonment/cleanup.json (state receipt)",
+            language: "json",
+            code: '{\n  "operation": "prune mobile-only Alchemy development state",\n  "providerAbsenceVerifiedFirst": true,\n  "scopes": [\n    {\n      "scope": "Proof/dev-expo-mobile",\n      "exitCode": 0\n    },\n    {\n      "scope": "Proof/dev-mobile-preview",\n      "exitCode": 0\n    },\n    {\n      "scope": "Proof/dev-mobile",\n      "exitCode": 0\n    }\n  ]\n}',
+            annotations: [
+              {
+                lines: "3",
+                label: "Deletion order",
+                note: "State-only scopes were pruned only after complete live Worker, D1, R2 and domain inventories showed no corresponding mobile-development resources.",
+              },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      id: "preservation",
+      label: "Preservation invariants",
+      blocks: [
+        {
+          id: "preservation-code",
+          type: "annotated-code",
+          data: {
+            filename: "plans/mobile-abandonment/cleanup.json (preservation checks)",
+            language: "json",
+            code: '{\n  "productionWorkerIdsStillPresent": true,\n  "productionWorkersNotRedeployed": true,\n  "productionBucketStillPresent": true,\n  "productionD1StillPresent": true,\n  "productionDomainsStillPresent": true,\n  "productionAccountTokensPreserved": true,\n  "sharedAlchemyStateWorkerPreserved": true,\n  "sharedOnetimepinProviderPreserved": true,\n  "unrelatedHealthyTunnelPreserved": true\n}',
+            annotations: [
+              {
+                lines: "2-7",
+                label: "Production stays live",
+                note: "Existing production resource identities and active account credentials were checked after teardown. Workers were not redeployed.",
+              },
+              {
+                lines: "8-10",
+                label: "Shared infrastructure stays shared",
+                note: "The Alchemy state worker, reused one-time-PIN provider and unrelated healthy Tunnel remain outside the deletion allowlist.",
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ]}
+/>
+
+# Verification and review risks
+
+## Exercised proof
+
+| Check                      | Observed result                                                                                                                                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owning graph               | `bun scripts/android-preview-infra.ts destroy` at `707e3fa`: five owned Alchemy resources deleted, exit 0.                                                                                                                                                      |
+| AWS post-delete inventory  | 252 product/region read requests across 18 enabled regions. No failed requests or active instances, volumes, Elastic IPs, NAT gateways, load balancers, RDS compute, ECR repositories, ECS/EKS clusters, Lambda functions, SSM managed instances or log groups. |
+| Probe platform objects     | EC2 terminated; exact EBS volume absent; CloudFormation, VPC, subnet, security group, launch template, gateway, route table and IAM role/profile absent.                                                                                                        |
+| Cloudflare proof resources | Probe DNS and zone Access app return not found; Tunnel carries a deletion timestamp; verification token absent. Both abandoned PR-stage resource sets are absent.                                                                                               |
+| Orphaned mobile state      | `alchemy state delete --backend cloudflare <scope> --recursive --no-input` succeeded for the three allowlisted namespaces after live resource absence proof.                                                                                                    |
+| Production preservation    | Existing Worker identities and modification timestamps, database, bucket, domain and active account CI/signing token identities preserved. Home and sign-in pages rendered with no console errors.                                                              |
+| Source preservation        | Six experiment refs verified against a private Git bundle; four untracked plan/handoff files verified byte-for-byte against their archive; the main ignore patch retained.                                                                                      |
+| Local cleanup              | Four local experiment branches and all three remote experiment branches deleted; mobile, docs and old planning checkouts removed; missing delivery registration pruned. Two owned Xcode DerivedData caches, measured at 4.1G and 2.2G, removed.                 |
+| Delivery controls          | GitHub mobile-secret names absent; the identified proof robot token has a recorded `revokedAt` timestamp. Personal Expo credentials unchanged.                                                                                                                  |
+
+## Costs are not a universal zero
+
+The probe's stopped-host storage was a 50 GiB gp3 disk, approximately $4.80 for a full month at the observed regional rate. Its absence removes that continuing resource; deleting Git refs alone would not have done so. Cost Explorer's estimated October 7 gp3 charge of $0.0490555555 includes pre-deletion usage and can still appear on the next invoice. A full post-deletion billing day has not yet settled.
+
+The unrelated 2025 AMI and its two snapshots, the 2020 RDS final snapshot, older S3 bucket and SST stack remain intentionally preserved. Latest available billing still shows old snapshot and RDS backup usage. Three invalid AWS profiles and unauthenticated Cloudflare, Apple and Google subscription coverage remain outside any account-wide zero-cost claim.
+
+## Remaining prerequisites
+
+1. The owner must run the interactive project deletion in the retained mobile-preview checkout and confirm the password locally, not in chat. The investigation checkout lacked the EAS binary; its wrapper swallowed that spawn error and returned code 1. The known-working pinned CLI is in the original mobile-preview checkout.
+2. Confirm Expo project absence, then remove the retained original and reconstructed checkouts and the last local mobile-preview branch. The dedicated token is already revoked. Optional deletion of the now-inactive robot also requires sudo mode.
+3. The physical phone's preview app can be removed when the phone is available; it no longer has an experiment backend or a valid proof publishing credential.
+4. Older recovery-asset deletion or membership cancellation needs its own ownership/retention decision. No destructive account-wide inference was made.
+
+The proof brief must record the final main-based verification gate and the documentation PR's create/check/close preview lifecycle. Closing the documentation PR must remove its new preview too; this infrastructure inventory alone does not prove that later step.

@@ -1,0 +1,358 @@
+---
+title: Retire mobile experiments and remove billable leftovers
+kind: plan
+---
+
+# Objective and done criteria
+
+Abandon mobile development in this template. Remove the experiment's remote compute, storage, access configuration, delivery project and publishing credentials, then retire its branches and worktrees. Preserve the production web template and unrelated projects.
+
+This document retains the original authorized cleanup sequence. `audit.json` contains the initial read-only investigation. Actual Alchemy teardown and provider verification are recorded in `cleanup.json` and reviewed in `../mobile-retirement/plan.mdx`. AWS and Cloudflare experiment resources are gone; Expo project deletion remains blocked on owner reauthentication. Do not mistake the original inventory below for resources still running.
+
+Completion requires:
+
+- The Android CloudFormation stack is deleted, its instance is terminated and its root EBS volume is absent. Its network resources and IAM role/profile are absent too.
+- The Android Tunnel, DNS record, Access application/policies and verification service token are absent. Both abandoned PR stages have no Workers, D1 database, R2 bucket, custom domain or stage state left.
+- The Expo project is deleted, the repository's Expo secrets are removed and the project-only publishing token is revoked. Cached preview applications no longer have a live experiment backend.
+- Mobile-only development state is removed after confirming it has no remaining remote resources. The experiment branches and worktrees are retired only after their source, required teardown inputs and uncommitted work have been preserved.
+- `main` remains web-only. Its production Workers, database, files bucket, web CI, R2 signing credentials and shared Alchemy state infrastructure still work.
+- A post-cleanup provider inventory and later billing check distinguish zero experiment resources from older, unrelated storage and unverified subscriptions. Do not describe the entire account as cost-free while those remain.
+
+Non-goals: deleting production web data, rewriting the web template, upgrading Alchemy or Effect, cancelling unrelated subscriptions, deleting shared account infrastructure, or erasing Git history. The older AWS backups listed below need a separate owner decision.
+
+# Decisions
+
+| Decision            | Selected action                                                              | Reason and consequence                                                                                                                                                                        |
+| ------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code cutover        | Keep `main`; abandon unmerged mobile branches                                | Local and remote `main` are both `3ad872a`. Every experiment branch has that commit as its merge base. There is no merged mobile implementation to reverse.                                   |
+| Source preservation | Keep a private offline archive, then remove active experiment refs/worktrees | Preserves the actual delivery revision and teardown recipe without leaving an active deployment path. Never put `.env`, signing material or provider state output in Git or GitHub artifacts. |
+| AWS cleanup         | Destroy the owning probe graph, not merely stop the instance                 | The instance is already stopped, but its disk is still billable. Deployed CloudFormation and EC2 settings confirm that termination deletes the root disk.                                     |
+| Cloudflare cleanup  | Delete the probe and `pr-5` / `pr-6`, preserve `prod` and shared resources   | Exact live bindings establish which databases and buckets belong to each stage. No account-wide deletion or name-substring purge.                                                             |
+| Expo cleanup        | Delete the experiment project, rather than leave publishing disabled         | It contains experiment updates and no build records. The account is Free with no current estimated charges, but deleting the project also retires its hosted delivery surface.                |
+| Older AWS assets    | Preserve pending ownership/retention confirmation                            | Their dates and identities predate this mobile work. Deleting them with the emulator would silently expand the destructive scope.                                                             |
+| Billing signoff     | Resource absence plus a delayed usage check, with explicit coverage limits   | A stopped instance, empty current-object listing, successful destroy exit or zero current Expo estimate is not a universal zero-cost guarantee.                                               |
+
+# What is actually present
+
+## Branches and worktrees
+
+| Branch                               | Inspected revision                | Relationship to `main`                          | Retirement handling                                                                                                                                       |
+| ------------------------------------ | --------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mobile`                             | `fe2e59c`                         | Unmerged; PR #4 already closed                  | Preserve privately, then remove its worktree/ref.                                                                                                         |
+| `codex/mobile-preview-docs`          | `db94243`                         | Unmerged; PR #5 open                            | Close without merging; clean its PR stage.                                                                                                                |
+| `mobile-preview`                     | Local `c6c3f89`, remote `707e3fa` | Unmerged; PR #6 open                            | The local worktree is behind the deployed delivery code. Do not use its older probe graph for final teardown.                                             |
+| `codex/android-browser-delivery`     | `707e3fa`                         | Includes the protected Android browser probe    | Registered worktree `/private/tmp/proof-android-delivery` is missing. Reconstruct a detached teardown worktree at this commit before deleting the branch. |
+| `codex/android-browser-preview-plan` | `105ac89`                         | Unmerged planning checkout based on mobile work | Preserve its untracked Android plan and handoff, and transfer this retirement plan to a clean main-based worktree before removing it.                     |
+
+The other three present experiment worktrees were clean during inspection. The canonical main worktree has a user-owned `.prettierignore` change: the Expo stanza at lines 9 through 14. Preserve its patch, then remove only that obsolete stanza during execution, leaving `packages/create-proof/template/` and any other edits intact. This is local residue, not evidence that mobile merged into `main`.
+
+The complete per-branch path accounting is in `audit.json.repository.branches`. The delivery branch differs from `main` in 84 tracked paths, including the native app, preview contracts/controllers/domain, auth integration, CI publication, scripts, host tooling, dependencies and documentation. Retiring that branch avoids copying any of those changes into the web baseline. Do not merge this planning branch just to retain the plan.
+
+## AWS: confirmed experiment ownership
+
+Audit scope: the working `default` identity, account ending `9204`, across all 18 enabled regions. The only EC2 instance and EBS volume found are the probe in `ap-southeast-1`. No Elastic IP or NAT gateway was found in those regions. The additional ELB, RDS instance/cluster, ECR, ECS, EKS, Lambda, SSM parameter and CloudWatch log-group inventories were empty.
+
+| Resource                         | Exact identity                                                                                                     | Observed state and action                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Alchemy owner                    | `ProofAndroidPreviewProbe`, stage `probe`                                                                          | State lists host, Tunnel, DNS, Access and verification-token records. Destroy this scope.     |
+| CloudFormation                   | `Proof-android-preview-probe`                                                                                      | `CREATE_COMPLETE`; owns 12 resources with no `Retain` deletion policy.                        |
+| EC2                              | `i-0cbf34b60d90daa6b`                                                                                              | `stopped`, `m7i.xlarge`; terminate through its owner.                                         |
+| EBS                              | `vol-0ce56fb9c7f7b43d2`                                                                                            | Attached, encrypted 50 GiB gp3, `DeleteOnTermination: true`; verify absence after teardown.   |
+| VPC / subnet                     | `vpc-0ab73835a484bb431` / `subnet-074856165d13b1ece`                                                               | Owned by the probe stack.                                                                     |
+| Launch template / security group | `lt-07bf6dee2f2c9b649` / `sg-0492842db5066e72f`                                                                    | Owned by the probe stack.                                                                     |
+| Internet gateway / route table   | `igw-09bc8ad347883e473` / `rtb-0fd8690ac00a6f303`                                                                  | Owned by the probe stack, including attachment, route and subnet association.                 |
+| IAM role / profile               | `Proof-android-preview-probe-SsmRole-8OuM87lHgORh` / `Proof-android-preview-probe-SsmInstanceProfile-7J9GfLMNXCZo` | Delete through CloudFormation, not the shared operator identity.                              |
+| Temporary APK-transfer stack     | `ProofAndroidProbeArtifacts` / `Proof-android-probe-artifacts`                                                     | No current AWS stack/bucket or Alchemy stage records found. Do not recreate it to destroy it. |
+
+The retained probe disk accounts for the observed gp3 storage usage. AWS Cost Explorer reported these estimated Singapore storage charges for October 1 through October 6, excluding tax:
+
+| Usage type                 | Reported USD  | Meaning                                                                                                                             |
+| -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APS1-EBS:VolumeUsage.gp3` | `0.903225806` | The 50 GiB probe disk. A full-month projection from the observed GB-month rate is approximately **$4.80**, not an invoice forecast. |
+| `APS1-EBS:SnapshotUsage`   | `0.242597026` | Older snapshots described below, not the probe disk.                                                                                |
+
+[AWS instance billing rules](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html) explicitly distinguish stopped compute from ongoing EBS charges. The historical feasibility document's successful first-run cleanup does not prove that the later browser-delivery deployment was destroyed.
+
+## Cloudflare: exact removal manifest
+
+Audit scope: the authenticated account ending `6084`. Complete API inventory returned 83 Workers and 63 R2 buckets. The initial Wrangler R2 listing returned only 20 buckets and omitted Proof's buckets; the plan uses the complete API result and actual Worker bindings instead.
+
+| Scope                    | Remove                                                                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Probe Tunnel             | `ac37f457-8663-4e29-a6e2-0a6d0427c58e`, name `Proof-android-preview-probe`, currently `down`                                                              |
+| Probe DNS                | Record `c9154e515224c27b3278cd75763fab58`, the configured `ANDROID_PREVIEW_PROBE_HOSTNAME` CNAME                                                          |
+| Probe Access             | Zone-scoped app `89854cae-9729-40ff-ba65-f702e721c447`, named `Proof Android preview`; its Owner and Bounded verification policies                        |
+| Probe verification token | `9abeacbb-2ec8-4b24-9662-39565909581e`; expired, but the resource still exists                                                                            |
+| `pr-5` Workers           | `proof-backend-pr-5-a53lnxaohwxkqlbm`, `proof-website-pr-5-al5agltvdjxcd3cp`                                                                              |
+| `pr-5` D1 / R2           | Database `7f7a6d7d-d985-4465-91c0-9b17933e3546`; bucket `proof-files-pr-5-yqt2zyklv455lttt`, currently no objects                                         |
+| `pr-6` Workers           | `proof-backend-pr-6-ipsoowkvb6pedj75`, `proof-website-pr-6-4755laehfs67lctc`                                                                              |
+| `pr-6` D1 / R2           | Database `54a086c6-8a5c-4bdf-97fe-d8925092a4e2`; bucket `proof-files-pr-6-ixn77rm3rvkzaitq`, currently 3 objects totalling 469,401 bytes                  |
+| PR custom domains        | Domain resources `b8e5dc2d8deb62835794f4f058e41fc72528e7db` and `557b586140e824dcbfb70f7a3dcefd77abd8991b`; verify their associated DNS records disappear |
+| Mobile development state | `Proof/dev-expo-mobile`, `Proof/dev-mobile-preview`, `Proof/dev-mobile`; no corresponding remote Workers, D1 or R2 resources in the live inventories      |
+
+No container applications or container-registry images were listed. No Proof KV namespace or Durable Object binding was found. No full shared Android allocator platform was found; the actual retained deployment is the single-host probe.
+
+Preserve:
+
+- `proof-backend-prod-lza6dydesjheor4d`, `proof-website-prod-a3piyue7cj2m7ioa`, database `e0b78dd6-4647-43ac-a0e9-a8d3ee313ec9` and bucket `proof-files-prod-bnv7q5kq33awg5zy`.
+- The production custom domain and both `ProofGitHub` CI/R2-presign account tokens. They serve the web app, not just mobile.
+- `alchemy-state-store`, its shared Secrets Store and both Alchemy state secrets. Keep the existing account-wide one-time-PIN provider and unrelated healthy Tunnel.
+- `Proof/dev_fawwaz.alharbi`, `Proof/temp`, all other projects, DNS zones, account plans and credentials unless separately authorized.
+
+## Expo and GitHub
+
+The linked Expo project is `1e9b19eb-9be2-4c2f-b4ba-404811931171`, slug `proof`. Read-only EAS commands found no build records, update branches `pr-6`, `pr-99` and `development`, and one `development` channel. The account is Free, has no add-ons, and reports zero current estimated charges. Published updates are still hosted; Free is not the same as retired.
+
+GitHub PRs #5 and #6 are open. No queued or running Actions jobs and no retained Actions artifacts were found. Repository secret names `EXPO_TOKEN` and `EAS_PROJECT_ID` exist. The web deployment secrets must remain.
+
+# Complete source-controlled file accounting
+
+This plan deliberately does not prescribe an application-code removal PR. The selected baseline already excludes mobile. Branch/worktree retirement removes active experimental checkouts, not files from main's Git tree. Every tracked path in those experimental deltas is preserved in the audit appendix.
+
+<FileTree
+  id="mobile-retirement-file-ledger"
+  entries={[
+    {
+      path: "plans/mobile-abandonment/plan.mdx",
+      change: "added",
+      note: "Authorized retirement decisions, ordered runbook, ownership boundaries and completion checks, with a link to executed outcomes.",
+    },
+    {
+      path: "plans/mobile-abandonment/audit.json",
+      change: "added",
+      note: "Sanitized initial read-only audit and complete experimental branch path deltas. Preserved separately from execution receipts.",
+    },
+    {
+      path: "plans/mobile-abandonment/cleanup.json",
+      change: "added",
+      note: "Sanitized Alchemy execution receipts, live absence checks, production preservation, source archival and explicit remaining blockers.",
+    },
+    {
+      path: "plans/mobile-retirement/plan.mdx",
+      change: "added",
+      note: "Operational recap of observed cleanup, compatibility boundaries, real verification and remaining owner-authentication requirements.",
+    },
+  ]}
+/>
+
+The canonical main worktree's uncommitted Expo `.prettierignore` stanza was removed after archiving the user patch. The committed baseline already lacked those lines, so that local cleanup is not part of the documentation PR's source-controlled file ledger.
+
+Intentionally unchanged: application source, contracts, migrations, web/generated routes, root dependency versions and lockfile, production workflows, `README.md`, `docs/faq.md`, `AGENTS.md`, shared stack identity and the existing web template. Do not remove `aws4fetch` or R2 signing credentials: S3-compatible signing for Cloudflare R2 does not make them disposable AWS-emulator resources.
+
+# Implementation sequence
+
+All destructive commands below are proposed steps for an approved cleanup run, not commands exercised during this investigation.
+
+## 1. Preserve source and pin teardown ownership
+
+1. Create the retirement worktree by running `bun run wt retire-mobile` **from the canonical main checkout**, not from a mobile checkout. `scripts/wt.ts:79` branches from the caller's HEAD. Transfer only `plans/mobile-abandonment/` into it.
+2. Make a private offline Git bundle of the five experiment branches and remote `mobile-preview` ref. Separately preserve the untracked Android plan/handoff and the main `.prettierignore` patch. Verify the bundle can resolve `707e3fa` and `105ac89`. Preserve this retirement plan outside the worktree that will be removed.
+3. Reconstruct a detached teardown worktree at `707e3fafc3f6f95e2b784f56a75ed70d39078480`. This is the latest deployed graph and includes `scripts/android-preview-infra.ts`, Access ownership and the Alchemy Tunnel patch. Do not reset the older `mobile-preview` worktree.
+4. Supply the original probe environment privately: `STACK=Proof` remains the source literal, region `ap-southeast-1`, AMI `ami-095f155a67469a548`, original probe hostname, the Owner policy's reviewer address, original verification setting and the working Cloudflare account/token. Recover the reviewer address from the existing Access Owner policy without printing it or sending a login email. Preserve it only in private operator input, not the plan or audit.
+5. Confirm the original AWS account with STS and list `ProofAndroidPreviewProbe/probe` state before mutating. The old stored admin credential and canonical main `.env` token failed authentication; the existing mobile-preview `.env` credential succeeded. Preserve that working credential until teardown finishes. No `update-stack-secrets` run or parent-token rotation is necessary.
+
+## 2. Prevent republishing and close the abandoned PRs
+
+1. Remove only repository secrets `EXPO_TOKEN` and `EAS_PROJECT_ID`, preventing further native publication from retained branches.
+2. Close PR #5 and PR #6 without merging. Preserve their head refs until the teardown worktree/archive is ready.
+3. Let the closed-PR cleanup jobs finish. Their web-stage cleanup does **not** delete the separate EC2 probe or Expo project. Observe actual outcomes before running a competing manual destroy on the same stage.
+4. If a close job fails, use the pinned deployment code and original stage inputs for manual cleanup. The canonical main uses Alchemy beta.77, while PR #6 deployed beta.79 with `FilesBucket.forceDestroy: true`. Do not assume a main-based destroy will correctly empty the nonempty PR #6 bucket or understand later graph additions.
+
+## 3. Destroy the Android probe, including storage
+
+From the reconstructed delivery worktree with private original inputs loaded:
+
+```bash
+bun scripts/android-preview-infra.ts destroy
+```
+
+The wrapper exports the configured AWS CLI credentials into the child process and invokes Alchemy destroy for the probe at stage `probe`. It does not rotate the operator's credential.
+
+Verify the exact instance, volume, stack, network resources, role/profile, Tunnel, DNS record, Access app and verification-token resource against the manifest. Probe Access is zone-scoped: the account-level Access application list was empty and cannot prove it is gone.
+
+If Alchemy cannot complete teardown, keep its state and code while reconciling the error. The narrow fallback for the known AWS owner is:
+
+```bash
+aws cloudformation delete-stack \
+  --region ap-southeast-1 \
+  --stack-name Proof-android-preview-probe
+aws cloudformation wait stack-delete-complete \
+  --region ap-southeast-1 \
+  --stack-name Proof-android-preview-probe
+```
+
+Then remove only the manifest's remaining Cloudflare resources through their exact IDs and rerun absence checks. Do not delete state first, do not replace the AWS deletion with `stop-instances`, and do not create a replacement stack to repair a teardown. Record any partial failure, including `DELETE_FAILED`, until resolved.
+
+The temporary artifacts stack and bucket were already absent. Execute no deploy or destroy for that absent scope unless a fresh inventory finds a resource that still needs deletion.
+
+## 4. Finish PR-stage and state cleanup
+
+For each abandoned stage, use the deployment-compatible graph only after its CI cleanup job has finished:
+
+```bash
+bunx alchemy destroy --stage pr-5 --yes
+bunx alchemy destroy --stage pr-6 --yes
+```
+
+Restore the exact stage identity, sender, domain and R2 deployment inputs used by that stage; keep the CI-token credentials available. Do not set `PULL_REQUEST` merely to run teardown, and do not aim these commands at `prod`.
+
+Verify Workers, custom domains/DNS, D1, R2 and stage-specific auth state are gone. If a bucket is nonempty, delete only that stage's confirmed objects before deleting the bucket; never purge a name-prefix match across the account. The `pr-6` bucket is preview-owned; its three objects are intentionally deleted with that abandoned stage. No production bucket is in this allowlist.
+
+Once live provider inventories establish absence, remove leftover records under `Proof/pr-5`, `Proof/pr-6`, the probe scope and the three mobile-only development scopes. `alchemy state delete` removes state records, not cloud resources. Preserve all shared state infrastructure and unrelated stage namespaces.
+
+## 5. Retire Expo and installed preview clients
+
+1. Check `bun run eas project:info` in the original mobile-capable checkout and verify the exact project ID before deletion. Capture only nonsecret metadata required for the retirement receipt.
+2. Delete that project using the installed EAS CLI's verified project-deletion command. Set `EXPO_PROJECT_FULL_NAME` privately to the exact full name reported by project info:
+
+```bash
+bun run eas project:delete 1e9b19eb-9be2-4c2f-b4ba-404811931171 \
+  --dangerously-confirm-deletion "$EXPO_PROJECT_FULL_NAME" \
+  --json --non-interactive
+```
+
+3. Identify and revoke the proof CI publishing token or robot credential in Expo's access-token settings. Do not revoke the user's unrelated personal token. If ownership is not apparent, complete project and GitHub-secret deletion and document that remaining credential decision rather than guessing.
+4. Confirm the project is absent and re-read EAS account usage. Do not buy a paid plan to access unavailable audit logs.
+5. Uninstall the experiment's preview app (`dev.fawwaz.proof.preview`) from devices/simulators when desired. Remove only proof-specific local emulator data and signing/build artifacts; leave shared SDKs, certificates and unrelated apps alone. Device cleanup is not a substitute for cloud deletion.
+
+The Apple Developer and Google Play membership renewals are separate from Expo. No authenticated billing evidence for either was available. Check their actual subscriptions before making any account-wide zero-cost statement; do not cancel a membership serving other apps.
+
+## 6. Retire branches/worktrees and record the proof
+
+1. Recheck worktree changes immediately before removal. The current investigation's snapshot is not authorization to erase later user edits.
+2. Remove the clean `mobile`, `mobile-preview`, docs, Android plan and reconstructed teardown worktrees only after cloud cleanup succeeds and the archive is verified. Use explicit Git worktree operations, not an unchecked `wt --remove`: `scripts/wt.ts:60` force-removes the checkout and can destroy untracked files.
+3. Prune only the confirmed missing delivery-worktree registration after a dry-run inspection. Delete the archived local and remote experiment branches after PR closure. Do not delete `main` or the new retirement branch.
+4. Remove the obsolete Expo stanza from the main worktree's `.prettierignore`, preserving the archived patch and any other edits. Delete experiment-only `.env` copies only after they are no longer needed for teardown; never commit them.
+5. Update this plan and audit with sanitized deletion receipts. Run the main-based verification gate, then open a documentation PR against `main` using the repository's proof-brief sections: What changed, What fought back, How to check the proof.
+6. That documentation PR creates its own ordinary web preview. Close or merge it, then verify its new `pr-N` stage is also destroyed so the cleanup report does not strand a new preview.
+
+# Older AWS assets and unresolved billing coverage
+
+These are not owned by the Android probe. They remain possible account costs even after the mobile cleanup:
+
+| Resource                                          | Evidence                                                                                                                       | Safe disposition                                                                                                                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AMI `ami-0a8b9383444a48fc4`, `sig_game_dev_image` | Created in 2025; references snapshots `snap-0cf564f7a1074c84e` and `snap-0c0261bf9db1b6591`, with logical sizes 50 and 250 GiB | Preserve until owner confirms retention. If abandoned, deregister the AMI first, then delete its exclusively owned snapshots. Logical disk capacity is not the billable incremental snapshot size. |
+| RDS snapshot `myfirstmysql-final-snapshot`        | Ohio, 20 GiB allocated, created in 2020; no current DB instance or cluster found                                               | Preserve until owner confirms it is not needed. Estimated October RDS usage was nonzero.                                                                                                           |
+| S3 bucket `mycoool`                               | Ohio, created in 2019; current-object listing is empty                                                                         | Not an emulator artifact. Inspect object versions, delete markers, multipart uploads and ownership before considering deletion. Current emptiness alone does not establish zero stored history.    |
+| `SSTConsole-a6leb8e8i0936fqn9bve1eab`             | Older Virginia stack with an SST IAM role and custom connector                                                                 | No compute/storage found through this stack. Keep unless the owner also retires SST; never infer Android ownership.                                                                                |
+
+Three configured AWS profiles (`fawwaz1427_maybe`, `supabase_migration`, `supabase_prod`) returned `InvalidClientTokenId`, so their account identities/resources could not be verified. Inventorying the working account cannot clear those identities.
+
+Cloudflare resource reads succeeded through existing credentials, but subscription reads lacked billing authorization. Its account plans and other projects were not certified cost-free. Audit actual billing/subscriptions with billing-authorized access; cancel only a confirmed mobile-exclusive purchase. Source and live inventories showed no additional project-owned provider requiring deployment, but unconnected accounts and independent paid memberships remain outside verified coverage.
+
+# Risks and mitigations
+
+| Risk                                                                                 | Mitigation                                                                                                                                    |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stopped host continues to incur storage charges or can restart                       | Destroy its owner and verify disk absence, not merely `stopped`. Remove deployment/publication paths afterward.                               |
+| Older source misses Access resources during teardown                                 | Reconstruct the exact delivery revision and inspect all six probe state records before deletion.                                              |
+| Credentials disappear before destroy can evaluate                                    | Keep working Cloudflare/AWS inputs and the original graph until every owned resource is absent. Delete only Expo publishing capability early. |
+| Closing PRs appears successful but leaves storage                                    | Inspect provider resources; PR #6's bucket is nonempty and uses a later Alchemy graph than main.                                              |
+| User source, signing material or credentials are lost/leaked during worktree removal | Private archive, fresh change inspection, non-forced removal and no secrets in the bundle, plan, GitHub artifact or audit.                    |
+| Broad cleanup removes production or shared services                                  | Exact allowlist by owner and IDs; preserve `prod`, shared Alchemy state, shared identity provider, R2 signing and operator keys.              |
+| Account-wide zero-cost claim hides old backups or subscriptions                      | Keep separate experiment and account-wide signoffs, complete ownership decisions and check delayed billing.                                   |
+
+# Verification
+
+## Investigation already exercised
+
+`audit.json.commandsExercised` records the real source/provider commands. The audit called live AWS, Cloudflare, GitHub and EAS services; it did not run repo tests, send auth emails or claim cleanup success. AWS regional read inventories completed without a product/region failure for the listed coverage. Available credential failures and subscription/audit-log limitations are recorded separately.
+
+## Cleanup acceptance
+
+<Checklist
+  id="mobile-retirement-acceptance"
+  items={[
+    {
+      id: "aws-absent",
+      label: "Probe stack, root volume, network resources and IAM role/profile are absent",
+      note: "EC2 is terminated or no longer returned. Absence of the exact volume ID is mandatory.",
+    },
+    {
+      id: "cf-probe-absent",
+      label: "Probe Tunnel, DNS, zone Access app/policies and verification service token are absent",
+      note: "Use the exact IDs, including the zone-scoped Access list.",
+    },
+    {
+      id: "cf-pr-absent",
+      label: "Both abandoned PR stages have no Worker/domain/DNS/D1/R2 or stage state left",
+      note: "Check pr-5 and pr-6 against the live manifest, not a destroy exit code.",
+    },
+    {
+      id: "expo-retired",
+      label: "Expo project and publishing capability are retired",
+      note: "Project lookup reports absent, repository Expo secrets are absent, and the correctly identified CI credential is revoked.",
+    },
+    {
+      id: "source-retired",
+      label: "Experiment checkouts and refs are retired after verified preservation",
+      note: "The delivered plan is on a main-based worktree; user edits and the source archive are retained privately.",
+    },
+    {
+      id: "web-preserved",
+      label: "Production web stack remains intact and the main-based check passes",
+      note: "Run bun run check. Open the existing production home and login page without triggering an email send. Keep its database, bucket, domain and signing credentials.",
+    },
+    {
+      id: "billing-followthrough",
+      label: "Post-cleanup resource and billing evidence separates experiment costs from unrelated costs",
+      note: "After usage data catches up, no new probe gp3 or compute usage may accrue. Earlier accrued charges can still appear on the next invoice.",
+    },
+    {
+      id: "cleanup-pr-closed",
+      label: "The documentation PR's ordinary preview is also destroyed after closure",
+      note: "Do not leave a new pr-N stage behind while reporting cleanup.",
+    },
+  ]}
+/>
+
+Useful exact read-only post-deletion checks include:
+
+```bash
+aws ec2 describe-instances --region ap-southeast-1 \
+  --instance-ids i-0cbf34b60d90daa6b --output json --no-cli-pager
+aws ec2 describe-volumes --region ap-southeast-1 \
+  --volume-ids vol-0ce56fb9c7f7b43d2 --output json --no-cli-pager
+aws cloudformation describe-stacks --region ap-southeast-1 \
+  --stack-name Proof-android-preview-probe --output json --no-cli-pager
+wrangler tunnel list
+wrangler d1 list --json
+bunx alchemy state list --backend cloudflare ProofAndroidPreviewProbe/probe --recursive --no-input
+```
+
+For deleted exact IDs, record the provider's not-found result as expected evidence, not a blanket ignored error. Reinventory enabled regions and complete Cloudflare pages, corroborate production preservation, and compare delayed AWS usage by type. Never use a zero total that hides a failed request.
+
+Primary operational references: [EAS CLI deletion and inventory](https://docs.expo.dev/eas/cli/), [Expo token revocation](https://docs.expo.dev/accounts/programmatic-access/), [Cloudflare Tunnel commands](https://developers.cloudflare.com/workers/wrangler/commands/tunnel/). Teardown source basis: `707e3fa:stacks/android-preview-probe.ts`, `scripts/android-preview-infra.ts`, `stacks/android-preview-artifacts.ts`, `.github/workflows/pr-preview.yml`; stage-storage basis: `apps/backend/config/storage.ts:8-14`; baseline/worktree basis: `main:package.json`, `identity.ts:9`, `scripts/wt.ts:56-63,74-88`.
+
+# Open questions
+
+The mobile retirement approach is selected. The remaining destructive-scope decision concerns older AWS backups, not whether to keep developing mobile.
+
+<QuestionForm
+  id="legacy-storage-disposition"
+  questions={[
+    {
+      id: "older-aws-backups",
+      title: "Should cleanup also retire the older AWS AMI and RDS backups?",
+      subtitle: "They predate the mobile experiment and are still associated with storage charges. No backup deletion was performed.",
+      mode: "single",
+      options: [
+        {
+          id: "preserve-for-review",
+          label: "Preserve pending owner review",
+          detail: "Execute the mobile teardown first. Confirm retention requirements before deleting old recovery assets.",
+          recommended: true,
+        },
+        {
+          id: "retire-after-ownership",
+          label: "Also retire confirmed unused backups",
+          detail:
+            "After ownership and retention checks, deregister the old AMI, delete its exclusive snapshots and delete the old RDS snapshot. Verify other account costs separately.",
+        },
+      ],
+      required: true,
+    },
+  ]}
+  submitLabel="Record cleanup scope"
+/>

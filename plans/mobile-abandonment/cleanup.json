@@ -1,0 +1,711 @@
+{
+  "startedAt": "2026-10-07T08:02:47.183604+00:00",
+  "authorizedScope": "mobile experiment and mobile-only infra, preserving production/shared infrastructure and unrelated old backups",
+  "archiveBundleVerified": true,
+  "operations": [
+    {
+      "operation": "archive source and reconstruct teardown",
+      "result": "bundle verified and untracked plan/local patch preserved",
+      "teardownRevision": "707e3fafc3f6f95e2b784f56a75ed70d39078480"
+    },
+    {
+      "operation": "remove native CI publishing secrets",
+      "secretNames": ["EXPO_TOKEN", "EAS_PROJECT_ID"],
+      "result": "deleted via gh secret delete"
+    },
+    {
+      "operation": "Alchemy destroy Android probe",
+      "startedAt": "2026-10-07T08:06:21.323188+00:00",
+      "finishedAt": "2026-10-07T08:07:09.513166+00:00",
+      "command": "bun scripts/android-preview-infra.ts destroy",
+      "revision": "707e3fafc3f6f95e2b784f56a75ed70d39078480",
+      "exitCode": 0,
+      "scope": "ProofAndroidPreviewProbe/probe"
+    },
+    {
+      "operation": "close abandoned PRs and destroy their previews",
+      "prs": [5, 6],
+      "cleanupRuns": [37591485397, 37591485133],
+      "result": "Both CI cleanup runs succeeded; provider resources and stage state absent"
+    },
+    {
+      "operation": "prune mobile-only Alchemy development state",
+      "providerAbsenceVerifiedFirst": true,
+      "scopes": [
+        {
+          "scope": "Proof/dev-expo-mobile",
+          "exitCode": 0
+        },
+        {
+          "scope": "Proof/dev-mobile-preview",
+          "exitCode": 0
+        },
+        {
+          "scope": "Proof/dev-mobile",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "operation": "Expo project delete attempted",
+      "projectId": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+      "result": "Refused before deletion: owner password confirmation required to enter Expo sudo mode",
+      "resourcesDeleted": false
+    },
+    {
+      "operation": "revoke dedicated Expo CI publishing token",
+      "actorId": "b45afba7-6e48-4243-883d-c0d38231de26",
+      "tokenId": "5cb4a526-0ef0-4eb4-8ef9-19d9bb2ecf59",
+      "revokedAt": "2026-10-07T23:24:51.869Z",
+      "personalCredentialsUnchanged": true
+    },
+    {
+      "operation": "retire archived clean experiment worktrees",
+      "removed": ["mobile", "mobile-preview-docs"],
+      "preservedPendingExpoAuth": "mobile-preview"
+    },
+    {
+      "operation": "prune confirmed missing delivery worktree registration",
+      "path": "/private/tmp/proof-android-delivery",
+      "result": "pruned"
+    },
+    {
+      "operation": "remove archived planning worktree",
+      "result": "removed after byte-for-byte untracked archive and preview shutdown"
+    },
+    {
+      "operation": "delete archived local experiment branches",
+      "branches": ["mobile", "codex/mobile-preview-docs", "codex/android-browser-preview-plan", "codex/android-browser-delivery"]
+    },
+    {
+      "operation": "remove obsolete main Expo ignore stanza",
+      "result": "Removed exactly six obsolete lines; original user patch archived"
+    },
+    {
+      "operation": "remove proof Xcode DerivedData",
+      "workspaceOwnershipVerified": true,
+      "paths": ["ProofPreview-gnmbnllylqvhelhjcmyfrobwlzog", "Proof-hcbqnrslcgsbyhdwwiudqrgcsiqr"],
+      "observedSizes": ["4.1G", "2.2G"]
+    },
+    {
+      "operation": "uninstall known proof apps from local simulators",
+      "results": [
+        {
+          "device": "21DAD9E3-DA13-4FB2-90A8-A9B298D4238A",
+          "bundleId": "dev.fawwaz.proof.preview",
+          "exitCode": 149,
+          "error": "An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=405):\nUnable to lookup in current state: Shutdown"
+        },
+        {
+          "device": "380AF4F3-4C56-44A7-8F14-829E0B086DE2",
+          "bundleId": "dev.fawwaz.proof",
+          "exitCode": 149,
+          "error": "An error was encountered processing the command (domain=com.apple.CoreSimulator.SimError, code=405):\nUnable to lookup in current state: Shutdown"
+        }
+      ]
+    },
+    {
+      "operation": "delete archived remote experiment branches",
+      "branches": ["mobile", "mobile-preview", "codex/mobile-preview-docs"],
+      "result": "deleted"
+    }
+  ],
+  "verification": {
+    "productionBefore": {
+      "/": {
+        "status": 403,
+        "note": "Initial urllib GET was forbidden before any infrastructure teardown"
+      }
+    },
+    "baselinePreservedResourceIds": {
+      "workers": ["proof-backend-prod-lza6dydesjheor4d", "proof-website-prod-a3piyue7cj2m7ioa"],
+      "buckets": ["proof-files-prod-bnv7q5kq33awg5zy"],
+      "domainIds": ["f668ae77eb3a90e7d52c2d02974a257580a81b11"],
+      "d1Ids": ["e0b78dd6-4647-43ac-a0e9-a8d3ee313ec9"],
+      "accountTokenIds": ["f65b2a7b00f7075bad703a02ea8fd826", "7e1d03d6e1c9de2505706068cc3a26d8"],
+      "sharedStateWorker": ["alchemy-state-store"]
+    },
+    "androidProbeAws": {
+      "instances": {
+        "ok": true,
+        "data": [
+          [
+            {
+              "id": "i-0cbf34b60d90daa6b",
+              "state": "terminated"
+            }
+          ]
+        ],
+        "error": null
+      },
+      "volumes": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "vpcs": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "subnets": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "securityGroups": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "launchTemplates": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "internetGateways": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "routeTables": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "cfnStack": {
+        "ok": false,
+        "data": null,
+        "error": "An error occurred (ValidationError) when calling the DescribeStacks operation: Stack with id Proof-android-preview-probe does not exist"
+      },
+      "iamRole": {
+        "ok": false,
+        "data": null,
+        "error": "An error occurred (NoSuchEntity) when calling the GetRole operation: The role with name Proof-android-preview-probe-SsmRole-8OuM87lHgORh cannot be found."
+      },
+      "instanceProfile": {
+        "ok": false,
+        "data": null,
+        "error": "An error occurred (NoSuchEntity) when calling the GetInstanceProfile operation: Instance Profile Proof-android-preview-probe-SsmInstanceProfile-7J9GfLMNXCZo cannot be found."
+      }
+    },
+    "androidProbeCloudflare": {
+      "accessApp": {
+        "ok": false,
+        "status": 404,
+        "errors": [
+          {
+            "code": 11021,
+            "message": "access.api.error.unknown_application"
+          }
+        ],
+        "deletedAt": null,
+        "targetStillListed": null
+      },
+      "dns": {
+        "ok": false,
+        "status": 404,
+        "errors": [
+          {
+            "code": 81044,
+            "message": "Record does not exist."
+          }
+        ],
+        "deletedAt": null,
+        "targetStillListed": null
+      },
+      "tunnel": {
+        "ok": true,
+        "status": null,
+        "errors": [],
+        "deletedAt": "2026-10-07T08:06:34.672789Z",
+        "targetStillListed": null
+      },
+      "serviceTokens": {
+        "ok": true,
+        "status": null,
+        "errors": [],
+        "deletedAt": null,
+        "targetStillListed": false
+      }
+    },
+    "abandonedPrStages": {
+      "remainingWorkerIds": [],
+      "remainingBucketNames": [],
+      "remainingD1Ids": [],
+      "remainingDomainIds": [],
+      "remainingMobileDevResources": [],
+      "inventoryCounts": {
+        "workers": 79,
+        "r2": 61,
+        "domains": 25,
+        "d1": 67
+      },
+      "dnsRecordsAbsent": ["8520ccdeb229aa3ba201c0d48fb8fb64", "f7f67b7c26e49ba3056048ef4fd8c6d1"]
+    },
+    "preservedAlchemyScopes": ["dev_fawwaz.alharbi", "prod", "temp"],
+    "preservedUntrackedPlans": [
+      {
+        "path": "plans/android-browser-previews/plan.mdx",
+        "sha256": "1422e985d02a361b73981f789ca28053ee47ee58c898fc3924f2c538807c07a9"
+      },
+      {
+        "path": "plans/android-browser-previews/handoff.md",
+        "sha256": "96d7d7b0d6ef3d21d6bdc3ac62d56a089d3d4853af1a1941c51767e2a87e9647"
+      },
+      {
+        "path": "plans/mobile-abandonment/plan.mdx",
+        "sha256": "ac38d9bddefb078bbc0db5d531adecb5c78517618b1ad235a8a99fe4bd445d19"
+      },
+      {
+        "path": "plans/mobile-abandonment/audit.json",
+        "sha256": "beb2805e00823e989e0e40b24f8e0011976a55fcd0613adf8e6f194b7af326c1"
+      }
+    ],
+    "ownedXcodeCachesAbsent": true,
+    "awsRegionalReinventory": {
+      "regions": [
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-northeast-3",
+        "ap-south-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ca-central-1",
+        "eu-central-1",
+        "eu-north-1",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "sa-east-1",
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2"
+      ],
+      "counts": {
+        "ap-south-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "eu-north-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "eu-west-3": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "eu-west-2": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "eu-west-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-northeast-3": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-northeast-2": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-northeast-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ca-central-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "sa-east-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-southeast-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-southeast-2": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "eu-central-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "ap-southeast-3": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "us-east-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "us-east-2": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "us-west-1": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        },
+        "us-west-2": {
+          "activeInstances": 0,
+          "volumes": 0,
+          "elasticIps": 0,
+          "natGateways": 0,
+          "loadBalancers": 0,
+          "classicLoadBalancers": 0,
+          "rdsInstances": 0,
+          "rdsClusters": 0,
+          "ecrRepositories": 0,
+          "ecsClusters": 0,
+          "eksClusters": 0,
+          "lambdaFunctions": 0,
+          "ssmManagedInstances": 0,
+          "logGroups": 0
+        }
+      },
+      "failedRequests": [],
+      "completedAt": "2026-10-07T23:32:33.390639+00:00"
+    },
+    "simulatorExperimentAppsAbsent": [
+      {
+        "device": "21DAD9E3-DA13-4FB2-90A8-A9B298D4238A",
+        "bundleId": "dev.fawwaz.proof.preview",
+        "uninstallExitCode": 0,
+        "postUninstallLookupError": "An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=2):\nThe operation couldn’t be completed. No such file or directory\nNo such file or directory",
+        "previousShutdownStateRestored": true
+      },
+      {
+        "device": "380AF4F3-4C56-44A7-8F14-829E0B086DE2",
+        "bundleId": "dev.fawwaz.proof",
+        "uninstallExitCode": 0,
+        "postUninstallLookupError": "An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=2):\nThe operation couldn’t be completed. No such file or directory\nNo such file or directory",
+        "previousShutdownStateRestored": true
+      }
+    ],
+    "productionAndSharedPreserved": {
+      "productionWorkerIdsStillPresent": true,
+      "productionWorkersNotRedeployed": true,
+      "productionBucketStillPresent": true,
+      "productionD1StillPresent": true,
+      "productionDomainsStillPresent": true,
+      "productionAccountTokensPreserved": true,
+      "sharedAlchemyStateWorkerPreserved": true,
+      "sharedOnetimepinProviderPreserved": true,
+      "unrelatedHealthyTunnelPreserved": true
+    },
+    "productionBrowserAfter": {
+      "homeTitle": "Proof",
+      "homeRendered": true,
+      "loginEmailTextboxRendered": true,
+      "loginSendCodeButtonRendered": true,
+      "consoleErrors": [],
+      "authEmailSent": false
+    },
+    "unrelatedBackupsPreserved": {
+      "ami": {
+        "ok": true,
+        "data": ["ami-0a8b9383444a48fc4"],
+        "error": null
+      },
+      "snapshots": {
+        "ok": true,
+        "data": ["snap-0cf564f7a1074c84e", "snap-0c0261bf9db1b6591"],
+        "error": null
+      },
+      "rdsSnapshot": {
+        "ok": true,
+        "data": ["myfirstmysql-final-snapshot"],
+        "error": null
+      }
+    },
+    "awsDailyBillingAfter": {
+      "days": [
+        {
+          "period": {
+            "Start": "2026-10-06",
+            "End": "2026-10-07"
+          },
+          "estimated": true,
+          "groups": [
+            {
+              "usageType": "APS1-EBS:SnapshotUsage",
+              "costUsd": "0.0485194052",
+              "usage": "0.9703881048",
+              "usageUnit": "GB-Month"
+            },
+            {
+              "usageType": "APS1-EBS:VolumeUsage.gp3",
+              "costUsd": "0.1548387096",
+              "usage": "1.6129032264",
+              "usageUnit": "GB-Month"
+            },
+            {
+              "usageType": "USE2-RDS:ChargedBackupUsage",
+              "costUsd": "0.0033518145",
+              "usage": "0.0352822581",
+              "usageUnit": "GB-Month"
+            }
+          ]
+        },
+        {
+          "period": {
+            "Start": "2026-10-07",
+            "End": "2026-10-08"
+          },
+          "estimated": true,
+          "groups": [
+            {
+              "usageType": "APS1-EBS:VolumeUsage.gp3",
+              "costUsd": "0.0490555555",
+              "usage": "0.5109953705",
+              "usageUnit": "GB-Month"
+            }
+          ]
+        }
+      ],
+      "warning": "Cost Explorer data is estimated and delayed. The deletion day includes pre-deletion volume usage. No zero-account-cost claim is made."
+    },
+    "repositorySecrets": {
+      "expoSecretNamesAbsent": ["EXPO_TOKEN", "EAS_PROJECT_ID"],
+      "productionCredentialNamesPreserved": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
+    },
+    "expoProjectLookup": {
+      "data": {
+        "app": {
+          "byId": {
+            "id": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+            "slug": "proof"
+          }
+        }
+      }
+    },
+    "providerScope": "AWS account 063381839204 across 18 enabled regions and Cloudflare account 5552227bfaaefe624309a42b810d6084"
+  },
+  "remaining": [
+    {
+      "item": "Physical iPhone installed preview app",
+      "reason": "Paired physical device unavailable; no cloud or publishing cost. Shared signing material preserved."
+    },
+    {
+      "item": "Unrelated older AWS backups and unavailable account/subscription coverage",
+      "reason": "Older AMI snapshots and RDS snapshot are intentionally retained. Three invalid AWS profiles and unauthenticated Cloudflare/Apple/Google billing cannot be certified cost-free."
+    },
+    {
+      "item": "Expo project and optional robot deletion",
+      "reason": "Owner sudo-mode confirmation required; project remains Free. Dedicated CI token revoked and GitHub publishing secrets absent."
+    }
+  ],
+  "recordedAt": "2026-10-07T23:35:55.441785+00:00",
+  "status": "infrastructure-retired-owner-authentication-pending"
+}
