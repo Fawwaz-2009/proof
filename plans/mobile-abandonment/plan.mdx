@@ -18,19 +18,19 @@ Completion requires:
 - `main` remains web-only. Its production Workers, database, files bucket, web CI, R2 signing credentials and shared Alchemy state infrastructure still work.
 - A post-cleanup provider inventory and later billing check distinguish zero experiment resources from older, unrelated storage and unverified subscriptions. Do not describe the entire account as cost-free while those remain.
 
-Non-goals: deleting production web data, rewriting the web template, upgrading Alchemy or Effect, cancelling unrelated subscriptions, deleting shared account infrastructure, or erasing Git history. The older AWS backups listed below need a separate owner decision.
+Non-goals: deleting production web data, rewriting the web template, upgrading Alchemy or Effect, cancelling unrelated subscriptions, deleting shared account infrastructure, or erasing Git history. The owner subsequently authorized deletion of both older AWS backup sets; that explicit scope expansion and its completed absence checks are recorded in `cleanup.json`.
 
 # Decisions
 
-| Decision            | Selected action                                                              | Reason and consequence                                                                                                                                                                        |
-| ------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Code cutover        | Keep `main`; abandon unmerged mobile branches                                | Local and remote `main` are both `3ad872a`. Every experiment branch has that commit as its merge base. There is no merged mobile implementation to reverse.                                   |
-| Source preservation | Keep a private offline archive, then remove active experiment refs/worktrees | Preserves the actual delivery revision and teardown recipe without leaving an active deployment path. Never put `.env`, signing material or provider state output in Git or GitHub artifacts. |
-| AWS cleanup         | Destroy the owning probe graph, not merely stop the instance                 | The instance is already stopped, but its disk is still billable. Deployed CloudFormation and EC2 settings confirm that termination deletes the root disk.                                     |
-| Cloudflare cleanup  | Delete the probe and `pr-5` / `pr-6`, preserve `prod` and shared resources   | Exact live bindings establish which databases and buckets belong to each stage. No account-wide deletion or name-substring purge.                                                             |
-| Expo cleanup        | Delete the experiment project, rather than leave publishing disabled         | It contains experiment updates and no build records. The account is Free with no current estimated charges, but deleting the project also retires its hosted delivery surface.                |
-| Older AWS assets    | Preserve pending ownership/retention confirmation                            | Their dates and identities predate this mobile work. Deleting them with the emulator would silently expand the destructive scope.                                                             |
-| Billing signoff     | Resource absence plus a delayed usage check, with explicit coverage limits   | A stopped instance, empty current-object listing, successful destroy exit or zero current Expo estimate is not a universal zero-cost guarantee.                                               |
+| Decision            | Selected action                                                              | Reason and consequence                                                                                                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Code cutover        | Keep `main`; abandon unmerged mobile branches                                | Local and remote `main` are both `3ad872a`. Every experiment branch has that commit as its merge base. There is no merged mobile implementation to reverse.                                                              |
+| Source preservation | Keep a private offline archive, then remove active experiment refs/worktrees | Preserves the actual delivery revision and teardown recipe without leaving an active deployment path. Never put `.env`, signing material or provider state output in Git or GitHub artifacts.                            |
+| AWS cleanup         | Destroy the owning probe graph, not merely stop the instance                 | The instance is already stopped, but its disk is still billable. Deployed CloudFormation and EC2 settings confirm that termination deletes the root disk.                                                                |
+| Cloudflare cleanup  | Delete the probe and `pr-5` / `pr-6`, preserve `prod` and shared resources   | Exact live bindings establish which databases and buckets belong to each stage. No account-wide deletion or name-substring purge.                                                                                        |
+| Expo cleanup        | Delete the experiment project, rather than leave publishing disabled         | It contains experiment updates and no build records. The account is Free with no current estimated charges, but deleting the project also retires its hosted delivery surface.                                           |
+| Older AWS assets    | Delete both backup sets after explicit owner authorization                   | The owner superseded the original preserve-for-review choice. Sharing, AMI references and Recycle Bin rules were checked before deregistering the old AMI and deleting its two snapshots and the old RDS final snapshot. |
+| Billing signoff     | Resource absence plus a delayed usage check, with explicit coverage limits   | A stopped instance, empty current-object listing, successful destroy exit or zero current Expo estimate is not a universal zero-cost guarantee.                                                                          |
 
 # What is actually present
 
@@ -228,14 +228,14 @@ The Apple Developer and Google Play membership renewals are separate from Expo. 
 
 # Older AWS assets and unresolved billing coverage
 
-These are not owned by the Android probe. They remain possible account costs even after the mobile cleanup:
+These assets are outside the Android probe graph. The owner explicitly authorized both backup sets after the initial preserve-for-review investigation. Their actual disposition is now:
 
-| Resource                                          | Evidence                                                                                                                       | Safe disposition                                                                                                                                                                                   |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AMI `ami-0a8b9383444a48fc4`, `sig_game_dev_image` | Created in 2025; references snapshots `snap-0cf564f7a1074c84e` and `snap-0c0261bf9db1b6591`, with logical sizes 50 and 250 GiB | Preserve until owner confirms retention. If abandoned, deregister the AMI first, then delete its exclusively owned snapshots. Logical disk capacity is not the billable incremental snapshot size. |
-| RDS snapshot `myfirstmysql-final-snapshot`        | Ohio, 20 GiB allocated, created in 2020; no current DB instance or cluster found                                               | Preserve until owner confirms it is not needed. Estimated October RDS usage was nonzero.                                                                                                           |
-| S3 bucket `mycoool`                               | Ohio, created in 2019; current-object listing is empty                                                                         | Not an emulator artifact. Inspect object versions, delete markers, multipart uploads and ownership before considering deletion. Current emptiness alone does not establish zero stored history.    |
-| `SSTConsole-a6leb8e8i0936fqn9bve1eab`             | Older Virginia stack with an SST IAM role and custom connector                                                                 | No compute/storage found through this stack. Keep unless the owner also retires SST; never infer Android ownership.                                                                                |
+| Resource                                          | Evidence                                                                                                                       | Safe disposition                                                                                                                                                                                  |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AMI `ami-0a8b9383444a48fc4`, `sig_game_dev_image` | Created in 2025; referenced snapshots `snap-0cf564f7a1074c84e` and `snap-0c0261bf9db1b6591`, with logical sizes 50 and 250 GiB | Deregistered before deleting both snapshots. Exclusive ownership, no sharing, no other AMI references and no Recycle Bin rules were verified. Owned image and snapshot inventories are now empty. |
+| RDS snapshot `myfirstmysql-final-snapshot`        | Ohio, 20 GiB allocated, created in 2020; manual and unshared                                                                   | Deleted through AWS after explicit authorization. Deletion waiter succeeded, and the exact lookup returns `DBSnapshotNotFound`.                                                                   |
+| S3 bucket `mycoool`                               | Ohio, created in 2019; versioning enabled                                                                                      | Preserved as unrelated. Current objects, object versions, delete markers and multipart uploads were all verified empty, so no hidden object history was found.                                    |
+| `SSTConsole-a6leb8e8i0936fqn9bve1eab`             | Older Virginia stack with an SST IAM role and custom connector                                                                 | No compute/storage found through this stack. Keep unless the owner also retires SST; never infer Android ownership.                                                                               |
 
 Three configured AWS profiles (`fawwaz1427_maybe`, `supabase_migration`, `supabase_prod`) returned `InvalidClientTokenId`, so their account identities/resources could not be verified. Inventorying the working account cannot clear those identities.
 
@@ -325,34 +325,8 @@ For deleted exact IDs, record the provider's not-found result as expected eviden
 
 Primary operational references: [EAS CLI deletion and inventory](https://docs.expo.dev/eas/cli/), [Expo token revocation](https://docs.expo.dev/accounts/programmatic-access/), [Cloudflare Tunnel commands](https://developers.cloudflare.com/workers/wrangler/commands/tunnel/). Teardown source basis: `707e3fa:stacks/android-preview-probe.ts`, `scripts/android-preview-infra.ts`, `stacks/android-preview-artifacts.ts`, `.github/workflows/pr-preview.yml`; stage-storage basis: `apps/backend/config/storage.ts:8-14`; baseline/worktree basis: `main:package.json`, `identity.ts:9`, `scripts/wt.ts:56-63,74-88`.
 
-# Open questions
+# Owner decisions recorded
 
-The mobile retirement approach is selected. The remaining destructive-scope decision concerns older AWS backups, not whether to keep developing mobile.
+The owner selected **Finish authenticated deletion** for Expo and **Delete both backup sets** for the older AWS assets. The prior default to preserve the backups is superseded, not silently reinterpreted.
 
-<QuestionForm
-  id="legacy-storage-disposition"
-  questions={[
-    {
-      id: "older-aws-backups",
-      title: "Should cleanup also retire the older AWS AMI and RDS backups?",
-      subtitle: "They predate the mobile experiment and are still associated with storage charges. No backup deletion was performed.",
-      mode: "single",
-      options: [
-        {
-          id: "preserve-for-review",
-          label: "Preserve pending owner review",
-          detail: "Execute the mobile teardown first. Confirm retention requirements before deleting old recovery assets.",
-          recommended: true,
-        },
-        {
-          id: "retire-after-ownership",
-          label: "Also retire confirmed unused backups",
-          detail:
-            "After ownership and retention checks, deregister the old AMI, delete its exclusive snapshots and delete the old RDS snapshot. Verify other account costs separately.",
-        },
-      ],
-      required: true,
-    },
-  ]}
-  submitLabel="Record cleanup scope"
-/>
+Both old AWS backup sets are deleted and verified absent. Expo project deletion still requires the owner's secure local password confirmation; its dedicated publishing token and repository Expo secrets are already retired. Do not request that password in chat or claim the project is deleted before provider verification.

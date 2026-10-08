@@ -9,6 +9,8 @@ The Android experiment's owning Alchemy graph was destroyed at deployment revisi
 
 PRs #5 and #6 were closed without merging. Their Alchemy cleanup jobs succeeded, and the exact Workers, custom domains/DNS, D1 databases, R2 buckets and stage state were verified absent. Only then were the three orphaned mobile-development state namespaces deleted. Production, shared Alchemy infrastructure, the reused one-time-PIN provider and unrelated projects remain intact.
 
+After the initial conservative retention decision, the owner explicitly authorized both older AWS backup sets for deletion. The unused 2025 AMI was deregistered before deleting its two exclusive EBS snapshots; the old RDS final snapshot was deleted through AWS and its deletion waiter succeeded. A further 108 product/region checks across all 18 enabled regions found no owned AMIs, EBS snapshots, manual RDS or cluster snapshots, retained RDS automated-backup records or AWS Backup vaults.
+
 **Incomplete owner-authenticated step:** Expo's proof project still exists because its deletion requires password confirmation in sudo mode. The dedicated proof robot's only publishing token is revoked, and `EXPO_TOKEN` / `EAS_PROJECT_ID` are absent from GitHub. The original `mobile-preview` checkout and reconstructed teardown checkout remain available for that secure owner step. Do not describe all retirement acceptance criteria as complete.
 
 # Visible behavior
@@ -24,6 +26,8 @@ Application contracts, schemas, migrations, dependency versions, lockfile and pr
 - Removed: `ProofAndroidPreviewProbe/probe`, `Proof/pr-5`, `Proof/pr-6`, `Proof/dev-expo-mobile`, `Proof/dev-mobile-preview` and `Proof/dev-mobile`.
 - Preserved: `Proof/prod`, `Proof/dev_fawwaz.alharbi`, `Proof/temp`, the shared state worker/Secrets Store, production CI/R2 signing tokens and the operator AWS credential.
 - The already absent temporary APK-artifacts stack and bucket were not recreated merely to delete them.
+
+Alchemy's ownership boundary is the selected stack and stage, not the entire provider account. The probe and each PR preview needed their own graph destruction. The old AMI/EBS and RDS backups were outside Alchemy ownership and required explicit AWS deletion. Shared resources and externally created Expo projects are not automatically disposed merely because the template stack is brought down.
 
 # Complete file accounting
 
@@ -141,29 +145,31 @@ The excerpts below are actual sanitized records from `cleanup.json`, not prospec
 
 ## Exercised proof
 
-| Check                      | Observed result                                                                                                                                                                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Owning graph               | `bun scripts/android-preview-infra.ts destroy` at `707e3fa`: five owned Alchemy resources deleted, exit 0.                                                                                                                                                      |
-| AWS post-delete inventory  | 252 product/region read requests across 18 enabled regions. No failed requests or active instances, volumes, Elastic IPs, NAT gateways, load balancers, RDS compute, ECR repositories, ECS/EKS clusters, Lambda functions, SSM managed instances or log groups. |
-| Probe platform objects     | EC2 terminated; exact EBS volume absent; CloudFormation, VPC, subnet, security group, launch template, gateway, route table and IAM role/profile absent.                                                                                                        |
-| Cloudflare proof resources | Probe DNS and zone Access app return not found; Tunnel carries a deletion timestamp; verification token absent. Both abandoned PR-stage resource sets are absent.                                                                                               |
-| Orphaned mobile state      | `alchemy state delete --backend cloudflare <scope> --recursive --no-input` succeeded for the three allowlisted namespaces after live resource absence proof.                                                                                                    |
-| Production preservation    | Existing Worker identities and modification timestamps, database, bucket, domain and active account CI/signing token identities preserved. Home and sign-in pages rendered with no console errors.                                                              |
-| Source preservation        | Six experiment refs verified against a private Git bundle; four untracked plan/handoff files verified byte-for-byte against their archive; the main ignore patch retained.                                                                                      |
-| Local cleanup              | Four local experiment branches and all three remote experiment branches deleted; mobile, docs and old planning checkouts removed; missing delivery registration pruned. Two owned Xcode DerivedData caches, measured at 4.1G and 2.2G, removed.                 |
-| Delivery controls          | GitHub mobile-secret names absent; the identified proof robot token has a recorded `revokedAt` timestamp. Personal Expo credentials unchanged.                                                                                                                  |
+| Check                      | Observed result                                                                                                                                                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owning graph               | `bun scripts/android-preview-infra.ts destroy` at `707e3fa`: five owned Alchemy resources deleted, exit 0.                                                                                                                                                           |
+| AWS post-delete inventory  | 252 product/region read requests across 18 enabled regions. No failed requests or active instances, volumes, Elastic IPs, NAT gateways, load balancers, RDS compute, ECR repositories, ECS/EKS clusters, Lambda functions, SSM managed instances or log groups.      |
+| Probe platform objects     | EC2 terminated; exact EBS volume absent; CloudFormation, VPC, subnet, security group, launch template, gateway, route table and IAM role/profile absent.                                                                                                             |
+| Cloudflare proof resources | Probe DNS and zone Access app return not found; Tunnel carries a deletion timestamp; verification token absent. Both abandoned PR-stage resource sets are absent.                                                                                                    |
+| Orphaned mobile state      | `alchemy state delete --backend cloudflare <scope> --recursive --no-input` succeeded for the three allowlisted namespaces after live resource absence proof.                                                                                                         |
+| Production preservation    | Existing Worker identities and modification timestamps, database, bucket, domain and active account CI/signing token identities preserved. Home and sign-in pages rendered with no console errors.                                                                   |
+| Source preservation        | Six experiment refs verified against a private Git bundle; four untracked plan/handoff files verified byte-for-byte against their archive; the main ignore patch retained.                                                                                           |
+| Local cleanup              | Four local experiment branches and all three remote experiment branches deleted; mobile, docs and old planning checkouts removed; missing delivery registration pruned. Two owned Xcode DerivedData caches, measured at 4.1G and 2.2G, removed.                      |
+| Delivery controls          | GitHub mobile-secret names absent; the identified proof robot token has a recorded `revokedAt` timestamp. Personal Expo credentials unchanged.                                                                                                                       |
+| Authorized legacy backups  | Old AMI and its two snapshots deleted after ownership, reference, sharing and Recycle Bin checks. RDS final snapshot deleted and exact lookup reports `DBSnapshotNotFound`; 108 additional regional backup inventories completed with no resources or read failures. |
+| Documentation preview      | PR #7 deployment and browser smoke succeeded; PR closed without merging; cleanup run succeeded. Exact Worker/domain/DNS/D1/R2 objects and `Proof/pr-7` state were verified absent.                                                                                   |
 
 ## Costs are not a universal zero
 
 The probe's stopped-host storage was a 50 GiB gp3 disk, approximately $4.80 for a full month at the observed regional rate. Its absence removes that continuing resource; deleting Git refs alone would not have done so. Cost Explorer's estimated October 7 gp3 charge of $0.0490555555 includes pre-deletion usage and can still appear on the next invoice. A full post-deletion billing day has not yet settled.
 
-The unrelated 2025 AMI and its two snapshots, the 2020 RDS final snapshot, older S3 bucket and SST stack remain intentionally preserved. Latest available billing still shows old snapshot and RDS backup usage. Three invalid AWS profiles and unauthenticated Cloudflare, Apple and Google subscription coverage remain outside any account-wide zero-cost claim.
+The owner subsequently authorized and completed deletion of the old AMI/EBS and RDS backup sets. Their earlier storage usage can still appear on a delayed invoice, alongside one-time API-request usage from the inventory itself. The unrelated older S3 bucket was preserved after verifying zero current objects, object versions, delete markers and multipart uploads; the SST IAM connector and shared operator credentials were also preserved. Three invalid AWS profiles and unauthenticated Cloudflare, Apple and Google subscription coverage remain outside an account-wide zero-cost claim.
 
 ## Remaining prerequisites
 
 1. The owner must run the interactive project deletion in the retained mobile-preview checkout and confirm the password locally, not in chat. The investigation checkout lacked the EAS binary; its wrapper swallowed that spawn error and returned code 1. The known-working pinned CLI is in the original mobile-preview checkout.
 2. Confirm Expo project absence, then remove the retained original and reconstructed checkouts and the last local mobile-preview branch. The dedicated token is already revoked. Optional deletion of the now-inactive robot also requires sudo mode.
 3. The physical phone's preview app can be removed when the phone is available; it no longer has an experiment backend or a valid proof publishing credential.
-4. Older recovery-asset deletion or membership cancellation needs its own ownership/retention decision. No destructive account-wide inference was made.
+4. The prior backup-retention decision is resolved: both old backup sets are deleted. Any unrelated account membership cancellation still requires its own authorization and billing evidence.
 
-The proof brief must record the final main-based verification gate and the documentation PR's create/check/close preview lifecycle. Closing the documentation PR must remove its new preview too; this infrastructure inventory alone does not prove that later step.
+The main-based `bun run check` passed, including lint, IAC/backend/web typechecks, formatting and client/SSR builds. PR #7's deployment run `37703758947` succeeded; its actual home and login were smoke-checked without an email send. After closure, cleanup run `37704086041` succeeded and every allowlisted `pr-7` resource plus stage state was verified absent. This proof record did not strand another preview.

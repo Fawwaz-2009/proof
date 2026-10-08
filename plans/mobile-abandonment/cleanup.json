@@ -108,6 +108,48 @@
       "operation": "delete archived remote experiment branches",
       "branches": ["mobile", "mobile-preview", "codex/mobile-preview-docs"],
       "result": "deleted"
+    },
+    {
+      "operation": "retire owner-authorized legacy AMI and EBS snapshots",
+      "deletions": [
+        {
+          "operation": "deregister-image",
+          "resourceId": "ami-0a8b9383444a48fc4",
+          "exitCode": 0,
+          "result": {
+            "Return": true,
+            "DeleteSnapshotResults": []
+          },
+          "error": null,
+          "completedAt": "2026-10-07T23:55:51.356861+00:00"
+        },
+        {
+          "operation": "delete-snapshot",
+          "resourceId": "snap-0cf564f7a1074c84e",
+          "exitCode": 0,
+          "result": null,
+          "error": null,
+          "completedAt": "2026-10-07T23:55:52.148003+00:00"
+        },
+        {
+          "operation": "delete-snapshot",
+          "resourceId": "snap-0c0261bf9db1b6591",
+          "exitCode": 0,
+          "result": null,
+          "error": null,
+          "completedAt": "2026-10-07T23:55:52.960536+00:00"
+        }
+      ],
+      "imageDeregisteredBeforeSnapshots": true,
+      "noSharingOrRecycleBinRules": true
+    },
+    {
+      "operation": "delete owner-authorized legacy RDS final snapshot",
+      "snapshotId": "myfirstmysql-final-snapshot",
+      "region": "us-east-2",
+      "deleteReportedStatus": "deleted",
+      "deletionWaiter": "success",
+      "completedAt": "2026-10-07T23:59:15.916882+00:00"
     }
   ],
   "verification": {
@@ -612,23 +654,6 @@
       "consoleErrors": [],
       "authEmailSent": false
     },
-    "unrelatedBackupsPreserved": {
-      "ami": {
-        "ok": true,
-        "data": ["ami-0a8b9383444a48fc4"],
-        "error": null
-      },
-      "snapshots": {
-        "ok": true,
-        "data": ["snap-0cf564f7a1074c84e", "snap-0c0261bf9db1b6591"],
-        "error": null
-      },
-      "rdsSnapshot": {
-        "ok": true,
-        "data": ["myfirstmysql-final-snapshot"],
-        "error": null
-      }
-    },
     "awsDailyBillingAfter": {
       "days": [
         {
@@ -690,7 +715,665 @@
         }
       }
     },
-    "providerScope": "AWS account 063381839204 across 18 enabled regions and Cloudflare account 5552227bfaaefe624309a42b810d6084"
+    "providerScope": "AWS account 063381839204 across 18 enabled regions and Cloudflare account 5552227bfaaefe624309a42b810d6084",
+    "mainBasedCheck": {
+      "command": "bun run check",
+      "result": "passed",
+      "includes": ["oxlint", "IAC/backend/web typecheck", "Prettier format check", "Vite client and SSR build"],
+      "existingWarnings": ["Vite CSS optimizer: Invalid empty selector in unchanged generated CSS"],
+      "applicationSourceChanged": false
+    },
+    "visuals": {
+      "planValidation": "passed",
+      "recapValidation": "passed",
+      "recapBlockCount": 8,
+      "renderedLightAndDark": true,
+      "receiptTabsExercised": 3,
+      "fourFileLedgerInspected": true,
+      "verificationAndPrerequisitesVisuallyInspected": true,
+      "consoleErrors": [],
+      "horizontalOverflow": false
+    },
+    "sharedAlchemySecretsStore": {
+      "stateEncryptionKeyPreserved": true,
+      "stateTokenPreserved": true
+    },
+    "retainedLegacyBucket": {
+      "versioning": {
+        "ok": true,
+        "data": {
+          "Status": "Enabled"
+        },
+        "error": null
+      },
+      "objectVersions": {
+        "ok": true,
+        "data": {
+          "versions": 0,
+          "deleteMarkers": 0
+        },
+        "error": null
+      },
+      "multipartUploads": {
+        "ok": true,
+        "data": 0,
+        "error": null
+      }
+    },
+    "proofPrPreview": {
+      "deployRun": 37703758947,
+      "deployResult": "success",
+      "resourceIds": {
+        "workers": ["proof-backend-pr-7-mmukfzlsav3avtnq", "proof-website-pr-7-ri3ddq2qdbssvfil"],
+        "buckets": ["proof-files-pr-7-voogy2yawd47wtki"],
+        "d1": ["2f053ad8-b8ab-4271-a681-da0c00ded03a"],
+        "domains": ["2a0ff8e4f52f7db22df3b81b1b480339126577bf"]
+      },
+      "dnsIds": ["569927e9c5e8d9fb8fabead5744354a1"],
+      "browserSmoke": {
+        "homeTitle": "Proof",
+        "homeRendered": true,
+        "loginRendered": true,
+        "consoleErrors": [],
+        "authEmailSent": false
+      },
+      "cleanupRun": 37704086041,
+      "cleanupResult": "success",
+      "postCleanupProviderAbsence": {
+        "workers": {
+          "checkedIds": ["proof-backend-pr-7-mmukfzlsav3avtnq", "proof-website-pr-7-ri3ddq2qdbssvfil"],
+          "remainingIds": []
+        },
+        "r2": {
+          "checkedIds": ["proof-files-pr-7-voogy2yawd47wtki"],
+          "remainingIds": []
+        },
+        "domains": {
+          "checkedIds": ["2a0ff8e4f52f7db22df3b81b1b480339126577bf"],
+          "remainingIds": []
+        },
+        "d1": {
+          "checkedIds": ["2f053ad8-b8ab-4271-a681-da0c00ded03a"],
+          "remainingIds": []
+        }
+      },
+      "dnsAbsence": [
+        {
+          "id": "569927e9c5e8d9fb8fabead5744354a1",
+          "status": 404,
+          "code": 81044
+        }
+      ],
+      "stageStateAbsent": true
+    },
+    "expoBillingNodeAfter": {
+      "billing": null,
+      "note": "Nullable billing record returned. Prior Free tier and zero estimate are historical audit facts, not inferred from null."
+    },
+    "expoPublisherRevoked": {
+      "id": "5cb4a526-0ef0-4eb4-8ef9-19d9bb2ecf59",
+      "revokedAt": "2026-10-07T23:24:51.869Z"
+    },
+    "expoSubscriptionAfter": {
+      "name": "Free",
+      "planId": "price_free",
+      "price": 0,
+      "recurringCents": null,
+      "addons": []
+    },
+    "expoProjectStillPresentAfterProofLifecycle": true,
+    "legacyBackupPredelete": {
+      "images": {
+        "ok": true,
+        "data": [
+          {
+            "id": "ami-0a8b9383444a48fc4",
+            "state": "available",
+            "mappings": [
+              {
+                "device": "/dev/sda1",
+                "snapshot": "snap-0cf564f7a1074c84e"
+              },
+              {
+                "device": "xvdb",
+                "snapshot": "snap-0c0261bf9db1b6591"
+              },
+              {
+                "device": "xvdca",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcb",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcc",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcd",
+                "snapshot": null
+              },
+              {
+                "device": "xvdce",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcf",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcg",
+                "snapshot": null
+              },
+              {
+                "device": "xvdch",
+                "snapshot": null
+              },
+              {
+                "device": "xvdci",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcj",
+                "snapshot": null
+              },
+              {
+                "device": "xvdck",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcl",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcm",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcn",
+                "snapshot": null
+              },
+              {
+                "device": "xvdco",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcp",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcq",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcr",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcs",
+                "snapshot": null
+              },
+              {
+                "device": "xvdct",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcu",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcv",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcw",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcx",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcy",
+                "snapshot": null
+              },
+              {
+                "device": "xvdcz",
+                "snapshot": null
+              }
+            ],
+            "alchemyOwned": null,
+            "cloudFormationOwned": null
+          }
+        ],
+        "error": null
+      },
+      "imageSharing": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "snapshot1": {
+        "ok": true,
+        "data": [
+          {
+            "id": "snap-0cf564f7a1074c84e",
+            "owner": "063381839204",
+            "state": "completed",
+            "size": 50,
+            "encrypted": true,
+            "alchemyOwned": null,
+            "cloudFormationOwned": null
+          }
+        ],
+        "error": null
+      },
+      "snapshot2": {
+        "ok": true,
+        "data": [
+          {
+            "id": "snap-0c0261bf9db1b6591",
+            "owner": "063381839204",
+            "state": "completed",
+            "size": 250,
+            "encrypted": true,
+            "alchemyOwned": null,
+            "cloudFormationOwned": null
+          }
+        ],
+        "error": null
+      },
+      "snapshot1Sharing": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "snapshot2Sharing": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "snapshotRetentionRules": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "imageRetentionRules": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "rdsSnapshot": {
+        "ok": true,
+        "data": [
+          {
+            "id": "myfirstmysql-final-snapshot",
+            "type": "manual",
+            "status": "available",
+            "allocatedGb": 20,
+            "arn": "arn:aws:rds:us-east-2:063381839204:snapshot:myfirstmysql-final-snapshot"
+          }
+        ],
+        "error": null
+      },
+      "rdsSharing": {
+        "ok": true,
+        "data": [
+          {
+            "AttributeName": "restore",
+            "AttributeValues": []
+          }
+        ],
+        "error": null
+      }
+    },
+    "legacyAmiAndSnapshotsAbsent": {
+      "ownedImages": {
+        "ok": true,
+        "data": [],
+        "error": null
+      },
+      "ownedSnapshots": {
+        "ok": true,
+        "data": [],
+        "error": null
+      }
+    },
+    "latestAllNonzeroAwsBillingCategories": [
+      {
+        "day": "2026-10-06",
+        "usageType": "APS1-EBS:SnapshotUsage",
+        "costUsd": "0.0485194052"
+      },
+      {
+        "day": "2026-10-06",
+        "usageType": "APS1-EBS:VolumeUsage.gp3",
+        "costUsd": "0.1548387096"
+      },
+      {
+        "day": "2026-10-06",
+        "usageType": "USE2-RDS:ChargedBackupUsage",
+        "costUsd": "0.0033518145"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APN1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APN2-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APN3-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APS1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APS1-EBS:VolumeUsage.gp3",
+        "costUsd": "0.0490555555"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APS2-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APS3-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "APS4-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "CAN1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "EU-AWSSecretsManager-APIRequests",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "EUC1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "EUN1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "EUW2-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "EUW3-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "Requests-Tier1",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "SAE1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USE1-APIRequest",
+        "costUsd": "0.02"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USE1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USE2-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USE2-Requests-Tier1",
+        "costUsd": "0.00001"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USE2-Requests-Tier2",
+        "costUsd": "0.0000004"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USW1-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      },
+      {
+        "day": "2026-10-07",
+        "usageType": "USW2-AWSSecretsManagerAPIRequest",
+        "costUsd": "0.000005"
+      }
+    ],
+    "legacyRegionKmsKeyClasses": [
+      {
+        "ok": true,
+        "data": {
+          "manager": "AWS",
+          "state": "Enabled"
+        },
+        "error": null
+      }
+    ],
+    "legacyRdsSnapshotAbsent": {
+      "ok": false,
+      "data": null,
+      "error": "An error occurred (DBSnapshotNotFound) when calling the DescribeDBSnapshots operation: DBSnapshot not found: myfirstmysql-final-snapshot"
+    },
+    "awsBackupReinventory": {
+      "regions": [
+        "ap-northeast-1",
+        "ap-northeast-2",
+        "ap-northeast-3",
+        "ap-south-1",
+        "ap-southeast-1",
+        "ap-southeast-2",
+        "ap-southeast-3",
+        "ca-central-1",
+        "eu-central-1",
+        "eu-north-1",
+        "eu-west-1",
+        "eu-west-2",
+        "eu-west-3",
+        "sa-east-1",
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2"
+      ],
+      "counts": {
+        "ap-south-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "eu-north-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "eu-west-3": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "eu-west-2": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "eu-west-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-northeast-3": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-northeast-2": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-northeast-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ca-central-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "sa-east-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-southeast-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-southeast-2": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "eu-central-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "ap-southeast-3": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "us-east-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "us-east-2": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "us-west-1": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        },
+        "us-west-2": {
+          "ownedAmis": 0,
+          "ownedEbsSnapshots": 0,
+          "rdsManualSnapshots": 0,
+          "rdsClusterManualSnapshots": 0,
+          "rdsAutomatedBackupRecords": 0,
+          "awsBackupVaults": 0
+        }
+      },
+      "failedRequests": [],
+      "completedAt": "2026-10-07T23:59:33.279066+00:00"
+    },
+    "legacyBackupsBeforeExpandedAuthorization": {
+      "ami": {
+        "ok": true,
+        "data": ["ami-0a8b9383444a48fc4"],
+        "error": null
+      },
+      "snapshots": {
+        "ok": true,
+        "data": ["snap-0cf564f7a1074c84e", "snap-0c0261bf9db1b6591"],
+        "error": null
+      },
+      "rdsSnapshot": {
+        "ok": true,
+        "data": ["myfirstmysql-final-snapshot"],
+        "error": null
+      }
+    }
   },
   "remaining": [
     {
@@ -698,14 +1381,26 @@
       "reason": "Paired physical device unavailable; no cloud or publishing cost. Shared signing material preserved."
     },
     {
-      "item": "Unrelated older AWS backups and unavailable account/subscription coverage",
-      "reason": "Older AMI snapshots and RDS snapshot are intentionally retained. Three invalid AWS profiles and unauthenticated Cloudflare/Apple/Google billing cannot be certified cost-free."
-    },
-    {
       "item": "Expo project and optional robot deletion",
       "reason": "Owner sudo-mode confirmation required; project remains Free. Dedicated CI token revoked and GitHub publishing secrets absent."
+    },
+    {
+      "item": "Unverified accounts and subscription coverage",
+      "reason": "Three invalid AWS profiles and unauthenticated Cloudflare/Apple/Google billing are outside verified coverage. The newly authorized old AMI/EBS and RDS backup sets are deleted."
     }
   ],
-  "recordedAt": "2026-10-07T23:35:55.441785+00:00",
-  "status": "infrastructure-retired-owner-authentication-pending"
+  "recordedAt": "2026-10-08T00:03:16.399478+00:00",
+  "status": "aws-and-cloudflare-retired-expo-owner-authentication-pending",
+  "proofPr": {
+    "number": 7,
+    "url": "https://github.com/Fawwaz-2009/proof/pull/7",
+    "commit": "4fd2a74",
+    "applicationSourceChanged": false,
+    "closedWithoutMerge": true
+  },
+  "expandedAuthorization": {
+    "legacyBackups": "Delete both backup sets",
+    "expo": "Finish authenticated deletion",
+    "previousRetentionDecisionSuperseded": true
+  }
 }
