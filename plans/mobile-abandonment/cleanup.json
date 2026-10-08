@@ -150,6 +150,29 @@
       "deleteReportedStatus": "deleted",
       "deletionWaiter": "success",
       "completedAt": "2026-10-07T23:59:15.916882+00:00"
+    },
+    {
+      "operation": "owner-authenticated Expo project deletion",
+      "projectId": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+      "actor": "owner in local terminal",
+      "providerAbsenceVerified": true,
+      "verifiedAt": "2026-10-08T00:14:42.018306+00:00"
+    },
+    {
+      "operation": "retire credential-less proof Expo robot",
+      "actorId": "b45afba7-6e48-4243-883d-c0d38231de26",
+      "receipt": {
+        "id": "01a118dd-7865-799e-9ffc-76b84be7d0dc",
+        "state": "QUEUED"
+      },
+      "unrelatedActorsUnchanged": true
+    },
+    {
+      "operation": "retire final archived mobile checkouts and branch",
+      "removedCheckouts": ["mobile-preview", "mobile-teardown"],
+      "removedBranch": "mobile-preview",
+      "freshChangesChecked": true,
+      "archiveReferenceMatched": true
     }
   ],
   "verification": {
@@ -706,14 +729,10 @@
       "productionCredentialNamesPreserved": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
     },
     "expoProjectLookup": {
-      "data": {
-        "app": {
-          "byId": {
-            "id": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
-            "slug": "proof"
-          }
-        }
-      }
+      "projectId": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+      "result": "absent from complete owner account project inventory",
+      "ownerAuthenticatedDeletion": true,
+      "deletionCommandRepeatedByAssistant": false
     },
     "providerScope": "AWS account 063381839204 across 18 enabled regions and Cloudflare account 5552227bfaaefe624309a42b810d6084",
     "mainBasedCheck": {
@@ -816,12 +835,9 @@
     },
     "expoSubscriptionAfter": {
       "name": "Free",
-      "planId": "price_free",
       "price": 0,
-      "recurringCents": null,
       "addons": []
     },
-    "expoProjectStillPresentAfterProofLifecycle": true,
     "legacyBackupPredelete": {
       "images": {
         "ok": true,
@@ -1373,6 +1389,51 @@
         "data": ["myfirstmysql-final-snapshot"],
         "error": null
       }
+    },
+    "expoProjectLookupBeforeOwnerDeletion": {
+      "data": {
+        "app": {
+          "byId": {
+            "id": "1e9b19eb-9be2-4c2f-b4ba-404811931171",
+            "slug": "proof"
+          }
+        }
+      }
+    },
+    "expoProjectPresentBeforeOwnerDeletion": true,
+    "finalExpoProjectStillPresent": false,
+    "expoProjectAbsentAfterOwnerDeletion": true,
+    "expoNoActiveProofPublishingTokens": true,
+    "experimentWorktreesAndBranchesRetired": true,
+    "proofExpoRobotAbsent": true,
+    "proofExpoRobotDeletionReceipt": {
+      "data": {
+        "backgroundJobReceipt": {
+          "byId": {
+            "id": "01a118dd-7865-799e-9ffc-76b84be7d0dc",
+            "state": "SUCCESS"
+          }
+        }
+      }
+    },
+    "expoFreeSubscriptionFinalCheck": {
+      "name": "Free",
+      "price": 0,
+      "addons": []
+    },
+    "finalCompletionDocumentSmoke": {
+      "planValidation": "passed",
+      "planBlockCount": 5,
+      "recapValidation": "passed",
+      "recapBlockCount": 8,
+      "completedExpoOutcomeRendered": true,
+      "obsoleteOwnerAuthenticationBlockerAbsent": true,
+      "finalFreeSubscriptionEvidenceRendered": true,
+      "coverageAndDeviceLimitsVisuallyInspected": true,
+      "lightAndDarkScreenshotsObserved": true,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "formatCheck": "passed"
     }
   },
   "remaining": [
@@ -1381,22 +1442,19 @@
       "reason": "Paired physical device unavailable; no cloud or publishing cost. Shared signing material preserved."
     },
     {
-      "item": "Expo project and optional robot deletion",
-      "reason": "Owner sudo-mode confirmation required; project remains Free. Dedicated CI token revoked and GitHub publishing secrets absent."
-    },
-    {
       "item": "Unverified accounts and subscription coverage",
       "reason": "Three invalid AWS profiles and unauthenticated Cloudflare/Apple/Google billing are outside verified coverage. The newly authorized old AMI/EBS and RDS backup sets are deleted."
     }
   ],
-  "recordedAt": "2026-10-08T00:03:16.399478+00:00",
-  "status": "aws-and-cloudflare-retired-expo-owner-authentication-pending",
+  "recordedAt": "2026-10-08T00:26:41.442301+00:00",
+  "status": "retirement-complete-with-explicit-unverified-account-and-device-coverage",
   "proofPr": {
     "number": 7,
     "url": "https://github.com/Fawwaz-2009/proof/pull/7",
     "commit": "4fd2a74",
     "applicationSourceChanged": false,
-    "closedWithoutMerge": true
+    "closedWithoutMerge": true,
+    "finalProofLocation": "https://github.com/Fawwaz-2009/proof/tree/retire-mobile/plans/mobile-retirement"
   },
   "expandedAuthorization": {
     "legacyBackups": "Delete both backup sets",

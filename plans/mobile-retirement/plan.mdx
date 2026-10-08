@@ -11,7 +11,7 @@ PRs #5 and #6 were closed without merging. Their Alchemy cleanup jobs succeeded,
 
 After the initial conservative retention decision, the owner explicitly authorized both older AWS backup sets for deletion. The unused 2025 AMI was deregistered before deleting its two exclusive EBS snapshots; the old RDS final snapshot was deleted through AWS and its deletion waiter succeeded. A further 108 product/region checks across all 18 enabled regions found no owned AMIs, EBS snapshots, manual RDS or cluster snapshots, retained RDS automated-backup records or AWS Backup vaults.
 
-**Incomplete owner-authenticated step:** Expo's proof project still exists because its deletion requires password confirmation in sudo mode. The dedicated proof robot's only publishing token is revoked, and `EXPO_TOKEN` / `EAS_PROJECT_ID` are absent from GitHub. The original `mobile-preview` checkout and reconstructed teardown checkout remain available for that secure owner step. Do not describe all retirement acceptance criteria as complete.
+The owner completed the authenticated Expo project deletion locally, and the complete account project inventory confirms its absence. The dedicated proof publishing token is revoked, the unused CI robot is deleted with a successful provider receipt, and `EXPO_TOKEN` / `EAS_PROJECT_ID` are absent from GitHub. All archived experiment worktrees and branches, including the temporarily retained teardown checkout, are now removed. The identified experiment's cloud and publishing retirement is complete.
 
 # Visible behavior
 
@@ -49,7 +49,7 @@ The documentation PR contains only the following four added files. The canonical
     {
       path: "plans/mobile-abandonment/cleanup.json",
       change: "added",
-      note: "Sanitized actual operations, absence proofs, preserved-resource checks and pending prerequisites.",
+      note: "Sanitized actual operations, absence proofs, preserved-resource checks and explicit coverage limits.",
     },
     {
       path: "plans/mobile-retirement/plan.mdx",
@@ -154,8 +154,8 @@ The excerpts below are actual sanitized records from `cleanup.json`, not prospec
 | Orphaned mobile state      | `alchemy state delete --backend cloudflare <scope> --recursive --no-input` succeeded for the three allowlisted namespaces after live resource absence proof.                                                                                                         |
 | Production preservation    | Existing Worker identities and modification timestamps, database, bucket, domain and active account CI/signing token identities preserved. Home and sign-in pages rendered with no console errors.                                                                   |
 | Source preservation        | Six experiment refs verified against a private Git bundle; four untracked plan/handoff files verified byte-for-byte against their archive; the main ignore patch retained.                                                                                           |
-| Local cleanup              | Four local experiment branches and all three remote experiment branches deleted; mobile, docs and old planning checkouts removed; missing delivery registration pruned. Two owned Xcode DerivedData caches, measured at 4.1G and 2.2G, removed.                      |
-| Delivery controls          | GitHub mobile-secret names absent; the identified proof robot token has a recorded `revokedAt` timestamp. Personal Expo credentials unchanged.                                                                                                                       |
+| Local cleanup              | All archived experiment checkouts, five local experiment branches and all three remote experiment branches removed; missing delivery registration pruned. Two owned Xcode DerivedData caches, measured at 4.1G and 2.2G, removed.                                    |
+| Delivery controls          | Expo project absent from the complete account inventory; dedicated token revoked and unused proof robot absent after successful deletion. GitHub mobile-secret names absent. Personal Expo credentials and unrelated projects unchanged.                             |
 | Authorized legacy backups  | Old AMI and its two snapshots deleted after ownership, reference, sharing and Recycle Bin checks. RDS final snapshot deleted and exact lookup reports `DBSnapshotNotFound`; 108 additional regional backup inventories completed with no resources or read failures. |
 | Documentation preview      | PR #7 deployment and browser smoke succeeded; PR closed without merging; cleanup run succeeded. Exact Worker/domain/DNS/D1/R2 objects and `Proof/pr-7` state were verified absent.                                                                                   |
 
@@ -165,11 +165,11 @@ The probe's stopped-host storage was a 50 GiB gp3 disk, approximately $4.80 for 
 
 The owner subsequently authorized and completed deletion of the old AMI/EBS and RDS backup sets. Their earlier storage usage can still appear on a delayed invoice, alongside one-time API-request usage from the inventory itself. The unrelated older S3 bucket was preserved after verifying zero current objects, object versions, delete markers and multipart uploads; the SST IAM connector and shared operator credentials were also preserved. Three invalid AWS profiles and unauthenticated Cloudflare, Apple and Google subscription coverage remain outside an account-wide zero-cost claim.
 
-## Remaining prerequisites
+The Expo account subscription was verified as Free with price 0 and no add-ons after project deletion. That account-specific evidence is not a claim about the unrelated provider subscriptions above.
 
-1. The owner must run the interactive project deletion in the retained mobile-preview checkout and confirm the password locally, not in chat. The investigation checkout lacked the EAS binary; its wrapper swallowed that spawn error and returned code 1. The known-working pinned CLI is in the original mobile-preview checkout.
-2. Confirm Expo project absence, then remove the retained original and reconstructed checkouts and the last local mobile-preview branch. The dedicated token is already revoked. Optional deletion of the now-inactive robot also requires sudo mode.
-3. The physical phone's preview app can be removed when the phone is available; it no longer has an experiment backend or a valid proof publishing credential.
-4. The prior backup-retention decision is resolved: both old backup sets are deleted. Any unrelated account membership cancellation still requires its own authorization and billing evidence.
+## Explicit coverage and device limits
+
+1. The physical phone's preview app can be removed when the phone is available; it no longer has an experiment backend or a valid proof publishing credential. This local icon is not a standing cloud resource.
+2. Three invalid AWS profiles and unauthenticated provider subscriptions remain outside verified account coverage. Cancelling unrelated memberships would require separate authorization and billing evidence.
 
 The main-based `bun run check` passed, including lint, IAC/backend/web typechecks, formatting and client/SSR builds. PR #7's deployment run `37703758947` succeeded; its actual home and login were smoke-checked without an email send. After closure, cleanup run `37704086041` succeeded and every allowlisted `pr-7` resource plus stage state was verified absent. This proof record did not strand another preview.

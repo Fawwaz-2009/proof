@@ -7,7 +7,7 @@ kind: plan
 
 Abandon mobile development in this template. Remove the experiment's remote compute, storage, access configuration, delivery project and publishing credentials, then retire its branches and worktrees. Preserve the production web template and unrelated projects.
 
-This document retains the original authorized cleanup sequence. `audit.json` contains the initial read-only investigation. Actual Alchemy teardown and provider verification are recorded in `cleanup.json` and reviewed in `../mobile-retirement/plan.mdx`. AWS and Cloudflare experiment resources are gone; Expo project deletion remains blocked on owner reauthentication. Do not mistake the original inventory below for resources still running.
+This document retains the original authorized cleanup sequence. `audit.json` contains the initial read-only investigation. Actual Alchemy teardown and provider verification are recorded in `cleanup.json` and reviewed in `../mobile-retirement/plan.mdx`. The identified AWS, Cloudflare and Expo experiment resources are retired, and all archived experiment worktrees and branches are removed. Do not mistake the original inventory below for resources still running.
 
 Completion requires:
 
@@ -329,4 +329,4 @@ Primary operational references: [EAS CLI deletion and inventory](https://docs.ex
 
 The owner selected **Finish authenticated deletion** for Expo and **Delete both backup sets** for the older AWS assets. The prior default to preserve the backups is superseded, not silently reinterpreted.
 
-Both old AWS backup sets are deleted and verified absent. Expo project deletion still requires the owner's secure local password confirmation; its dedicated publishing token and repository Expo secrets are already retired. Do not request that password in chat or claim the project is deleted before provider verification.
+Both old AWS backup sets are deleted and verified absent. The owner completed the authenticated Expo project deletion locally; the complete account project inventory confirms absence. The dedicated publishing token is revoked, the unused proof robot's deletion receipt reports `SUCCESS`, and repository Expo secrets are absent. The final retained experiment checkouts and branch were then removed without forcing through user changes.
