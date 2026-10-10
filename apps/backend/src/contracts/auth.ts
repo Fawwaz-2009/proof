@@ -1,7 +1,7 @@
 import type * as Alchemy from "alchemy";
 import * as Context from "effect/Context";
 import * as Schema from "effect/Schema";
-import { HttpApiMiddleware } from "effect/unstable/httpapi";
+import { HttpApiMiddleware } from "effect/http-api";
 
 export class SessionUser extends Schema.Class<SessionUser>("SessionUser")({
   id: Schema.String,

@@ -4,10 +4,10 @@ import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
-import { Etag, HttpRouter } from "effect/unstable/http";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
-import * as HttpPlatform from "effect/unstable/http/HttpPlatform";
-import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { Etag, HttpRouter } from "effect/http";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
+import * as HttpPlatform from "effect/http/HttpPlatform";
+import { HttpApiBuilder } from "effect/http-api";
 import { Auth } from "../config/auth.ts";
 import { AppDatabase } from "../config/database/index.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
@@ -62,7 +62,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
       // silent drift.
       ...(isDev ? { dev: { port, strictPort: true } } : {}),
       env: {
-        AUTH_EMAIL_FROM: yield* (isDev ? Config.string("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>")) : Config.string("AUTH_EMAIL_FROM")).pipe(
+        AUTH_EMAIL_FROM: yield* (isDev ? Config.String("AUTH_EMAIL_FROM").pipe(Config.withDefault("App <noreply@localhost>")) : Config.String("AUTH_EMAIL_FROM")).pipe(
           Effect.orDie,
         ),
         // Without ROOT_DOMAIN the site lives on the platform host, and the
@@ -74,8 +74,8 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
         // Optional by design: without them the app deploys, destroys, and
         // serves; images simply render without presigned URLs. CI always
         // receives minted values from the ceremony.
-        R2_ACCESS_KEY_ID: yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""), Effect.orDie),
-        R2_SECRET_ACCESS_KEY: yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")), Effect.orDie),
+        R2_ACCESS_KEY_ID: yield* Config.String("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""), Effect.orDie),
+        R2_SECRET_ACCESS_KEY: yield* Config.Redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")), Effect.orDie),
       },
     };
   }),

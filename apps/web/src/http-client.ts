@@ -1,6 +1,6 @@
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import type * as HttpApi from "effect/unstable/httpapi/HttpApi";
-import { HttpApiClient } from "effect/unstable/httpapi";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import type * as HttpApi from "effect/http-api/HttpApi";
+import { HttpApiClient } from "effect/http-api";
 import * as Effect from "effect/Effect";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { AppApi, ValidationError } from "@app/backend/contract";

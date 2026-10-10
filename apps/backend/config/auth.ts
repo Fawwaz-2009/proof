@@ -15,7 +15,7 @@ import { d1Database } from "./database/index.ts";
  * synthesis, outside any binding context. Deployed stages get the derived
  * hosts via the AUTH_ALLOWED_HOSTS binding (see worker.ts).
  */
-export const allowedHostsConfig = Config.string("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
+export const allowedHostsConfig = Config.String("AUTH_ALLOWED_HOSTS").pipe(Config.withDefault("localhost:*,127.0.0.1:*,*.workers.dev"));
 
 /**
  * The dev sign-in trick: on capture stages an address whose local part is
@@ -34,7 +34,7 @@ export const otpFromAddress = (email: string): string | null => {
 export class Auth extends Context.Service<Auth>()("Auth", {
   make: Effect.gen(function* () {
     const mail = yield* Email;
-    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
     const effectContext = yield* Effect.context<never>();
     const allowedHosts = (yield* allowedHostsConfig.pipe(Effect.orDie))
       .split(",")

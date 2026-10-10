@@ -1,4 +1,4 @@
-import { HttpApi } from "effect/unstable/httpapi";
+import { HttpApi } from "effect/http-api";
 import { NotesApi } from "./notes.ts";
 
 /** Applied once to every group below; code building absolute backend URLs must prepend it. */

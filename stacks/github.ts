@@ -54,8 +54,8 @@ export default Alchemy.Stack(
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
-    const owner = yield* Config.string("GITHUB_OWNER").pipe(Effect.orDie);
-    const repository = yield* Config.string("GITHUB_REPO").pipe(Effect.orDie);
+    const owner = yield* Config.String("GITHUB_OWNER").pipe(Effect.orDie);
+    const repository = yield* Config.String("GITHUB_REPO").pipe(Effect.orDie);
     const repo = { owner, repository };
     const { accountId } = yield* yield* Cloudflare.CloudflareEnvironment;
 
@@ -99,13 +99,13 @@ export default Alchemy.Stack(
     // App-level values the workflows re-resolve on every deploy. The R2
     // account id is not among them: it is derived from the authenticated
     // account at synthesis (worker.ts reads CloudflareEnvironment).
-    const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
-    const appSlug = yield* Config.string("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
+    const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+    const appSlug = yield* Config.String("APP_SLUG").pipe(Config.withDefault("app"), Effect.orDie);
     // Day zero may ship on the platform host: an empty ROOT_DOMAIN is
     // legal (the deploy-time domain config treats empty as absent), and
     // the secret is written anyway so the workflows always resolve it.
-    const rootDomain = yield* Config.string("ROOT_DOMAIN").pipe(Config.withDefault(""), Effect.orDie);
-    const authEmailFrom = yield* Config.string("AUTH_EMAIL_FROM").pipe(Effect.orDie);
+    const rootDomain = yield* Config.String("ROOT_DOMAIN").pipe(Config.withDefault(""), Effect.orDie);
+    const authEmailFrom = yield* Config.String("AUTH_EMAIL_FROM").pipe(Effect.orDie);
 
     // The display name rides the deploys so renamed apps greet their
     // owner's product, not the template's.

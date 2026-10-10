@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
 import { Auth } from "../../config/auth.ts";
 import { Authenticated, CurrentUser, SessionUser, Unauthorized } from "../contracts/auth.ts";
 

@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi";
+import { HttpApiError, HttpApiMiddleware } from "effect/http-api";
 import { SchemaErrorHandler, ValidationError } from "../contracts/notes.ts";
 
 /**

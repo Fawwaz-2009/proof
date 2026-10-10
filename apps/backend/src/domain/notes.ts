@@ -11,7 +11,7 @@ import { Note } from "../../config/database/schema.ts";
 import { and, desc, eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { CurrentUser } from "../contracts/index.ts";
-import { HttpApiError } from "effect/unstable/httpapi";
+import { HttpApiError } from "effect/http-api";
 import { buildNoteView as makeBuildNoteView } from "../views/notes.builder.ts";
 
 export interface CreateNoteInput {
