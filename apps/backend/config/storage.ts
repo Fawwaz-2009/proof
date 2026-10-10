@@ -31,9 +31,9 @@ export class Files extends Context.Service<Files>()("Files", {
     // and writes go through the bucket binding above. Upstream alchemy
     // plans presignUrl on the bucket binding, which would drop them
     // entirely; revisit when bumping alchemy.
-    const accountId = yield* Config.string("R2_ACCOUNT_ID").pipe(Config.withDefault(""));
-    const accessKeyId = yield* Config.string("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""));
-    const secretAccessKey = yield* Config.redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")));
+    const accountId = yield* Config.String("R2_ACCOUNT_ID").pipe(Config.withDefault(""));
+    const accessKeyId = yield* Config.String("R2_ACCESS_KEY_ID").pipe(Config.withDefault(""));
+    const secretAccessKey = yield* Config.Redacted("R2_SECRET_ACCESS_KEY").pipe(Config.withDefault(Redacted.make("")));
     const r2 = new AwsClient({
       accessKeyId,
       secretAccessKey: Redacted.value(secretAccessKey),
@@ -55,7 +55,7 @@ export class Files extends Context.Service<Files>()("Files", {
         // The bucket name is a deploy-time output of the FilesBucket
         // resource: bound via props env, readable from the worker env at
         // request time (alchemy wires the env ConfigProvider per request).
-        const bucketName = yield* Config.string("R2_BUCKET_NAME");
+        const bucketName = yield* Config.String("R2_BUCKET_NAME");
         const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`);
         url.searchParams.set("X-Amz-Expires", String(expiresIn));
         const signed = yield* Effect.promise(() => r2.sign(url, { aws: { signQuery: true } }));

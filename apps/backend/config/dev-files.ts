@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
-import { HttpRouter, HttpServerResponse } from "effect/unstable/http";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
+import { HttpRouter, HttpServerResponse } from "effect/http";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
 import { ALCHEMY_DEV } from "alchemy/Phase";
 import { Layer } from "effect";
 import { Files } from "./storage.ts";

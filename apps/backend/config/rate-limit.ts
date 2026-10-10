@@ -1,7 +1,7 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Context, Effect, Layer, Option } from "effect";
-import type { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
-import { HttpServerResponse } from "effect/unstable/http";
+import type { HttpServerRequest } from "effect/http/HttpServerRequest";
+import { HttpServerResponse } from "effect/http";
 
 /**
  * Edge rate limits, backed by Cloudflare Rate Limit bindings (period must be

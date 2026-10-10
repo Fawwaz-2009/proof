@@ -27,7 +27,7 @@ const websiteDeployProps = Effect.gen(function* () {
   const host = yield* websiteDomain;
   const isDev = yield* Effect.orDie(ALCHEMY_DEV);
   const stage = yield* Effect.serviceOption(Alchemy.Stage).pipe(Effect.map((service) => (service._tag === "Some" ? service.value : "")));
-  const appName = yield* Config.string("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
+  const appName = yield* Config.String("APP_NAME").pipe(Config.withDefault("App"), Effect.orDie);
 
   // Yielding the SAME Worker entry the stack deploys registers/dedupes it by
   // logical id — this is what makes the BACKEND service binding point at the
@@ -37,7 +37,7 @@ const websiteDeployProps = Effect.gen(function* () {
     rootDir: path.resolve(import.meta.dirname, "apps/web"),
     compatibility: {
       date: "2026-07-11",
-      // nodejs_compat: React SSR + the effect/unstable/http client on the SSR
+      // nodejs_compat: React SSR + the effect/http client on the SSR
       // data path; enable_request_signal: TanStack Start's loader signals.
       flags: ["nodejs_compat", "enable_request_signal"],
     },

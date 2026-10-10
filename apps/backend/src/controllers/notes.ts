@@ -1,6 +1,6 @@
 import * as FileSystem from "effect/FileSystem";
 import * as Effect from "effect/Effect";
-import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { HttpApiBuilder } from "effect/http-api";
 import { AppApi } from "../contracts/index.ts";
 import { Notes } from "../domain/notes.ts";
 

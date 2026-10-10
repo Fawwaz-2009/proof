@@ -1,6 +1,6 @@
-import { Multipart } from "effect/unstable/http";
+import { Multipart } from "effect/http";
 import * as Schema from "effect/Schema";
-import { HttpApiEndpoint, HttpApiGroup, HttpApiMiddleware, HttpApiSchema, HttpApiError } from "effect/unstable/httpapi";
+import { HttpApiEndpoint, HttpApiGroup, HttpApiMiddleware, HttpApiSchema, HttpApiError } from "effect/http-api";
 import { Authenticated } from "./auth.ts";
 
 const NoteId = { id: Schema.String };
