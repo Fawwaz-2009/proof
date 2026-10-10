@@ -214,7 +214,13 @@ Credential + memory rules:
   `Account API Tokens Write`, and Cloudflare rejects any account-owned
   token carrying it ("sub-token is not allowed to have permissions to
   manage other tokens"), so the API-minted CI credential can never mint
-  at deploy time. Verified against the API 2026-10-10.
+  at deploy time. Verified against the API 2026-10-10. The credential
+  kinds, for future debugging: `cfut_` = user token (the only kind that
+  can mint; created at My Profile > API Tokens), `cfat_` = account-owned
+  token (can never hold `Account API Tokens` Edit, whatever created it);
+  both are 53 chars, so the prefix is the discriminator, not length.
+  `/user/tokens/verify` answers "Invalid API Token" for `cfat_` tokens:
+  false negative, they are account-scoped, not user-scoped.
 - Local dev needs no R2 credentials at all: alchemy's presign binding
   takes its local branch under `ALCHEMY_DEV`, which `alchemy dev` injects
   into the worker isolate, and serves the simulator bucket on the Worker's
