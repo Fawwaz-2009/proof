@@ -192,27 +192,32 @@ contract schema enforces content-type whitelist and per-file/request size
 limits (makeFilter + parser limits, rejected before the domain runs), the
 controller reads the persisted file part via the in-memory filesystem
 (`config/memory-fs.ts`), the domain puts bytes to R2 and writes the row, and
-the view exposes `imageUrl` from `Files.signReadUrl` (aws4fetch): a
-presigned R2 GET URL (15-min TTL) on deployed stages, the localhost gateway
-path in dev. The browser loads images directly; no presigned PUT, no
-base64, no bytes in JSON.
+the view exposes `imageUrl` from `Files.signReadUrl`: a presigned R2 GET URL
+(15-min TTL). Deployed, signing uses the ceremony-minted S3 credentials
+(aws4fetch) against real R2. Under `alchemy dev`, signing goes through
+alchemy's presign binding (`Cloudflare.R2.PresignGetObject`) against the
+backend Worker's own local S3 endpoint, so image URLs are absolute localhost
+URLs that resolve against the simulator. The browser loads images directly;
+no presigned PUT, no base64, no bytes in JSON.
 
 Credential + memory rules:
 
-- R2 S3 credentials are the key pair `R2_ACCESS_KEY_ID` +
-  `R2_SECRET_ACCESS_KEY` (Object Read scoped to the bucket); the account id
-  is not user-provided — worker.ts derives it from the authenticated
-  account (CloudflareEnvironment) and binds it as `R2_ACCOUNT_ID`. They are
+- Deployed image signing uses the key pair `R2_ACCESS_KEY_ID` +
+  `R2_SECRET_ACCESS_KEY` (Object Read scoped to the bucket) minted by the
+  ceremony (`stacks/github.ts`); the account id is not user-provided:
+  worker.ts derives it from the authenticated account
+  (CloudflareEnvironment) and binds it as `R2_ACCOUNT_ID`. They are
   required: absent values fail loudly rather than serving broken image
-  URLs.
-- Local dev serves images through the gateway route
-  (`GET /api/dev/files/*`, `config/dev-files.ts`), mounted only under
-  `ALCHEMY_DEV`, which `alchemy dev` injects into the worker isolate: the
-  simulator bucket does not exist in real R2, so presigned URLs would 404.
-  The gateway streams objects from the binding, unauthenticated by design
-  (localhost only, unguessable keys). Do NOT bind `ALCHEMY_DEV` into the
-  worker props env: that name collides with alchemy's own env handling and
-  every request 500s; read the ambient value instead.
+  URLs. Unifying deployed signing on alchemy's presign binding (which
+  mints its own per-Worker token) is planned; it is blocked on the
+  deployer being allowed to mint API tokens, which API-minted CI
+  credentials reportedly cannot carry.
+- Local dev needs no R2 credentials at all: alchemy's presign binding
+  takes its local branch under `ALCHEMY_DEV`, which `alchemy dev` injects
+  into the worker isolate, and serves the simulator bucket on the Worker's
+  local S3 endpoint. Do NOT bind `ALCHEMY_DEV` into the worker props env:
+  that name collides with alchemy's own env handling and every request
+  500s; read the ambient value instead.
 - `config/memory-fs.ts` holds in-flight upload bytes in the isolate (128MB
   shared across concurrent requests). `maxFileSize` bounds a single request;
   keep concurrent in-flight uploads x maxFileSize well under 128MB. Verified

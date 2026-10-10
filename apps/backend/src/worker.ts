@@ -11,7 +11,6 @@ import { HttpApiBuilder } from "effect/http-api";
 import { Auth } from "../config/auth.ts";
 import { AppDatabase } from "../config/database/index.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
-import { DevRoutesLive } from "../config/dev-files.ts";
 import { devPort, websiteDomain } from "../config/domain.ts";
 import * as Config from "effect/Config";
 import { Redacted } from "effect";
@@ -108,7 +107,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     // toHttpEffect, so the resulting fetch carries no requirements that
     // alchemy cannot satisfy per request.
 
-    const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive, DevRoutesLive).pipe(
+    const appLayer = Layer.mergeAll(ApiRoutesLive, AuthRoutesLive).pipe(
       Layer.provide(ApiHandlers),
       Layer.provide(AuthenticatedLive),
       Layer.provide(Auth.Live),
@@ -121,8 +120,8 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     );
     const app = yield* HttpRouter.toHttpEffect(appLayer);
 
-    // Tier 1 wraps EVERYTHING the backend serves (typed API, auth mount, dev
-    // routes): 300 requests per minute per IP. A bad-actor clamp, never a
+    // Tier 1 wraps EVERYTHING the backend serves (typed API, auth mount):
+    // 300 requests per minute per IP. A bad-actor clamp, never a
     // domain rule, so it answers plain HTTP 429 + Retry-After rather than a
     // typed contract error.
     return {
