@@ -11,7 +11,7 @@ import { HttpApiBuilder } from "effect/http-api";
 import { Auth } from "../config/auth.ts";
 import { AppDatabase } from "../config/database/index.ts";
 import { MemoryFsLive } from "../config/memory-fs.ts";
-import { devPort, websiteDomain } from "../config/domain.ts";
+import { devPort, prodName, websiteDomain } from "../config/domain.ts";
 import * as Config from "effect/Config";
 import { Redacted } from "effect";
 import { clientIp, RateLimits } from "../config/rate-limit.ts";
@@ -44,6 +44,7 @@ export default class Backend extends Cloudflare.Worker<Backend>()(
     const { accountId } = yield* yield* Cloudflare.CloudflareEnvironment;
     const websiteUrl = yield* websiteDomain;
     return {
+      ...(yield* prodName("proof-backend-prod-lza6dydesjheor4d")),
       main: import.meta.filename,
       workersDev: false,
       compatibility: {

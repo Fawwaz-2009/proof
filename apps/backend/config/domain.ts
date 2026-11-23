@@ -4,6 +4,20 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
 /**
+ * Prod pins a live resource's physical name, so a rebuilt state adopts it in
+ * place. Alchemy names resources with a random suffix that lives only in
+ * state; the shared state store lost every record written before 2026-11-20,
+ * and adopting without pins would create fresh, empty resources beside the
+ * live ones. Other stages keep generated names. Outside a synthesis context
+ * (the deployed Worker) there is no stage and nothing to pin.
+ */
+export const prodName = (name: string) =>
+  Effect.gen(function* () {
+    const stack = yield* Effect.serviceOption(Stack);
+    return stack._tag === "Some" && stack.value.stage === "prod" ? { name } : {};
+  });
+
+/**
  * The stage's public hostname, or null when no custom domain is configured.
  *
  * The slug is deployment identity in machine form and lives in env next to

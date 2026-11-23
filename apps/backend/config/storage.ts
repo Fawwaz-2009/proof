@@ -3,9 +3,10 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import { ALCHEMY_DEV } from "alchemy/Phase";
 import * as Config from "effect/Config";
 import { Context, Effect, Layer, Redacted } from "effect";
+import { prodName } from "./domain.ts";
 
 /** Attachment objects for the notes demo. Private: every read is authorized by the note's owner. */
-export const FilesBucket = Cloudflare.R2.Bucket("Files");
+export const FilesBucket = Cloudflare.R2.Bucket("Files", prodName("proof-files-prod-bnv7q5kq33awg5zy"));
 
 export class Files extends Context.Service<Files>()("Files", {
   make: Effect.gen(function* () {
