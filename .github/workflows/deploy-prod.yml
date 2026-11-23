@@ -38,10 +38,5 @@ jobs:
       - run: bun run typecheck
       - name: Preflight — prod requires its credentials
         run: bun scripts/ci/preflight.ts
-      # The shared Alchemy state store lost the key to every record written before 2026-11-20,
-      # so prod's state is rebuilt by adopting the live resources by their pinned names.
-      # One deploy only: remove --adopt and this check once it has run.
-      - name: Check the state store answers before deploying
-        run: curl -sf https://alchemy-state-store.fawwaz-dev.workers.dev/version | grep -q '"version":7'
       - name: Deploy prod (migrate + ship)
-        run: bunx alchemy deploy --stage prod --yes --adopt
+        run: bunx alchemy deploy --stage prod --yes
