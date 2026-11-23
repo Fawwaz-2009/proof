@@ -3,6 +3,7 @@ import * as Drizzle from "alchemy/Drizzle";
 import { Context, Effect, Layer } from "effect";
 import { defineRelations } from "drizzle-orm";
 import * as schema from "./schema.ts";
+import { prodName } from "../domain.ts";
 
 /**
  * Plan-time: regenerates migration SQL from the schema module on every
@@ -16,7 +17,7 @@ export const d1Database = Effect.gen(function* () {
     out: "apps/backend/migrations",
     dialect: "sqlite",
   });
-  return yield* Cloudflare.D1.Database("AppDatabase", { migrations });
+  return yield* Cloudflare.D1.Database("AppDatabase", { migrations, ...(yield* prodName("Proof-AppDatabase-prod-u6ysh2fh4vb4zw73")) });
 });
 
 /** Relations for the typed relational-query API (`db.query.*`). */

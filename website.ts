@@ -19,7 +19,7 @@ import * as Effect from "effect/Effect";
 import { Path } from "effect/Path";
 import Backend from "./apps/backend/src/worker.ts";
 import { devPort } from "./apps/backend/config/domain.ts";
-import { websiteDomain } from "./apps/backend/config/domain.ts";
+import { prodName, websiteDomain } from "./apps/backend/config/domain.ts";
 
 const websiteDeployProps = Effect.gen(function* () {
   const path = yield* Path;
@@ -34,6 +34,7 @@ const websiteDeployProps = Effect.gen(function* () {
   // stage's own backend Worker.
   const backend = yield* Backend;
   return {
+    ...(yield* prodName("proof-website-prod-a3piyue7cj2m7ioa")),
     rootDir: path.resolve(import.meta.dirname, "apps/web"),
     compatibility: {
       date: "2026-07-11",
