@@ -281,6 +281,18 @@ snapshot, and the D1 resource applies pending SQL per database
 `apps/backend/migrations/` are committed source: generate locally, commit,
 every environment replays its own delta. Never hand-edit snapshots.
 
+Better Auth's tables are not in that schema: `@alchemy.run/better-auth`
+migrates them inside the deploy too (the `BetterAuthMigrate` action, which
+runs on every new stage and whenever the auth schema changes) by
+introspecting D1 through better-auth and kysely. D1 keeps internal
+`_`-prefixed tables (`_cf_KV`) that refuse introspection with SQLITE_AUTH,
+so both packages carry a patch that skips them (`patches/`, keyed in
+`patchedDependencies` of the root `package.json`). The key is the exact
+version: when you bump `better-auth` or `kysely`, rename the patch file
+and its key to the new version, and regenerate the hunk if it no longer
+matches. A stale key does not fail `bun install`; bun prints
+`no longer applies` and installs the package unpatched.
+
 ## Worktrees (parallel agents and developers)
 
 One command sets up an isolated worktree:

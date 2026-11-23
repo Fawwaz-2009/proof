@@ -36,7 +36,7 @@
     "drizzle-kit": "1.0.0-rc.5-ab785fc"
   },
   "patchedDependencies": {
-    "better-auth@1.7.7": "patches/better-auth@1.7.7.patch",
+    "better-auth@1.7.27": "patches/better-auth@1.7.27.patch",
     "kysely@0.29.5": "patches/kysely@0.29.5.patch"
   }
 }

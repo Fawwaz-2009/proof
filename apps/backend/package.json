@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@alchemy.run/better-auth": "2.0.0-beta.83",
-    "@better-auth/drizzle-adapter": "1.7.7",
+    "@better-auth/drizzle-adapter": "1.7.27",
     "aws4fetch": "^1.0.20",
     "alchemy": "2.0.0-beta.83",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.27",
     "drizzle-orm": "1.0.0-rc.5-ab785fc",
     "effect": "4.0.2"
   },
